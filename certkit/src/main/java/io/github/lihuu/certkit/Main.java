@@ -6,9 +6,10 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -56,11 +57,11 @@ public final class Main implements Callable<Integer> {
         @ParentCommand
         private Main parent;
 
-        @Option(names = {"-d", "--domain"}, description = "Domain name(s) (e.g. localhost, api.local)", split = ",")
-        private String[] domains = new String[]{"localhost"};
+        @Parameters(description = "Hostnames and/or IP addresses (e.g. localhost 127.0.0.1 api.local)", arity = "0..*")
+        private List<String> rawHosts;
 
-        @Option(names = "--ip", description = "IP SAN(s) (e.g. 127.0.0.1)", split = ",")
-        private String[] ips = new String[]{"127.0.0.1"};
+        @Option(names = "--self-signed", description = "Force self-signed certificate, skipping local CA")
+        private boolean selfSigned;
 
         @Option(names = "--days", defaultValue = "365", description = "Validity in days (default: 365)")
         private int days;
@@ -68,31 +69,43 @@ public final class Main implements Callable<Integer> {
         @Option(names = "--algo", defaultValue = "ecdsa", description = "Key algorithm: ecdsa (P-256) or rsa4096 (default: ecdsa)")
         private String algo;
 
-        @Option(names = "--out", defaultValue = "./certs", description = "Output directory (default: ./certs)")
+        @Option(names = "--out", description = "Output directory (default: current directory)")
         private Path outDir;
 
-        @Option(names = "--ca-cert", description = "Path to CA certificate to sign this certificate")
-        private Path caCert;
+        @Option(names = "--ca-cert", description = "Custom CA certificate path (default: ~/.certkit/ca/ca.crt)")
+        private Path customCaCert;
 
-        @Option(names = "--ca-key", description = "Path to CA private key to sign this certificate")
-        private Path caKey;
+        @Option(names = "--ca-key", description = "Custom CA private key path (default: ~/.certkit/ca/ca.key)")
+        private Path customCaKey;
 
         @Override
         public Integer call() {
             try {
-                Path certOut = outDir.resolve("cert.pem");
-                Path keyOut = outDir.resolve("key.pem");
-                Path fullchainOut = outDir.resolve("fullchain.pem");
+                Path destDir = outDir != null ? outDir : Path.of(".");
+                Path certOut = destDir.resolve("cert.pem");
+                Path keyOut = destDir.resolve("key.pem");
+                Path fullchainOut = destDir.resolve("fullchain.pem");
 
+                var split = Defaults.splitHosts(rawHosts);
                 Openssl openssl = new Openssl();
-                List<String> domainList = domains != null ? Arrays.asList(domains) : List.of("localhost");
-                List<String> ipList = ips != null ? Arrays.asList(ips) : List.of("127.0.0.1");
+
+                Path activeCaCert = customCaCert;
+                Path activeCaKey = customCaKey;
+                boolean useCa = false;
+
+                if (activeCaCert != null && activeCaKey != null) {
+                    useCa = true;
+                } else if (!selfSigned && Defaults.hasDefaultCa()) {
+                    activeCaCert = Defaults.defaultCaCert();
+                    activeCaKey = Defaults.defaultCaKey();
+                    useCa = true;
+                }
 
                 CertInfo info;
-                if (caCert != null && caKey != null) {
-                    info = openssl.generateSignedByCa(domainList, ipList, days, algo, caCert, caKey, certOut, keyOut, fullchainOut);
+                if (useCa) {
+                    info = openssl.generateSignedByCa(split.domains(), split.ips(), days, algo, activeCaCert, activeCaKey, certOut, keyOut, fullchainOut);
                 } else {
-                    info = openssl.generateSelfSigned(domainList, ipList, days, algo, certOut, keyOut);
+                    info = openssl.generateSelfSigned(split.domains(), split.ips(), days, algo, certOut, keyOut);
                 }
 
                 if (parent != null && parent.json) {
@@ -100,11 +113,15 @@ public final class Main implements Callable<Integer> {
                 } else {
                     if (parent == null || !parent.quiet) {
                         System.out.println("✔ Certificate and private key generated successfully!");
-                        System.out.println("  Certificate: " + certOut.toAbsolutePath());
-                        System.out.println("  Private Key: " + keyOut.toAbsolutePath() + " (mode: 0600)");
-                        if (caCert != null) {
-                            System.out.println("  Fullchain:   " + fullchainOut.toAbsolutePath());
-                            System.out.println("  Signed by:   " + caCert.toAbsolutePath());
+                        System.out.println("  Certificate: " + certOut.toAbsolutePath().normalize());
+                        System.out.println("  Private Key: " + keyOut.toAbsolutePath().normalize() + " (mode: 0600)");
+                        if (useCa) {
+                            System.out.println("  Fullchain:   " + fullchainOut.toAbsolutePath().normalize());
+                            System.out.println("  Signed by:   " + activeCaCert.toAbsolutePath().normalize() + " (Trusted Root CA)");
+                        } else if (!selfSigned) {
+                            System.out.println();
+                            System.out.println("💡 Note: Generated as self-signed certificate.");
+                            System.out.println("   Run 'certkit ca' once to enable trusted root CA for green-lock browser support.");
                         }
                         System.out.println();
                         System.out.println(info.toHumanString());
@@ -118,12 +135,12 @@ public final class Main implements Callable<Integer> {
         }
     }
 
-    @Command(name = "ca", description = "Generate a local root CA for trusted dev environments")
+    @Command(name = "ca", description = "Initialize local root CA and install into system trust store")
     static class CaCommand implements Callable<Integer> {
         @ParentCommand
         private Main parent;
 
-        @Option(names = "--name", defaultValue = "Local Development Root CA", description = "CA Common Name (default: 'Local Development Root CA')")
+        @Option(names = "--name", description = "CA Common Name (default: 'Local Development Root CA')")
         private String name;
 
         @Option(names = "--days", defaultValue = "3650", description = "Validity in days (default: 3650 / 10 years)")
@@ -132,36 +149,62 @@ public final class Main implements Callable<Integer> {
         @Option(names = "--algo", defaultValue = "ecdsa", description = "Key algorithm: ecdsa (P-256) or rsa4096 (default: ecdsa)")
         private String algo;
 
-        @Option(names = "--out", defaultValue = "./ca", description = "Output directory (default: ./ca)")
+        @Option(names = "--out", description = "Output directory (default: ~/.certkit/ca)")
         private Path outDir;
+
+        @Option(names = "--no-trust", description = "Skip automatic installation into system trust store")
+        private boolean noTrust;
 
         @Override
         public Integer call() {
             try {
-                Path caCertOut = outDir.resolve("ca.crt");
-                Path caKeyOut = outDir.resolve("ca.key");
+                Path destDir = outDir != null ? outDir : Defaults.defaultCaDir();
+                Path caCertOut = destDir.resolve("ca.crt");
+                Path caKeyOut = destDir.resolve("ca.key");
+
+                String caName = (name != null && !name.isBlank()) ? name : defaultCaName();
 
                 Openssl openssl = new Openssl();
-                CertInfo info = openssl.generateCa(name, days, algo, caCertOut, caKeyOut);
+                CertInfo info = openssl.generateCa(caName, days, algo, caCertOut, caKeyOut);
 
                 if (parent != null && parent.json) {
                     System.out.println(info.toJson());
                 } else {
                     if (parent == null || !parent.quiet) {
                         System.out.println("✔ Root CA created successfully!");
-                        System.out.println("  CA Certificate: " + caCertOut.toAbsolutePath());
-                        System.out.println("  CA Private Key: " + caKeyOut.toAbsolutePath() + " (mode: 0600)");
+                        System.out.println("  CA Certificate: " + caCertOut.toAbsolutePath().normalize());
+                        System.out.println("  CA Private Key: " + caKeyOut.toAbsolutePath().normalize() + " (mode: 0600)");
                         System.out.println();
                         System.out.println(info.toHumanString());
-                        System.out.println();
-                        System.out.println("💡 Next step: Install into system trust store:");
-                        System.out.println("   certkit trust install " + caCertOut);
+
+                        if (!noTrust) {
+                            System.out.println();
+                            TrustStore ts = new TrustStore();
+                            var res = ts.install(caCertOut, false);
+                            if (res.success()) {
+                                System.out.println("✔ " + res.message());
+                            } else {
+                                System.out.println("ℹ " + res.message());
+                                if (res.suggestedCommand() != null) {
+                                    System.out.println("  Run: " + res.suggestedCommand());
+                                }
+                            }
+                        }
                     }
                 }
                 return 0;
             } catch (Exception e) {
                 System.err.println("certkit ca: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
                 return 1;
+            }
+        }
+
+        private String defaultCaName() {
+            try {
+                String host = InetAddress.getLocalHost().getHostName();
+                return "Local Development Root CA (" + host + ")";
+            } catch (UnknownHostException ignored) {
+                return "Local Development Root CA";
             }
         }
     }
@@ -171,8 +214,8 @@ public final class Main implements Callable<Integer> {
         @ParentCommand
         private Main parent;
 
-        @Parameters(index = "0", description = "Local cert file path or remote host:port (e.g. ./cert.pem or github.com:443)")
-        private String target;
+        @Parameters(index = "0", arity = "0..1", description = "Local cert file or remote host (default: ./cert.pem)")
+        private String rawTarget;
 
         @Option(names = "--timeout", defaultValue = "5000", description = "Network timeout in milliseconds for remote check (default: 5000)")
         private int timeout;
@@ -180,8 +223,10 @@ public final class Main implements Callable<Integer> {
         @Override
         public Integer call() {
             try {
+                String target = (rawTarget == null || rawTarget.isBlank()) ? "./cert.pem" : rawTarget;
                 CertInfo info;
                 Path path = Path.of(target);
+
                 if (Files.exists(path)) {
                     info = CertParser.parse(path);
                 } else if (target.contains(":") && !target.contains("/") && !target.contains("\\")) {
@@ -214,23 +259,38 @@ public final class Main implements Callable<Integer> {
         @ParentCommand
         private Main parent;
 
-        @Option(names = "--in", required = true, description = "Input certificate file (e.g. cert.pem, bundle.p12)")
+        @Parameters(index = "0", description = "Input certificate file (e.g. cert.pem, bundle.p12)")
         private Path inFile;
 
-        @Option(names = "--key", description = "Matching private key file (required when exporting to PKCS#12 / .p12)")
-        private Path inKey;
-
-        @Option(names = "--out", required = true, description = "Output file (e.g. cert.p12, cert.der, cert.pem)")
+        @Parameters(index = "1", description = "Output certificate file (e.g. cert.p12, restored.pem, cert.der)")
         private Path outFile;
 
-        @Option(names = "--pass", defaultValue = "changeit", description = "Passphrase for PKCS#12 bundle (default: changeit)")
+        @Option(names = {"-k", "--key"}, description = "Matching private key file (defaults to auto-detecting key.pem in same directory)")
+        private Path inKey;
+
+        @Option(names = {"-p", "--pass"}, defaultValue = "changeit", description = "Passphrase for PKCS#12 bundle (default: changeit)")
         private String pass;
 
         @Override
         public Integer call() {
             try {
+                Path activeKey = inKey;
+                String outName = outFile.getFileName().toString().toLowerCase();
+
+                // Convention: Auto-detect matching key if converting to .p12 and key not specified
+                if ((outName.endsWith(".p12") || outName.endsWith(".pfx")) && activeKey == null) {
+                    Path parentDir = inFile.getParent() != null ? inFile.getParent() : Path.of(".");
+                    Path candidate1 = parentDir.resolve("key.pem");
+                    Path candidate2 = parentDir.resolve(inFile.getFileName().toString().replaceFirst("\\.[^.]+$", "") + "-key.pem");
+                    if (Files.exists(candidate1)) {
+                        activeKey = candidate1;
+                    } else if (Files.exists(candidate2)) {
+                        activeKey = candidate2;
+                    }
+                }
+
                 Openssl openssl = new Openssl();
-                openssl.convert(inFile, inKey, outFile, pass);
+                openssl.convert(inFile, activeKey, outFile, pass);
                 if (parent == null || !parent.quiet) {
                     System.out.println("✔ Converted: " + inFile + " -> " + outFile);
                 }
@@ -261,11 +321,8 @@ public final class Main implements Callable<Integer> {
 
     @Command(name = "install", description = "Install and trust a root CA in the operating system")
     static class TrustInstallCommand implements Callable<Integer> {
-        @ParentCommand
-        private TrustCommand trustParent;
-
-        @Parameters(index = "0", description = "Root CA certificate file (e.g. ./ca/ca.crt)")
-        private Path caCert;
+        @Parameters(index = "0", arity = "0..1", description = "Root CA cert path (default: ~/.certkit/ca/ca.crt)")
+        private Path rawCaCert;
 
         @Option(names = "--system", description = "Install to system-wide keychain/truststore (requires admin/root)")
         private boolean system;
@@ -273,6 +330,7 @@ public final class Main implements Callable<Integer> {
         @Override
         public Integer call() {
             try {
+                Path caCert = rawCaCert != null ? rawCaCert : Defaults.defaultCaCert();
                 TrustStore ts = new TrustStore();
                 var result = ts.install(caCert, system);
                 if (result.success()) {
@@ -295,12 +353,13 @@ public final class Main implements Callable<Integer> {
 
     @Command(name = "check", description = "Check if a root CA is installed in the trust store")
     static class TrustCheckCommand implements Callable<Integer> {
-        @Parameters(index = "0", description = "Root CA certificate file (e.g. ./ca/ca.crt)")
-        private Path caCert;
+        @Parameters(index = "0", arity = "0..1", description = "Root CA cert path (default: ~/.certkit/ca/ca.crt)")
+        private Path rawCaCert;
 
         @Override
         public Integer call() {
             try {
+                Path caCert = rawCaCert != null ? rawCaCert : Defaults.defaultCaCert();
                 TrustStore ts = new TrustStore();
                 var result = ts.check(caCert);
                 System.out.println((result.success() ? "✔ " : "ℹ ") + result.message());
@@ -314,8 +373,8 @@ public final class Main implements Callable<Integer> {
 
     @Command(name = "uninstall", description = "Remove a root CA from the trust store")
     static class TrustUninstallCommand implements Callable<Integer> {
-        @Parameters(index = "0", description = "Root CA certificate file (e.g. ./ca/ca.crt)")
-        private Path caCert;
+        @Parameters(index = "0", arity = "0..1", description = "Root CA cert path (default: ~/.certkit/ca/ca.crt)")
+        private Path rawCaCert;
 
         @Option(names = "--system", description = "Remove from system-wide keychain (requires admin/root)")
         private boolean system;
@@ -323,6 +382,7 @@ public final class Main implements Callable<Integer> {
         @Override
         public Integer call() {
             try {
+                Path caCert = rawCaCert != null ? rawCaCert : Defaults.defaultCaCert();
                 TrustStore ts = new TrustStore();
                 var result = ts.uninstall(caCert, system);
                 if (result.success()) {

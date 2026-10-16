@@ -21,63 +21,57 @@
 - **零运行时第三方依赖**：仅用 JDK 内置 API，测试使用 JUnit 5。
 - 外部命令一律**显式参数、非交互**。
 
-## 2. 命令面
+## 2. 核心约定（Convention over Configuration）
+
+1. **默认 CA 存放目录**：`~/.certkit/ca/`（含 `ca.crt` 与 `ca.key`）。环境变量 `CERTKIT_CA_DIR` 可覆盖。
+2. **默认信任联动**：运行 `certkit ca` 默认自动尝试将 CA 注入系统钥匙串受信任（可用 `--no-trust` 跳过）。
+3. **默认签发联动**：运行 `certkit gen` 时，若检测到 `~/.certkit/ca/` 存在，**默认自动使用该 CA 签发**（产物直接受信任全绿！）；否则退回单机自签并温馨提示。
+4. **智能参数嗅探**：`certkit gen [hosts...]` 接收纯位置参数，自动识别 IPv4/IPv6 与域名，无需分别指定 `-d` 或 `--ip`。不传时默认 `localhost` + `127.0.0.1`。
+5. **默认就地落盘**：默认在当前目录直接生成 `cert.pem` 与 `key.pem`（若 CA 签发则同时产出 `fullchain.pem`）。
+
+## 3. 命令面
 
 全局参数：`--json`（机器可读输出）、`--quiet`、`--help`。
 **退出码**：`0` 成功；`1` 业务失败；`2` 用法错误。
 
-### 1) `certkit gen`
-生成 TLS 私钥与证书（默认包含 SAN 扩展，ECDSA P-256 或 RSA 4096）：
+### 1) `certkit gen [hosts...]`
+一键生成 TLS 证书与私钥：
 ```bash
-certkit gen [--domain localhost] [--ip 127.0.0.1] [--days 365] [--ca-cert F --ca-key F] [--out DIR]
+certkit gen                                    # 默认当前目录生成针对 localhost 与 127.0.0.1 的证书
+certkit gen dev.local api.test 192.168.1.100  # 自动识别域名与 IP，默认优先由本地 CA 签发
+certkit gen --self-signed                      # 强制单机自签名，不用本地 CA
+certkit gen --out ./certs                      # 指定输出目录
 ```
-- 默认：`--domain localhost --ip 127.0.0.1`，ECDSA P-256，有效期 365 天。
-- 产物：`cert.pem` (或 fullchain.pem) 与 `key.pem`（权限 0600）。
-- 若指定 `--ca-cert` 和 `--ca-key`，则自动用该 CA 签发并打包好证书链。
 
 ### 2) `certkit ca`
-生成本地专用自建 Root CA 根证书与私钥：
+一键初始化本地 Root CA 并自动信任：
 ```bash
-certkit ca [--name "My Dev CA"] [--days 3650] [--out DIR]
+certkit ca                                     # 默认写入 ~/.certkit/ca/ 并自动加入系统受信任库
+certkit ca --no-trust                          # 生成 CA 但不自动调用系统信任
+certkit ca --out DIR                           # 自定义生成目录
 ```
-- 产物：`ca.crt` 与 `ca.key`，可一键导入系统钥匙串（macOS Keychain / Linux ca-certificates）实现全绿受信任。
 
-### 3) `certkit check <file | host:port>`
-检查本地证书文件或远程 HTTPS 服务的证书状态：
+### 3) `certkit check [target]`
+检查证书文件或远程服务状态：
 ```bash
-certkit check ./cert.pem
-certkit check github.com:443
+certkit check                                  # 默认检查当前目录 ./cert.pem
+certkit check ./my-cert.pem
+certkit check github.com                       # 自动补全 :443
 ```
-- 规整输出：
-  - 域名覆盖列表（CN + SAN）
-  - 颁发者（Issuer）
-  - 有效期与**剩余天数倒计时**
-  - 是否过期 / 90 天内预警
-  - 证书链完整性
 
-### 4) `certkit convert`
-跨格式无痛转换：
+### 4) `certkit convert <in-file> <out-file>`
+极简双位置参数格式互转：
 ```bash
-certkit convert --in cert.pem [--key key.pem] --out cert.p12 [--passphrase-file F]
+certkit convert cert.pem bundle.p12            # 自动探测同目录 key.pem，默认密码 changeit
+certkit convert bundle.p12 restored.pem
+certkit convert cert.pem cert.der
 ```
-- 支持 PEM、PKCS12 (.p12/.pfx)、DER 互转。
 
 ### 5) `certkit trust`
-跨平台管理自建 CA 根证书的系统受信任状态（支持 macOS 与 Linux）：
+系统证书受信任状态管理：
 ```bash
-certkit trust install <ca-cert.pem> [--system]
-certkit trust check <ca-cert.pem>
-certkit trust uninstall <ca-cert.pem> [--system]
+certkit trust install [ca-cert] [--system]     # 缺省时默认安装 ~/.certkit/ca/ca.crt
+certkit trust check [ca-cert]                  # 缺省时默认检查 ~/.certkit/ca/ca.crt
+certkit trust uninstall [ca-cert] [--system]
 ```
-- **macOS 机制**：
-  - 默认（用户钥匙串，通常免 sudo）：安装至登录钥匙串并标记信任根：
-    `security add-trusted-cert -d -r trustRoot -k ~/Library/Keychains/login.keychain-db <ca.crt>`
-  - `--system`（全局系统钥匙串，需 sudo）：
-    `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain <ca.crt>`
-- **Linux 机制**：
-  - 自动探测系统发行版：
-    - Debian / Ubuntu：写入 `/usr/local/share/ca-certificates/` 并运行 `update-ca-certificates`
-    - RHEL / Fedora / CentOS：写入 `/etc/pki/ca-trust/source/anchors/` 并运行 `update-ca-trust extract`
-    - Arch Linux：写入 `/etc/ca-certificates/trust-source/anchors/` 并运行 `trust extract-compat`
-  - 权限不足时优雅打印需要执行的单行 `sudo` 命令，不盲目报错。
 

@@ -13,11 +13,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class CliCommandTest {
 
     @Test
-    void genAndCheckWorkflow(@TempDir Path tempDir) {
+    void genAndCheckWorkflowWithConventionFirstArgs(@TempDir Path tempDir) {
         Path certsDir = tempDir.resolve("certs");
 
-        // 1. Run certkit gen
-        int genExit = Main.run("gen", "--out", certsDir.toString(), "-d", "localhost,dev.local", "--ip", "127.0.0.1,10.0.0.1");
+        // 1. Run certkit gen with pure positional arguments (no -d or --ip flags!)
+        int genExit = Main.run("gen", "--out", certsDir.toString(), "localhost", "dev.local", "127.0.0.1", "10.0.0.1");
         assertEquals(0, genExit, "certkit gen should succeed");
         assertTrue(Files.exists(certsDir.resolve("cert.pem")));
         assertTrue(Files.exists(certsDir.resolve("key.pem")));
