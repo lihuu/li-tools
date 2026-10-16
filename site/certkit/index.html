@@ -3,8 +3,76 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>certkit — Zero-config SSL/TLS Certificate Swiss Army Knife</title>
-  <meta name="description" content="Local dev green-lock HTTPS certificates, CA management, format conversion, and cross-platform trust injection with zero config.">
+  <title>certkit — Zero-config SSL/TLS Certificate Swiss Army Knife | Local Green Lock & Trust Injection</title>
+  <meta name="description" content="Generate SAN-enabled dev certificates, manage local Root CA, perform single-argument format conversions, and inject cross-platform trust (macOS, Linux, Windows 11) with zero configuration.">
+  <meta name="keywords" content="ssl certificate, tls, openssl alternative, certkit, self-signed certificate, local ca, subject alternative name, p12 convert, windows 11 certutil, developer tools">
+  <meta name="author" content="lihuu">
+  <link rel="canonical" href="https://lihuu.github.io/li-tools/certkit/">
+  <link rel="alternate" hreflang="en" href="https://lihuu.github.io/li-tools/certkit/">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lihuu.github.io/li-tools/certkit/index_zh.html">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lihuu.github.io/li-tools/certkit/">
+  <meta property="og:title" content="certkit — Zero-config SSL/TLS Certificate Swiss Army Knife">
+  <meta property="og:description" content="Zero-config SSL/TLS toolkit. Instant local green lock, smart IP/DNS SAN deduction, format conversion, and Windows 11 non-elevated trust injection.">
+  <meta property="og:site_name" content="li-tools">
+  <meta property="og:locale" content="en_US">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="certkit — Zero-config SSL/TLS Certificate Swiss Army Knife">
+  <meta name="twitter:description" content="One command for the whole life of SSL/TLS certificates: generate dev certs with SAN, manage local CA, convert formats without OpenSSL agony.">
+
+  <!-- Schema.org JSON-LD (GEO Optimization) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "certkit",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "macOS, Linux, Windows 11",
+        "description": "Zero-config SSL/TLS certificate Swiss Army knife with smart SAN deduction, local root CA automation, and cross-platform trust store management.",
+        "url": "https://lihuu.github.io/li-tools/certkit/",
+        "license": "https://opensource.org/licenses/Apache-2.0",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "lihuu",
+          "url": "https://github.com/lihuu"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How does certkit enable HTTPS green lock on localhost?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "By running 'certkit ca', a local development root CA is initialized and added to your OS trust store. All certificates generated via 'certkit gen' are automatically signed by this CA and include modern SAN extensions required by browsers."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does certkit require administrative privileges (UAC/sudo) on Windows 11?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. certkit uses 'certutil.exe -addstore -user Root', injecting the certificate into the current user's personal trust store without requiring Administrator elevation or triggering annoying UAC prompts."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,9 +131,14 @@
         <a href="#features" class="text-slate-400 hover:text-white transition">Features</a>
         <a href="#install" class="text-slate-400 hover:text-white transition">Install</a>
         <a href="#docs" class="text-slate-400 hover:text-white transition">Commands</a>
+        <a href="#faq" class="text-slate-400 hover:text-white transition">FAQ</a>
         <a href="../gpgkit/index.html" class="text-slate-400 hover:text-indigo-400 transition flex items-center gap-1.5">
           <span>gpgkit</span>
           <span class="text-xs">↗</span>
+        </a>
+        <!-- Language Switcher -->
+        <a href="index_zh.html" class="px-2.5 py-1 text-xs font-mono font-semibold rounded-md bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 transition flex items-center gap-1.5" title="切换为简体中文">
+          <span>🌐</span> 中文
         </a>
       </nav>
     </div>
@@ -75,13 +148,13 @@
   <main class="max-w-6xl mx-auto px-6 pt-16 pb-24">
     <div class="text-center max-w-3xl mx-auto mb-14">
       <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono mb-6">
-        <span>✨</span> 约定大于配置 • macOS / Linux / Windows 11 全平台平权
+        <span>✨</span> Convention over Configuration • Triple-Platform Equity (macOS, Linux, Windows 11)
       </div>
       <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
         Zero-config <span class="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">SSL / TLS</span> Certificate Swiss Army Knife.
       </h1>
       <p class="text-lg text-slate-400 leading-relaxed">
-        忘掉 OpenSSL 让人抓狂的长参数与配置文件。一行命令生成浏览器全绿锁证书，自动管理本地 CA，格式智能互转，跨平台免提权信任注入。
+        Say goodbye to long command flags and esoteric OpenSSL configuration files. One command to generate green-lock certificates, auto-reuse local CA, convert formats seamlessly, and inject OS trust.
       </p>
     </div>
 
@@ -152,67 +225,94 @@
     <div id="features" class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-20">
       <div class="glass-card rounded-xl p-6 border-red-500/20 bg-red-950/10">
         <h4 class="text-red-400 font-bold mb-3 flex items-center gap-2">
-          <span>❌</span> 曾经使用 OpenSSL 的痛苦泥潭
+          <span>❌</span> The Pain of Raw OpenSSL
         </h4>
         <ul class="text-sm text-slate-400 space-y-2.5">
-          <li>• 极度反直觉的 CLI：每次签发证书都必须写临时 <code class="text-slate-300">openssl.cnf</code> 注入 SAN 扩展</li>
-          <li>• 格式转换噩梦：记不清 <code class="text-slate-300">x509</code>, <code class="text-slate-300">pkcs12</code>, <code class="text-slate-300">rsa</code> 的互转矩阵与长参数</li>
-          <li>• Windows 体验割裂：没有系统级 openssl，且无法简单将 CA 信任导入系统证书存储</li>
-          <li>• 查看证书繁复：查一个域名证书过期时间需要管道连接多个 openssl 过滤命令</li>
+          <li>• Hostile CLI: Having to write temporary <code class="text-slate-300">openssl.cnf</code> just to inject SAN extensions</li>
+          <li>• Format conversion nightmare: Memorizing complex flag matrices for <code class="text-slate-300">x509</code>, <code class="text-slate-300">pkcs12</code>, <code class="text-slate-300">rsa</code></li>
+          <li>• Broken Windows experience: No built-in openssl and no straightforward way to inject root trust</li>
+          <li>• Tedious inspection: Pipelining multiple commands just to view expiration dates</li>
         </ul>
       </div>
 
       <div class="glass-card rounded-xl p-6 border-emerald-500/20 bg-emerald-950/10">
         <h4 class="text-emerald-400 font-bold mb-3 flex items-center gap-2">
-          <span>✅</span> certkit 的现代极简体验
+          <span>✅</span> The certkit Experience
         </h4>
         <ul class="text-sm text-slate-400 space-y-2.5">
-          <li>• 约定大于配置：<code class="text-emerald-300 font-mono">certkit gen localhost</code> 智能嗅探 IP/域名自动配置 SAN</li>
-          <li>• 自动复用本地 CA：自动在 <code class="text-slate-300">~/.certkit/ca/</code> 创建并复用根 CA，天然支持自签互认</li>
-          <li>• 单参数对切转换：<code class="text-emerald-300 font-mono">certkit convert server.crt</code> 自动找 key 并转为 PKCS#12 (.p12)</li>
-          <li>• Windows 11 免提权注入：通过 <code class="text-slate-300">certutil.exe -user</code> 实现无 UAC 弹窗的浏览器全绿锁</li>
+          <li>• Convention over configuration: <code class="text-emerald-300 font-mono">certkit gen localhost</code> auto-detects IP vs DNS</li>
+          <li>• Local CA reuse: Automatically manages root CA in <code class="text-slate-300">~/.certkit/ca/</code> for trusted local development</li>
+          <li>• Single-argument conversion: <code class="text-emerald-300 font-mono">certkit convert server.crt</code> auto-locates key and outputs PKCS#12</li>
+          <li>• Non-elevated Windows 11 trust: <code class="text-slate-300">certutil.exe -user</code> injects root CA with zero UAC prompts</li>
         </ul>
       </div>
     </div>
 
     <!-- Commands Grid -->
     <div id="docs" class="max-w-4xl mx-auto mb-20">
-      <h3 class="text-2xl font-bold mb-8 text-center">核心命令速查 (Command Matrix)</h3>
+      <h3 class="text-2xl font-bold mb-8 text-center">Command Matrix</h3>
       <div class="grid sm:grid-cols-2 gap-4">
         <div class="glass-card p-5 rounded-xl">
           <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit gen [domain/ip]</div>
-          <p class="text-xs text-slate-400">位置参数智能嗅探，自动追加 IP/DNS SAN 扩展，自动复用 ~/.certkit/ca/ 签发，默认当前目录就地落盘。</p>
+          <p class="text-xs text-slate-400">Smart positional argument deduction, auto-injects IP/DNS SAN extensions, signed by local CA, defaults in-place.</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
           <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit ca init</div>
-          <p class="text-xs text-slate-400">一键创建属于开发机的高信任根 CA（默认 10 年），提供专属自签基础设施，杜绝自签散乱失控。</p>
+          <p class="text-xs text-slate-400">Initialize a dedicated local Root CA (default 10 years) for your machine, ending self-signed certificate clutter.</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
           <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit check [file | host:port]</div>
-          <p class="text-xs text-slate-400">支持本地 .crt/.pem/.p12 文件纯 JDK 高速解析，或远程握手嗅探 TLS 链。支持 --json 机器友好输出。</p>
+          <p class="text-xs text-slate-400">High-speed inspection of local .crt/.pem/.p12 files (pure JDK) or remote TLS probe with --json support.</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
           <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit convert &lt;file&gt;</div>
-          <p class="text-xs text-slate-400">单参数自动对切：PEM 证书自动搜寻同名密钥转为 P12，P12 自动解出 PEM 证书与私钥。</p>
+          <p class="text-xs text-slate-400">Single-argument bidirectional conversion: PEM automatically grabs matching key for P12; P12 unpacks certificates and keys.</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
           <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit trust [ca | &lt;cert&gt;]</div>
-          <p class="text-xs text-slate-400">跨平台信任注入：macOS 钥匙串、Linux update-ca-certificates、Windows 11 免提权 certutil 当前用户注入。</p>
+          <p class="text-xs text-slate-400">Cross-platform trust injection: macOS Keychain, Linux update-ca-certificates, Windows 11 non-elevated certutil.</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
           <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit raw &lt;args...&gt;</div>
-          <p class="text-xs text-slate-400">底层逃生门：无损透传给底层检测到的 openssl 执行，保留资深运维与复杂场景下的全量能力。</p>
+          <p class="text-xs text-slate-400">Unconstrained escape hatch: directly forwards arguments to the host OpenSSL binary for specialized administrative workflows.</p>
         </div>
         <div class="glass-card p-5 rounded-xl sm:col-span-2">
           <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit doctor</div>
-          <p class="text-xs text-slate-400">跨平台运行环境巡检：检查 OpenSSL 引擎（包括 Windows Git 路径）、CA 状态与系统信任库健康度。</p>
+          <p class="text-xs text-slate-400">Cross-platform diagnostics: checks OpenSSL engine (including Git for Windows path), CA integrity, and OS trust store status.</p>
         </div>
       </div>
     </div>
+
+    <!-- FAQ Section (GEO Optimization) -->
+    <div id="faq" class="max-w-4xl mx-auto mb-16">
+      <h3 class="text-2xl font-bold mb-8 text-center tracking-tight">Frequently Asked Questions</h3>
+      <div class="space-y-4">
+        <div class="glass-card p-6 rounded-xl">
+          <h4 class="font-bold text-white mb-2">Why does Chrome reject standard self-signed certificates?</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Chrome and modern Chromium browsers require the <code class="text-emerald-400">Subject Alternative Name (SAN)</code> extension to be present on all certificates. Legacy certificates specifying only Common Name (CN) are automatically rejected. certkit automatically detects domain and IP arguments and embeds compliant SAN extensions.
+          </p>
+        </div>
+        <div class="glass-card p-6 rounded-xl">
+          <h4 class="font-bold text-white mb-2">Where does certkit store my private keys and Root CA?</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Your Root CA is stored securely under <code class="text-teal-300">~/.certkit/ca/</code> with restricted filesystem permissions (mode 0600 on keys). Generated server certificates default to the current working directory.
+          </p>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <footer class="border-t border-slate-800/80 py-10 text-center text-xs text-slate-500 font-mono">
-    <p>Part of the <a href="../index.html" class="text-slate-400 hover:text-white transition">li-tools</a> suite • Created with passion for developer experience</p>
+    <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>Part of the <a href="../index.html" class="text-slate-400 hover:text-white transition">li-tools</a> suite • Created with passion for developer experience</div>
+      <div class="flex items-center gap-4">
+        <a href="index_zh.html" class="hover:text-white transition">中文版</a>
+        <a href="../gpgkit/index.html" class="hover:text-indigo-400 transition">gpgkit</a>
+        <a href="https://github.com/lihuu/li-tools" target="_blank" rel="noopener" class="hover:text-white transition">GitHub</a>
+      </div>
+    </div>
   </footer>
 
   <script>

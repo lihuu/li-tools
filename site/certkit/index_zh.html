@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>certkit — 零配置 SSL/TLS 证书瑞士军刀 | 本地全绿锁与跨平台信任注入</title>
+  <meta name="description" content="零配置生成带 SAN 扩展的开发证书、自动管理本地受信任根 CA、单参数格式无痛转换、macOS/Linux/Windows 11 跨平台系统信任注入，告别繁重 OpenSSL 认知税。">
+  <meta name="keywords" content="SSL证书, TLS, OpenSSL替代, certkit, 自签证书, 本地CA, SAN扩展, P12转换, Windows 11证书注入, 开发者工具">
+  <meta name="author" content="lihuu">
+  <link rel="canonical" href="https://lihuu.github.io/li-tools/certkit/index_zh.html">
+  <link rel="alternate" hreflang="en" href="https://lihuu.github.io/li-tools/certkit/">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lihuu.github.io/li-tools/certkit/index_zh.html">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lihuu.github.io/li-tools/certkit/index_zh.html">
+  <meta property="og:title" content="certkit — 零配置 SSL/TLS 证书瑞士军刀">
+  <meta property="og:description" content="零配置 SSL/TLS 工具。秒级本地全绿锁、智能 IP/域名 SAN 嗅探、单参数对切转换与 Windows 11 免提权系统注入。">
+  <meta property="og:site_name" content="li-tools">
+  <meta property="og:locale" content="zh_CN">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="certkit — 零配置 SSL/TLS 证书瑞士军刀">
+  <meta name="twitter:description" content="一条命令搞定 SSL/TLS 证书全生命周期：开发证书、本地 CA、格式转换与三端受信任。">
+
+  <!-- Schema.org JSON-LD (GEO 优化) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "certkit",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "macOS, Linux, Windows 11",
+        "description": "零配置 SSL/TLS 证书瑞士军刀，支持智能 SAN 嗅探、本地根 CA 自动化与跨平台系统信任库管理。",
+        "url": "https://lihuu.github.io/li-tools/certkit/index_zh.html",
+        "license": "https://opensource.org/licenses/Apache-2.0",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "lihuu",
+          "url": "https://github.com/lihuu"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "为什么在本地开发时 Chrome 会拦截自签证书并报红？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "因为现代浏览器（Chrome、Edge 等）强制要求证书必须包含 SAN (Subject Alternative Name) 扩展，老式仅带 Common Name 的证书一律报不安全。certkit 会自动识别域名与 IP 智能配置 SAN。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Windows 11 上信任证书需要管理员提权 (UAC) 吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "不需要。certkit 在 Windows 11 上采用 'certutil.exe -addstore -user Root' 命令，直接注入当前用户的根信任存储，无需管理员权限，零 UAC 弹窗。"
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #081014; }
+    .glass-card {
+      background: rgba(13, 27, 30, 0.75);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(16, 185, 129, 0.12);
+    }
+    .glow-emerald {
+      box-shadow: 0 0 60px -15px rgba(16, 185, 129, 0.25);
+    }
+  </style>
+</head>
+<body class="text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-black">
+
+  <!-- Navigation -->
+  <header class="border-b border-slate-800/80 sticky top-0 z-50 bg-[#081014]/80 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <a href="../index_zh.html" class="text-xs font-mono px-2 py-1 bg-slate-800 text-slate-400 rounded hover:text-white transition">li-tools/</a>
+        <div class="h-4 w-[1px] bg-slate-800"></div>
+        <span class="font-bold text-lg tracking-tight flex items-center gap-2">
+          <span class="w-6 h-6 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm font-mono font-bold border border-emerald-500/30">🔒</span>
+          certkit
+        </span>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">v0.1.0</span>
+      </div>
+
+      <nav class="flex items-center space-x-6 text-sm">
+        <a href="#features" class="text-slate-400 hover:text-white transition">特性优势</a>
+        <a href="#install" class="text-slate-400 hover:text-white transition">快速安装</a>
+        <a href="#docs" class="text-slate-400 hover:text-white transition">命令矩阵</a>
+        <a href="#faq" class="text-slate-400 hover:text-white transition">常见问题</a>
+        <a href="../gpgkit/index_zh.html" class="text-slate-400 hover:text-indigo-400 transition flex items-center gap-1.5">
+          <span>gpgkit</span>
+          <span class="text-xs">↗</span>
+        </a>
+        <!-- Language Switcher -->
+        <a href="index.html" class="px-2.5 py-1 text-xs font-mono font-semibold rounded-md bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 transition flex items-center gap-1.5" title="Switch to English">
+          <span>🌐</span> English
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="max-w-6xl mx-auto px-6 pt-16 pb-24">
+    <div class="text-center max-w-3xl mx-auto mb-14">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono mb-6">
+        <span>✨</span> 约定大于配置 • macOS / Linux / Windows 11 全平台平权
+      </div>
+      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+        零配置 <span class="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">SSL / TLS</span> 证书瑞士军刀。
+      </h1>
+      <p class="text-lg text-slate-400 leading-relaxed">
+        忘掉 OpenSSL 让人抓狂的长参数与配置文件。一行命令生成浏览器全绿锁证书，自动管理本地 CA，格式智能互转，跨平台免提权信任注入。
+      </p>
+    </div>
+
+    <!-- Terminal Window Component -->
+    <div class="max-w-3xl mx-auto glass-card rounded-xl overflow-hidden shadow-2xl glow-emerald mb-16">
+      <div class="bg-slate-900/90 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-3 h-3 rounded-full bg-rose-500/80"></div>
+          <div class="w-3 h-3 rounded-full bg-amber-500/80"></div>
+          <div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+          <span class="text-xs font-mono text-slate-500 ml-2">certkit gen & check demo</span>
+        </div>
+        <span class="text-xs font-mono text-slate-500">zsh</span>
+      </div>
+      <div class="p-6 font-mono text-sm leading-relaxed overflow-x-auto text-slate-300">
+        <div class="flex items-center gap-2 text-slate-500 mb-2">
+          <span class="text-emerald-400">~</span>
+          <span class="text-slate-400">$</span>
+          <span class="text-white">certkit gen localhost</span>
+        </div>
+        <div class="text-slate-400 mb-4 pl-4 border-l-2 border-emerald-500/30">
+          <div>ℹ 自动嗅探 Subject Alternative Name: <span class="text-teal-300">DNS:localhost</span></div>
+          <div>ℹ 自动复用本地根 CA: <span class="text-slate-200">~/.certkit/ca/rootCA.crt</span></div>
+          <div class="text-emerald-400">✔ 证书签发完成: ./localhost.crt (有效期 365 天)</div>
+          <div class="text-emerald-400">✔ 私钥安全落盘: ./localhost.key (权限 0600)</div>
+          <div class="text-slate-500 text-xs mt-1">提示: 执行 'certkit trust ca' 即可在 Chrome/Safari/Edge 享受原生绿锁。</div>
+        </div>
+
+        <div class="flex items-center gap-2 text-slate-500 mb-2">
+          <span class="text-emerald-400">~</span>
+          <span class="text-slate-400">$</span>
+          <span class="text-white">certkit check localhost.crt</span>
+        </div>
+        <div class="text-slate-400 pl-4 border-l-2 border-teal-500/30">
+          <div>主题 CN:   <span class="text-teal-300">CN=localhost</span></div>
+          <div>签发机构: <span class="text-slate-300">CN=Certkit Local Development Root CA</span></div>
+          <div>SAN 扩展:  <span class="text-slate-300">[DNS:localhost]</span></div>
+          <div>有效周期: 2026-10-16 至 2027-10-16 (<span class="text-emerald-400">剩余 365 天</span>)</div>
+          <div>SHA-256:  <span class="text-xs text-slate-500">8F:2A:44:B1:09:...:9E:C1</span></div>
+          <div class="text-emerald-400 font-semibold mt-1">健康状态: 有效且受本地 CA 信任 (OK)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Install Card -->
+    <div id="install" class="max-w-3xl mx-auto glass-card rounded-xl p-8 mb-20">
+      <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+        <span>⚡</span> 快速安装 (Quick Install)
+      </h3>
+      
+      <!-- Tabs -->
+      <div class="flex space-x-2 border-b border-slate-800 pb-3 mb-5 text-sm font-mono" id="install-tabs">
+        <button onclick="setTab('brew')" id="tab-brew" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition">Homebrew</button>
+        <button onclick="setTab('shell')" id="tab-shell" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">Shell 脚本</button>
+        <button onclick="setTab('npm')" id="tab-npm" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">NPM / NPX</button>
+      </div>
+
+      <div class="bg-black/60 rounded-lg p-4 font-mono text-sm flex items-center justify-between border border-slate-800">
+        <code id="install-code" class="text-emerald-300">brew install lihu/tools/certkit</code>
+        <button onclick="copyCode()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded border border-slate-700 transition flex items-center gap-1.5">
+          <span id="copy-icon">📋</span>
+          <span id="copy-text">复制</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- The Problem & Solution -->
+    <div id="features" class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-20">
+      <div class="glass-card rounded-xl p-6 border-red-500/20 bg-red-950/10">
+        <h4 class="text-red-400 font-bold mb-3 flex items-center gap-2">
+          <span>❌</span> 曾经使用 OpenSSL 的痛苦泥潭
+        </h4>
+        <ul class="text-sm text-slate-400 space-y-2.5">
+          <li>• 极度反直觉的 CLI：每次签发证书都必须写临时 <code class="text-slate-300">openssl.cnf</code> 注入 SAN 扩展</li>
+          <li>• 格式转换噩梦：记不清 <code class="text-slate-300">x509</code>, <code class="text-slate-300">pkcs12</code>, <code class="text-slate-300">rsa</code> 的互转矩阵与长参数</li>
+          <li>• Windows 体验割裂：没有系统级 openssl，且无法简单将 CA 信任导入系统证书存储</li>
+          <li>• 查看证书繁复：查一个域名证书过期时间需要管道连接多个 openssl 过滤命令</li>
+        </ul>
+      </div>
+
+      <div class="glass-card rounded-xl p-6 border-emerald-500/20 bg-emerald-950/10">
+        <h4 class="text-emerald-400 font-bold mb-3 flex items-center gap-2">
+          <span>✅</span> certkit 的现代极简体验
+        </h4>
+        <ul class="text-sm text-slate-400 space-y-2.5">
+          <li>• 约定大于配置：<code class="text-emerald-300 font-mono">certkit gen localhost</code> 智能嗅探 IP/域名自动配置 SAN</li>
+          <li>• 自动复用本地 CA：自动在 <code class="text-slate-300">~/.certkit/ca/</code> 创建并复用根 CA，天然支持自签互认</li>
+          <li>• 单参数对切转换：<code class="text-emerald-300 font-mono">certkit convert server.crt</code> 自动找 key 并转为 PKCS#12 (.p12)</li>
+          <li>• Windows 11 免提权注入：通过 <code class="text-slate-300">certutil.exe -user</code> 实现无 UAC 弹窗的浏览器全绿锁</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Commands Grid -->
+    <div id="docs" class="max-w-4xl mx-auto mb-20">
+      <h3 class="text-2xl font-bold mb-8 text-center">核心命令速查 (Command Matrix)</h3>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="glass-card p-5 rounded-xl">
+          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit gen [domain/ip]</div>
+          <p class="text-xs text-slate-400">位置参数智能嗅探，自动追加 IP/DNS SAN 扩展，自动复用 ~/.certkit/ca/ 签发，默认当前目录就地落盘。</p>
+        </div>
+        <div class="glass-card p-5 rounded-xl">
+          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit ca init</div>
+          <p class="text-xs text-slate-400">一键创建属于开发机的高信任根 CA（默认 10 年），提供专属自签基础设施，杜绝自签散乱失控。</p>
+        </div>
+        <div class="glass-card p-5 rounded-xl">
+          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit check [file | host:port]</div>
+          <p class="text-xs text-slate-400">支持本地 .crt/.pem/.p12 文件纯 JDK 高速解析，或远程握手嗅探 TLS 链。支持 --json 机器友好输出。</p>
+        </div>
+        <div class="glass-card p-5 rounded-xl">
+          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit convert &lt;file&gt;</div>
+          <p class="text-xs text-slate-400">单参数自动对切：PEM 证书自动搜寻同名密钥转为 P12，P12 自动解出 PEM 证书与私钥。</p>
+        </div>
+        <div class="glass-card p-5 rounded-xl">
+          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit trust [ca | &lt;cert&gt;]</div>
+          <p class="text-xs text-slate-400">跨平台信任注入：macOS 钥匙串、Linux update-ca-certificates、Windows 11 免提权 certutil 当前用户注入。</p>
+        </div>
+        <div class="glass-card p-5 rounded-xl">
+          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit raw &lt;args...&gt;</div>
+          <p class="text-xs text-slate-400">底层逃生门：无损透传给底层检测到的 openssl 执行，保留资深运维与复杂场景下的全量能力。</p>
+        </div>
+        <div class="glass-card p-5 rounded-xl sm:col-span-2">
+          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit doctor</div>
+          <p class="text-xs text-slate-400">跨平台运行环境巡检：检查 OpenSSL 引擎（包括 Windows Git 路径）、CA 状态与系统信任库健康度。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ Section (GEO 优化) -->
+    <div id="faq" class="max-w-4xl mx-auto mb-16">
+      <h3 class="text-2xl font-bold mb-8 text-center tracking-tight">常见问题 (FAQ)</h3>
+      <div class="space-y-4">
+        <div class="glass-card p-6 rounded-xl">
+          <h4 class="font-bold text-white mb-2">为什么现代 Chrome 浏览器会提示自签证书“不安全”？</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Chromium 内核早已弃用了单纯依靠 Common Name (CN) 校验域名的机制，强制要求证书内必须包含 <code class="text-emerald-400">Subject Alternative Name (SAN)</code> 扩展。certkit 会自动识别域名或 IP 地址并动态构建合规的 SAN 扩展。
+          </p>
+        </div>
+        <div class="glass-card p-6 rounded-xl">
+          <h4 class="font-bold text-white mb-2">certkit 生成的 Root CA 和私钥存放在哪里？</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            默认安全保存在用户家目录的 <code class="text-teal-300">~/.certkit/ca/</code> 中，并被赋予严格的文件权限（私钥默认 0600）。签发的目标服务证书默认在执行命令的当前目录就地生成。
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="border-t border-slate-800/80 py-10 text-center text-xs text-slate-500 font-mono">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>属于 <a href="../index_zh.html" class="text-slate-400 hover:text-white transition">li-tools</a> 工具矩阵 • 为极致工程体验打造</div>
+      <div class="flex items-center gap-4">
+        <a href="index.html" class="hover:text-white transition">English</a>
+        <a href="../gpgkit/index_zh.html" class="hover:text-indigo-400 transition">gpgkit</a>
+        <a href="https://github.com/lihuu/li-tools" target="_blank" rel="noopener" class="hover:text-white transition">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const commands = {
+      brew: 'brew install lihu/tools/certkit',
+      shell: 'curl -fsSL https://tools.lihu.me/install.sh | bash -s certkit',
+      npm: 'npx @lihu/certkit gen localhost'
+    };
+
+    function setTab(tab) {
+      document.getElementById('install-code').innerText = commands[tab];
+      document.querySelectorAll('#install-tabs button').forEach(btn => {
+        btn.className = 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+      });
+      document.getElementById('tab-' + tab).className = 'px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition';
+    }
+
+    function copyCode() {
+      const code = document.getElementById('install-code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        document.getElementById('copy-icon').innerText = '✔';
+        document.getElementById('copy-text').innerText = '已复制!';
+        setTimeout(() => {
+          document.getElementById('copy-icon').innerText = '📋';
+          document.getElementById('copy-text').innerText = '复制';
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

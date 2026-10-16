@@ -3,8 +3,76 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>gpgkit — One command for the whole life of a GPG key</title>
-  <meta name="description" content="One command for the whole life of a GPG key: generate, back up, restore, extend, sign, publish, check.">
+  <title>gpgkit — One Command for the Whole Life of a GPG Key | Reliable Loopback Backup & Restore</title>
+  <meta name="description" content="Never lose your GPG key across machines again. gpgkit provides one-command key generation, loopback-verified backup and restore, auto-renewal, signing, and diagnostics with zero runtime dependencies.">
+  <meta name="keywords" content="gpg, gnupg, gpg backup, gpg restore, loopback verification, git commit signing, developer security, graalvm native image, java 25">
+  <meta name="author" content="lihuu">
+  <link rel="canonical" href="https://lihuu.github.io/li-tools/gpgkit/">
+  <link rel="alternate" hreflang="en" href="https://lihuu.github.io/li-tools/gpgkit/">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lihuu.github.io/li-tools/gpgkit/index_zh.html">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lihuu.github.io/li-tools/gpgkit/">
+  <meta property="og:title" content="gpgkit — Reliable GPG Key Lifecycle Manager">
+  <meta property="og:description" content="One command for the whole life of a GPG key. Guaranteed loopback verified backups, auto-extension, and zero runtime dependencies.">
+  <meta property="og:site_name" content="li-tools">
+  <meta property="og:locale" content="en_US">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="gpgkit — Reliable GPG Key Lifecycle Manager">
+  <meta name="twitter:description" content="One command for the whole life of a GPG key: generate, backup, restore, renew, and check.">
+
+  <!-- Schema.org JSON-LD (GEO Optimization) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "gpgkit",
+        "applicationCategory": "SecurityApplication",
+        "operatingSystem": "macOS, Linux, Windows 11",
+        "description": "Zero runtime dependency CLI for complete GPG key lifecycle management with automated loopback verification.",
+        "url": "https://lihuu.github.io/li-tools/gpgkit/",
+        "license": "https://opensource.org/licenses/Apache-2.0",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "lihuu",
+          "url": "https://github.com/lihuu"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Why does gpgkit emphasize loopback verification during backup?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Traditional GPG exports often fail silently or cannot be restored when moving to a new machine. gpgkit restores every backup in an ephemeral sandbox keyring and verifies an actual test signature before writing the archive."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does gpgkit hang in CI/CD or headless SSH sessions?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. All external gpg invocations use batch and non-interactive flags, preventing the process from hanging on GUI pinentry prompts."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,9 +131,14 @@
         <a href="#features" class="text-slate-400 hover:text-white transition">Features</a>
         <a href="#install" class="text-slate-400 hover:text-white transition">Install</a>
         <a href="#docs" class="text-slate-400 hover:text-white transition">Commands</a>
+        <a href="#faq" class="text-slate-400 hover:text-white transition">FAQ</a>
         <a href="../certkit/index.html" class="text-slate-400 hover:text-emerald-400 transition flex items-center gap-1.5">
           <span>certkit</span>
           <span class="text-xs">↗</span>
+        </a>
+        <!-- Language Switcher -->
+        <a href="index_zh.html" class="px-2.5 py-1 text-xs font-mono font-semibold rounded-md bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/30 transition flex items-center gap-1.5" title="切换为简体中文">
+          <span>🌐</span> 中文
         </a>
       </nav>
     </div>
@@ -81,7 +154,7 @@
         One command for the whole life of a <span class="bg-gradient-to-r from-brand-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">GPG key</span>.
       </h1>
       <p class="text-lg text-slate-400 leading-relaxed">
-        让“换一台机器就丢密钥”这件事彻底消失。生成、带闭环校验的备份与还原、自动续期、安全签名、发布与体检，收进一个符合直觉的命令。
+        Eliminate the catastrophic "lost my key when switching laptops" failure mode forever. Key generation, loopback-verified backups and deterministic restores, automatic renewal, and health diagnostics under one intuitive command.
       </p>
     </div>
 
@@ -148,66 +221,93 @@
     </div>
 
     <!-- The Problem & Solution -->
-    <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-20">
+    <div id="features" class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-20">
       <div class="glass-card rounded-xl p-6 border-red-500/20 bg-red-950/10">
         <h4 class="text-red-400 font-bold mb-3 flex items-center gap-2">
-          <span>❌</span> 曾经 GPG 令人抓狂的体验
+          <span>❌</span> The Pain of Traditional GPG
         </h4>
         <ul class="text-sm text-slate-400 space-y-2.5">
-          <li>• 记不住长参数：每次查指纹都要搜 <code class="text-slate-300">--keyid-format=long</code></li>
-          <li>• 备份无验证：导出了一堆文件，换机器导入发现根本用不了</li>
-          <li>• 繁琐交互：导入后还要手动编辑信任度 <code class="text-slate-300">trust -> 5 -> save</code></li>
-          <li>• 无头卡死：在 SSH 或 CI 中经常弹出图形 pinentry 导致流程挂起</li>
+          <li>• Impossible flags: Searching docs for <code class="text-slate-300">--keyid-format=long</code> every time</li>
+          <li>• Unverified backups: Exporting files only to discover they fail to restore on a new machine</li>
+          <li>• Tedious trust setup: Manually setting trust level <code class="text-slate-300">trust -> 5 -> save</code></li>
+          <li>• Headless hang: GUI pinentry prompts freezing CI pipelines and remote SSH terminals</li>
         </ul>
       </div>
 
       <div class="glass-card rounded-xl p-6 border-emerald-500/20 bg-emerald-950/10">
         <h4 class="text-emerald-400 font-bold mb-3 flex items-center gap-2">
-          <span>✅</span> gpgkit 的现代救赎
+          <span>✅</span> The gpgkit Solution
         </h4>
         <ul class="text-sm text-slate-400 space-y-2.5">
-          <li>• 极简动词：<code class="text-emerald-300 font-mono">gen</code>, <code class="text-emerald-300 font-mono">backup</code>, <code class="text-emerald-300 font-mono">restore</code>, <code class="text-emerald-300 font-mono">doctor</code></li>
-          <li>• 强制回环校验：任何一次备份，必须在沙盒当场证明能还原且能验签</li>
-          <li>• 非交互设计：所有外部命令固定静默参数，绝不卡死终端</li>
-          <li>• 零依赖单文件：原生独立二进制，不要求机器安装 JDK</li>
+          <li>• Intuitive verbs: <code class="text-emerald-300 font-mono">gen</code>, <code class="text-emerald-300 font-mono">backup</code>, <code class="text-emerald-300 font-mono">restore</code>, <code class="text-emerald-300 font-mono">doctor</code></li>
+          <li>• Mandatory loopback check: Proves restoration and signature verification before disk write</li>
+          <li>• Non-interactive design: Pinned batch flags prevent terminal and CI deadlocks</li>
+          <li>• Zero JVM dependency: Standalone native binary runs instantly without Java pre-installed</li>
         </ul>
       </div>
     </div>
 
     <!-- Commands Grid -->
     <div id="docs" class="max-w-4xl mx-auto mb-20">
-      <h3 class="text-2xl font-bold mb-8 text-center">核心命令速查 (Command Matrix)</h3>
+      <h3 class="text-2xl font-bold mb-8 text-center">Command Matrix</h3>
       <div class="grid sm:grid-cols-2 gap-4">
         <div class="glass-card p-5 rounded-xl">
           <div class="font-mono text-brand-400 font-semibold mb-1 text-sm">gpgkit status</div>
-          <p class="text-xs text-slate-400">巡检本机密钥：指纹、剩余天数、私钥存在性、公钥是否在公钥服务器可见，给出 OK/WARN 结论。</p>
+          <p class="text-xs text-slate-400">Inspect local key fingerprints, expiry days, secret key presence, and keyserver visibility with a clear OK/WARN conclusion.</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
           <div class="font-mono text-brand-400 font-semibold mb-1 text-sm">gpgkit gen</div>
-          <p class="text-xs text-slate-400">一键生成现代签名密钥对（默认 rsa4096 / 2 年有效期），自动提取 git 用户名邮箱，生成后强制提示备份。</p>
+          <p class="text-xs text-slate-400">Generate a modern signing key pair (rsa4096 / 2y expiry) auto-configured with git identity, followed by an immediate backup prompt.</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
           <div class="font-mono text-brand-400 font-semibold mb-1 text-sm">gpgkit backup</div>
-          <p class="text-xs text-slate-400">第一等公民：加密导出私钥并写入元数据，当场在独立沙盒执行回环还原与验签，证明 100% 可用才落盘。</p>
+          <p class="text-xs text-slate-400">First-class citizen: exports encrypted secret key with metadata, running immediate loopback restoration and test signing before writing to disk.</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
           <div class="font-mono text-brand-400 font-semibold mb-1 text-sm">gpgkit restore &lt;backup-file&gt;</div>
-          <p class="text-xs text-slate-400">在新机器上还原备份，自动恢复 Ultimate 最终信任度，当场生成临时测试签名完成闭环验证。</p>
+          <p class="text-xs text-slate-400">Restores backup on a fresh machine, sets ultimate trust level automatically, and verifies signature production on the spot.</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
           <div class="font-mono text-brand-400 font-semibold mb-1 text-sm">gpgkit extend [--by 2y]</div>
-          <p class="text-xs text-slate-400">一键为主密钥和所有子密钥续期，避免密钥过期导致 git commit 签名失效。</p>
+          <p class="text-xs text-slate-400">Extends validity for master key and all subkeys with a single command, preventing git commit signatures from suddenly invalidating.</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
           <div class="font-mono text-brand-400 font-semibold mb-1 text-sm">gpgkit doctor</div>
-          <p class="text-xs text-slate-400">全面体检：gpg 引擎、备份存在性与可解密性、口令文件安全性，无参数自检并输出一句话结论。</p>
+          <p class="text-xs text-slate-400">Comprehensive health check: verifies gpg engine, backup existence, passphrase file permissions, and outputs a one-line conclusion.</p>
         </div>
       </div>
     </div>
+
+    <!-- FAQ Section (GEO Optimization) -->
+    <div id="faq" class="max-w-4xl mx-auto mb-16">
+      <h3 class="text-2xl font-bold mb-8 text-center tracking-tight">Frequently Asked Questions</h3>
+      <div class="space-y-4">
+        <div class="glass-card p-6 rounded-xl">
+          <h4 class="font-bold text-white mb-2">What is the "Loopback Test" in gpgkit backup?</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            During every backup, gpgkit spins up an ephemeral scratch keyring in memory, imports the newly created backup archive, decrypts it, generates a detached signature on dummy data, and verifies the signature. Only when all checks succeed does it write the backup to <code class="text-brand-300">~/.gpgkit/backups/</code>.
+          </p>
+        </div>
+        <div class="glass-card p-6 rounded-xl">
+          <h4 class="font-bold text-white mb-2">Does gpgkit replace GnuPG?</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            No. gpgkit is an intelligent, safety-enforcing orchestrator around the standard <code class="text-slate-300">gpg</code> engine. It takes care of arcane flags, directory standards, and verification safeguards so you never mess up GPG configurations.
+          </p>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <footer class="border-t border-slate-800/80 py-10 text-center text-xs text-slate-500 font-mono">
-    <p>Part of the <a href="../index.html" class="text-slate-400 hover:text-white transition">li-tools</a> suite • Created with passion for developer experience</p>
+    <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>Part of the <a href="../index.html" class="text-slate-400 hover:text-white transition">li-tools</a> suite • Created with passion for developer experience</div>
+      <div class="flex items-center gap-4">
+        <a href="index_zh.html" class="hover:text-white transition">中文版</a>
+        <a href="../certkit/index.html" class="hover:text-emerald-400 transition">certkit</a>
+        <a href="https://github.com/lihuu/li-tools" target="_blank" rel="noopener" class="hover:text-white transition">GitHub</a>
+      </div>
+    </div>
   </footer>
 
   <script>
