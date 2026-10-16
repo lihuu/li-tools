@@ -59,12 +59,17 @@ certkit check ./my-cert.pem
 certkit check github.com                       # 自动补全 :443
 ```
 
-### 4) `certkit convert <in-file> <out-file>`
-极简双位置参数格式互转：
+### 4) `certkit convert <in-file> [out-file]`
+证书格式互转（支持单参数智能同名推导与全参控制）：
 ```bash
-certkit convert cert.pem bundle.p12            # 自动探测同目录 key.pem，默认密码 changeit
-certkit convert bundle.p12 restored.pem
-certkit convert cert.pem cert.der
+# 极简模式（单参数自动对切，密码默认 changeit）：
+certkit convert cert.pem                       # 自动寻找同目录 key.pem，产出同名 cert.p12
+certkit convert cert.pem --all                 # 一键同时生成同名 cert.p12 与 cert.der
+certkit convert cert.p12                       # 自动解包为 cert.pem 与 cert-key.pem
+
+# 完整参数模式（全兼容保留）：
+certkit convert cert.pem cert.p12              # 显式指定输出目标
+certkit convert cert.pem --key ./my.key --out /other/app.pfx --pass "MySecret"
 ```
 
 ### 5) `certkit trust`
@@ -74,4 +79,14 @@ certkit trust install [ca-cert] [--system]     # 缺省时默认安装 ~/.certki
 certkit trust check [ca-cert]                  # 缺省时默认检查 ~/.certkit/ca/ca.crt
 certkit trust uninstall [ca-cert] [--system]
 ```
+
+### 6) `certkit raw <openssl-args...>`
+底层原生 OpenSSL 命令直接透传（100% 逃生门）：
+```bash
+certkit raw version
+certkit raw s_client -connect github.com:443
+certkit raw x509 -in cert.pem -noout -text
+```
+- 直接调用系统 OpenSSL，标准输入输出透明透传，不拦截任何参数。
+
 

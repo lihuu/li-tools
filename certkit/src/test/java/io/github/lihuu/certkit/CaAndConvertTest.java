@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class CaAndConvertTest {
 
     @Test
-    void fullCaWorkflowAndFormatConversion(@TempDir Path tempDir) {
+    void fullCaWorkflowAndFormatConversion(@TempDir Path tempDir) throws Exception {
         Path caDir = tempDir.resolve("ca");
         Path certsDir = tempDir.resolve("certs");
 
@@ -66,7 +66,25 @@ class CaAndConvertTest {
         assertEquals(0, toDerExit, "converting pem to der should succeed");
         assertTrue(Files.exists(derFile));
 
-        // 6. Test trust check behavior
+        // 6. Test ultra-simple single-argument convert (auto-generate cert.p12 with same name)
+        Files.deleteIfExists(certsDir.resolve("cert.p12"));
+        int singleArgExit = Main.run("convert", certFile.toString());
+        assertEquals(0, singleArgExit, "single argument convert should produce cert.p12");
+        assertTrue(Files.exists(certsDir.resolve("cert.p12")), "cert.p12 should exist");
+
+        // 7. Test --all flag (generate both .p12 and .der in one go)
+        Files.deleteIfExists(certsDir.resolve("cert.p12"));
+        Files.deleteIfExists(certsDir.resolve("cert.der"));
+        int allExit = Main.run("convert", certFile.toString(), "--all");
+        assertEquals(0, allExit, "convert --all should succeed");
+        assertTrue(Files.exists(certsDir.resolve("cert.p12")));
+        assertTrue(Files.exists(certsDir.resolve("cert.der")));
+
+        // 8. Test raw passthrough command (escape hatch)
+        int rawExit = Main.run("raw", "version");
+        assertEquals(0, rawExit, "certkit raw version should exit with 0");
+
+        // 9. Test trust check behavior
         int trustCheckExit = Main.run("trust", "check", caCert.toString());
         assertEquals(1, trustCheckExit);
     }

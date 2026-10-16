@@ -23,7 +23,8 @@ import java.util.concurrent.Callable;
         Main.CaCommand.class,
         Main.CheckCommand.class,
         Main.ConvertCommand.class,
-        Main.TrustCommand.class
+        Main.TrustCommand.class,
+        Main.RawCommand.class
     }
 )
 public final class Main implements Callable<Integer> {
@@ -259,14 +260,20 @@ public final class Main implements Callable<Integer> {
         @ParentCommand
         private Main parent;
 
-        @Parameters(index = "0", description = "Input certificate file (e.g. cert.pem, bundle.p12)")
+        @Parameters(index = "0", description = "Input certificate file (e.g. cert.pem, cert.p12)")
         private Path inFile;
 
-        @Parameters(index = "1", description = "Output certificate file (e.g. cert.p12, restored.pem, cert.der)")
-        private Path outFile;
+        @Parameters(index = "1", arity = "0..1", description = "Output certificate file (default: same name with target extension)")
+        private Path rawOutFile;
 
-        @Option(names = {"-k", "--key"}, description = "Matching private key file (defaults to auto-detecting key.pem in same directory)")
+        @Option(names = "--all", description = "Generate both .p12 and .der formats automatically")
+        private boolean all;
+
+        @Option(names = {"-k", "--key"}, description = "Matching private key file")
         private Path inKey;
+
+        @Option(names = {"-o", "--out"}, description = "Explicit output file path")
+        private Path optOutFile;
 
         @Option(names = {"-p", "--pass"}, defaultValue = "changeit", description = "Passphrase for PKCS#12 bundle (default: changeit)")
         private String pass;
@@ -274,29 +281,87 @@ public final class Main implements Callable<Integer> {
         @Override
         public Integer call() {
             try {
-                Path activeKey = inKey;
-                String outName = outFile.getFileName().toString().toLowerCase();
+                if (!Files.exists(inFile)) {
+                    throw new IllegalArgumentException("Input file does not exist: " + inFile);
+                }
 
-                // Convention: Auto-detect matching key if converting to .p12 and key not specified
-                if ((outName.endsWith(".p12") || outName.endsWith(".pfx")) && activeKey == null) {
-                    Path parentDir = inFile.getParent() != null ? inFile.getParent() : Path.of(".");
-                    Path candidate1 = parentDir.resolve("key.pem");
-                    Path candidate2 = parentDir.resolve(inFile.getFileName().toString().replaceFirst("\\.[^.]+$", "") + "-key.pem");
-                    if (Files.exists(candidate1)) {
-                        activeKey = candidate1;
-                    } else if (Files.exists(candidate2)) {
-                        activeKey = candidate2;
-                    }
+                String inName = inFile.getFileName().toString();
+                String baseName = inName.replaceFirst("\\.[^.]+$", "");
+                Path parentDir = inFile.getParent() != null ? inFile.getParent() : Path.of(".");
+
+                Path activeKey = inKey;
+                if (activeKey == null) {
+                    Path k1 = parentDir.resolve("key.pem");
+                    Path k2 = parentDir.resolve(baseName + "-key.pem");
+                    Path k3 = parentDir.resolve(baseName + ".key");
+                    if (Files.exists(k1)) activeKey = k1;
+                    else if (Files.exists(k2)) activeKey = k2;
+                    else if (Files.exists(k3)) activeKey = k3;
                 }
 
                 Openssl openssl = new Openssl();
-                openssl.convert(inFile, activeKey, outFile, pass);
+
+                if (all) {
+                    Path p12Out = parentDir.resolve(baseName + ".p12");
+                    Path derOut = parentDir.resolve(baseName + ".der");
+                    openssl.convert(inFile, activeKey, p12Out, pass);
+                    openssl.convert(inFile, null, derOut, pass);
+                    if (parent == null || !parent.quiet) {
+                        System.out.println("✔ Converted: " + inFile + " -> " + p12Out + " (password: " + pass + ")");
+                        System.out.println("✔ Converted: " + inFile + " -> " + derOut);
+                    }
+                    return 0;
+                }
+
+                Path finalOut = optOutFile != null ? optOutFile : rawOutFile;
+                if (finalOut == null) {
+                    String lowerIn = inName.toLowerCase();
+                    if (lowerIn.endsWith(".pem") || lowerIn.endsWith(".crt")) {
+                        finalOut = parentDir.resolve(baseName + ".p12");
+                    } else if (lowerIn.endsWith(".p12") || lowerIn.endsWith(".pfx")) {
+                        finalOut = parentDir.resolve(baseName + ".pem");
+                    } else if (lowerIn.endsWith(".der")) {
+                        finalOut = parentDir.resolve(baseName + ".pem");
+                    } else {
+                        throw new IllegalArgumentException("Cannot deduce target format for " + inName + ". Please specify output file.");
+                    }
+                }
+
+                openssl.convert(inFile, activeKey, finalOut, pass);
                 if (parent == null || !parent.quiet) {
-                    System.out.println("✔ Converted: " + inFile + " -> " + outFile);
+                    System.out.println("✔ Converted: " + inFile + " -> " + finalOut);
+                    if (finalOut.toString().toLowerCase().endsWith(".p12") || finalOut.toString().toLowerCase().endsWith(".pfx")) {
+                        System.out.println("  Password: " + pass);
+                    }
                 }
                 return 0;
             } catch (Exception e) {
                 System.err.println("certkit convert: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+                return 1;
+            }
+        }
+    }
+
+    @Command(name = "raw", description = "Pass arguments directly to underlying openssl binary (Escape Hatch)")
+    static class RawCommand implements Callable<Integer> {
+        @Parameters(arity = "1..*", description = "Raw arguments passed directly to openssl")
+        private List<String> rawArgs;
+
+        @Override
+        public Integer call() {
+            try {
+                List<String> cmd = new java.util.ArrayList<>();
+                cmd.add("openssl");
+                if (rawArgs != null) {
+                    cmd.addAll(rawArgs);
+                }
+                Process process = new ProcessBuilder(cmd)
+                    .start();
+                process.getInputStream().transferTo(System.out);
+                process.getErrorStream().transferTo(System.err);
+                return process.waitFor();
+            } catch (Exception e) {
+                System.err.println("certkit raw: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
                 return 1;
             }
         }
