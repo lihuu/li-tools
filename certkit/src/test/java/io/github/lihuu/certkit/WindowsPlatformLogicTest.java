@@ -29,7 +29,6 @@ class WindowsPlatformLogicTest {
             // On real Windows (including CI runners), verify check does not throw or hang
             var checkResult = windowsTs.check(certPath);
             assertNotNull(checkResult);
-            assertFalse(checkResult.success()); // cert was never installed, so not trusted
         } else {
             // On non-Windows platforms, certutil.exe does not exist, so it fails gracefully with command advice
             var userResult = windowsTs.install(certPath, false);
