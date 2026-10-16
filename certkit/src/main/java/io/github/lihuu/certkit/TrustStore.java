@@ -90,9 +90,14 @@ public final class TrustStore {
         }
 
         if (platform == Platform.WINDOWS) {
-            List<String> cmd = List.of("certutil.exe", "-store", "-user", "Root", info.subjectCn());
-            CommandResult res = runSilently(cmd);
-            boolean trusted = res.exitCode == 0 && res.output.contains(info.subjectCn());
+            // Check CurrentUser Root store first
+            CommandResult userRes = runSilently(List.of("certutil.exe", "-user", "-store", "Root", info.subjectCn()));
+            boolean trusted = userRes.exitCode == 0 && userRes.output.contains(info.subjectCn());
+            if (!trusted) {
+                // Check LocalMachine Root store as fallback
+                CommandResult sysRes = runSilently(List.of("certutil.exe", "-store", "Root", info.subjectCn()));
+                trusted = sysRes.exitCode == 0 && sysRes.output.contains(info.subjectCn());
+            }
             return new TrustResult(trusted, trusted ? "CA certificate is present in Windows Root store." : "CA certificate not found in Windows Root store.", null);
         }
 
@@ -119,19 +124,14 @@ public final class TrustStore {
         }
 
         if (platform == Platform.WINDOWS) {
-            List<String> cmd = new ArrayList<>();
-            cmd.add("certutil.exe");
-            cmd.add("-delstore");
-            if (!system) {
-                cmd.add("-user");
-            }
-            cmd.add("Root");
-            cmd.add(info.subjectCn());
-            CommandResult res = runSilently(cmd);
-            if (res.exitCode == 0) {
+            // Attempt to remove from both CurrentUser and LocalMachine stores
+            CommandResult resUser = runSilently(List.of("certutil.exe", "-delstore", "-user", "Root", info.subjectCn()));
+            CommandResult resSys = runSilently(List.of("certutil.exe", "-delstore", "Root", info.subjectCn()));
+
+            if (resUser.exitCode == 0 || resSys.exitCode == 0) {
                 return new TrustResult(true, "Successfully removed CA from Windows Root store: " + info.subjectCn(), null);
             } else {
-                return new TrustResult(false, "Failed to remove from Windows store: " + res.output.trim(), String.join(" ", cmd));
+                return new TrustResult(false, "Failed to remove from Windows store: " + resUser.output.trim(), "certutil.exe -delstore Root " + info.subjectCn());
             }
         }
 
@@ -165,22 +165,32 @@ public final class TrustStore {
     }
 
     private TrustResult installWindows(Path caCert, boolean system, CertInfo info) {
-        List<String> cmd = new ArrayList<>();
-        cmd.add("certutil.exe");
-        cmd.add("-addstore");
-        if (!system) {
-            cmd.add("-user");
-        }
-        cmd.add("Root");
-        cmd.add(caCert.toAbsolutePath().toString());
+        String certAbsPath = caCert.toAbsolutePath().toString();
 
-        CommandResult res = runSilently(cmd);
-        if (res.exitCode == 0) {
-            return new TrustResult(true, "Successfully installed and trusted CA in Windows Root store (" + (system ? "LocalMachine" : "CurrentUser") + ")", null);
-        } else {
-            String suggestCmd = (system ? "Run as Administrator: " : "") + String.join(" ", cmd);
-            return new TrustResult(false, "Failed to write to Windows certificate store: " + res.output.trim(), suggestCmd);
+        if (system) {
+            CommandResult res = runSilently(List.of("certutil.exe", "-addstore", "Root", certAbsPath));
+            if (res.exitCode == 0) {
+                return new TrustResult(true, "Successfully installed and trusted CA in Windows LocalMachine Root store", null);
+            } else {
+                return new TrustResult(false, "Failed to write to LocalMachine store: " + res.output.trim(), "Run as Administrator: certutil.exe -addstore Root " + certAbsPath);
+            }
         }
+
+        // Try CurrentUser first (requires interactive UI in desktop session)
+        CommandResult userRes = runSilently(List.of("certutil.exe", "-user", "-addstore", "Root", certAbsPath));
+        if (userRes.exitCode == 0) {
+            return new TrustResult(true, "Successfully installed and trusted CA in Windows CurrentUser Root store", null);
+        }
+
+        // If in headless SSH/CI without GUI, CurrentUser -addstore will fail with ERROR_NOT_SUPPORTED.
+        // Try fallback to LocalMachine store automatically if user has admin rights
+        CommandResult sysRes = runSilently(List.of("certutil.exe", "-addstore", "Root", certAbsPath));
+        if (sysRes.exitCode == 0) {
+            return new TrustResult(true, "Successfully installed and trusted CA in Windows LocalMachine Root store (Headless Mode)", null);
+        }
+
+        String suggest = "certutil.exe -user -addstore Root " + certAbsPath + " (or with Admin: certutil.exe -addstore Root " + certAbsPath + ")";
+        return new TrustResult(false, "Failed to write to Windows certificate store: " + userRes.output.trim(), suggest);
     }
 
     private TrustResult installLinux(Path caCert, CertInfo info) {

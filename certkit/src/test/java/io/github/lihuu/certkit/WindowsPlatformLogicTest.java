@@ -44,7 +44,8 @@ class WindowsPlatformLogicTest {
             assertFalse(userResult.success());
             assertNotNull(userResult.suggestedCommand());
             assertTrue(userResult.suggestedCommand().contains("certutil.exe"));
-            assertTrue(userResult.suggestedCommand().contains("-user Root"));
+            assertTrue(userResult.suggestedCommand().contains("-user"));
+            assertTrue(userResult.suggestedCommand().contains("Root"));
 
             assertFalse(sysResult.success());
             assertNotNull(sysResult.suggestedCommand());
