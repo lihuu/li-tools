@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>gpgkit — One command for the whole life of a GPG key</title>
+  <meta name="description" content="One command for the whole life of a GPG key: generate, back up, restore, extend, sign, publish, check.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0b0f19; }
+    .glass-card {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glow-indigo {
+      box-shadow: 0 0 60px -15px rgba(99, 102, 241, 0.3);
+    }
+  </style>
+</head>
+<body class="text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- Navigation -->
+  <header class="border-b border-slate-800/80 sticky top-0 z-50 bg-[#0b0f19]/80 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <a href="../index.html" class="text-xs font-mono px-2 py-1 bg-slate-800 text-slate-400 rounded hover:text-white transition">li-tools/</a>
+        <div class="h-4 w-[1px] bg-slate-800"></div>
+        <span class="font-bold text-lg tracking-tight flex items-center gap-2">
+          <span class="w-6 h-6 rounded bg-brand-500/20 text-brand-400 flex items-center justify-center text-sm font-mono font-bold border border-brand-500/30">🔑</span>
+          gpgkit
+        </span>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20">v0.1.0</span>
+      </div>
+
+      <nav class="flex items-center space-x-6 text-sm">
+        <a href="#features" class="text-slate-400 hover:text-white transition">Features</a>
+        <a href="#install" class="text-slate-400 hover:text-white transition">Install</a>
+        <a href="#docs" class="text-slate-400 hover:text-white transition">Commands</a>
+        <a href="../certkit/index.html" class="text-slate-400 hover:text-emerald-400 transition flex items-center gap-1.5">
+          <span>certkit</span>
+          <span class="text-xs">↗</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="max-w-6xl mx-auto px-6 pt-16 pb-24">
+    <div class="text-center max-w-3xl mx-auto mb-14">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 text-xs font-mono mb-6">
+        <span>🛡️</span> Zero Runtime Dependencies • GraalVM Native Image
+      </div>
+      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+        One command for the whole life of a <span class="bg-gradient-to-r from-brand-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">GPG key</span>.
+      </h1>
+      <p class="text-lg text-slate-400 leading-relaxed">
+        让“换一台机器就丢密钥”这件事彻底消失。生成、带闭环校验的备份与还原、自动续期、安全签名、发布与体检，收进一个符合直觉的命令。
+      </p>
+    </div>
+
+    <!-- Terminal Window Component -->
+    <div class="max-w-3xl mx-auto glass-card rounded-xl overflow-hidden shadow-2xl glow-indigo mb-16">
+      <div class="bg-slate-900/90 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-3 h-3 rounded-full bg-rose-500/80"></div>
+          <div class="w-3 h-3 rounded-full bg-amber-500/80"></div>
+          <div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+          <span class="text-xs font-mono text-slate-500 ml-2">gpgkit status & backup demo</span>
+        </div>
+        <span class="text-xs font-mono text-slate-500">zsh</span>
+      </div>
+      <div class="p-6 font-mono text-sm leading-relaxed overflow-x-auto text-slate-300">
+        <div class="flex items-center gap-2 text-slate-500 mb-2">
+          <span class="text-brand-400">~</span>
+          <span class="text-slate-400">$</span>
+          <span class="text-white">gpgkit status</span>
+        </div>
+        <div class="text-slate-400 mb-4 pl-4 border-l-2 border-brand-500/30">
+          <div>Key ID:    <span class="text-indigo-300">3AA5C34371567BD2</span> (rsa4096)</div>
+          <div>User ID:   <span class="text-slate-200">Alice &lt;alice@example.com&gt;</span></div>
+          <div>Usage:     [Sign, Certify] • Private Key: <span class="text-emerald-400">Present</span></div>
+          <div>Expires:   2028-10-14 (<span class="text-emerald-400">728 days remaining</span>)</div>
+          <div>Keyserver: Visible on hkps://keys.openpgp.org</div>
+          <div class="mt-1 text-emerald-400 font-semibold">Conclusion: OK</div>
+        </div>
+
+        <div class="flex items-center gap-2 text-slate-500 mb-2">
+          <span class="text-brand-400">~</span>
+          <span class="text-slate-400">$</span>
+          <span class="text-white">gpgkit backup</span>
+        </div>
+        <div class="text-slate-400 pl-4 border-l-2 border-emerald-500/30">
+          <div>✔ Exporting encrypted secret key...</div>
+          <div>✔ Verifying in isolated scratch keyring (Loopback Test)...</div>
+          <div>✔ Loopback signature verified successfully!</div>
+          <div class="text-emerald-400 mt-1">✔ Backup written to ~/.gpgkit/backups/3AA5C34371567BD2.gpgkit</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Install Card -->
+    <div id="install" class="max-w-3xl mx-auto glass-card rounded-xl p-8 mb-20">
+      <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+        <span>⚡</span> Quick Install
+      </h3>
+      
+      <!-- Tabs -->
+      <div class="flex space-x-2 border-b border-slate-800 pb-3 mb-5 text-sm font-mono" id="install-tabs">
+        <button onclick="setTab('brew')" id="tab-brew" class="px-3 py-1.5 rounded-lg bg-brand-500/20 text-brand-400 border border-brand-500/30 transition">Homebrew</button>
+        <button onclick="setTab('shell')" id="tab-shell" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">Shell Script</button>
+        <button onclick="setTab('npm')" id="tab-npm" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">NPM / NPX</button>
+      </div>
+
+      <div class="bg-black/60 rounded-lg p-4 font-mono text-sm flex items-center justify-between border border-slate-800">
+        <code id="install-code" class="text-brand-300">brew install lihu/tools/gpgkit</code>
+        <button onclick="copyCode()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded border border-slate-700 transition flex items-center gap-1.5">
+          <span id="copy-icon">📋</span>
+          <span id="copy-text">Copy</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- The Problem & Solution -->
+    <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-20">
+      <div class="glass-card rounded-xl p-6 border-red-500/20 bg-red-950/10">
+        <h4 class="text-red-400 font-bold mb-3 flex items-center gap-2">
+          <span>❌</span> 曾经 GPG 令人抓狂的体验
+        </h4>
+        <ul class="text-sm text-slate-400 space-y-2.5">
+          <li>• 记不住长参数：每次查指纹都要搜 <code class="text-slate-300">--keyid-format=long</code></li>
+          <li>• 备份无验证：导出了一堆文件，换机器导入发现根本用不了</li>
+          <li>• 繁琐交互：导入后还要手动编辑信任度 <code class="text-slate-300">trust -> 5 -> save</code></li>
+          <li>• 无头卡死：在 SSH 或 CI 中经常弹出图形 pinentry 导致流程挂起</li>
+        </ul>
+      </div>
+
+      <div class="glass-card rounded-xl p-6 border-emerald-500/20 bg-emerald-950/10">
+        <h4 class="text-emerald-400 font-bold mb-3 flex items-center gap-2">
+          <span>✅</span> gpgkit 的现代救赎
+        </h4>
+        <ul class="text-sm text-slate-400 space-y-2.5">
+          <li>• 极简动词：<code class="text-emerald-300 font-mono">gen</code>, <code class="text-emerald-300 font-mono">backup</code>, <code class="text-emerald-300 font-mono">restore</code>, <code class="text-emerald-300 font-mono">doctor</code></li>
+          <li>• 强制回环校验：任何一次备份，必须在沙盒当场证明能还原且能验签</li>
+          <li>• 非交互设计：所有外部命令固定静默参数，绝不卡死终端</li>
+          <li>• 零依赖单文件：原生独立二进制，不要求机器安装 JDK</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Commands Grid -->
+    <div id="docs" class="max-w-4xl mx-auto mb-20">
+      <h3 class="text-2xl font-bold mb-8 text-center">核心命令速查 (Command Matrix)</h3>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="glass-card p-5 rounded-xl">
+          <div class="font-mono text-brand-400 font-semibold mb-1 text-sm">gpgkit status</div>
+          <p class="text-xs text-slate-400">巡检本机密钥：指纹、剩余天数、私钥存在性、公钥是否在公钥服务器可见，给出 OK/WARN 结论。</p>
+        </div>
+        <div class="glass-card p-5 rounded-xl">
+          <div class="font-mono text-brand-400 font-semibold mb-1 text-sm">gpgkit gen</div>
+          <p class="text-xs text-slate-400">一键生成现代签名密钥对（默认 rsa4096 / 2 年有效期），自动提取 git 用户名邮箱，生成后强制提示备份。</p>
+        </div>
+        <div class="glass-card p-5 rounded-xl">
+          <div class="font-mono text-brand-400 font-semibold mb-1 text-sm">gpgkit backup</div>
+          <p class="text-xs text-slate-400">第一等公民：加密导出私钥并写入元数据，当场在独立沙盒执行回环还原与验签，证明 100% 可用才落盘。</p>
+        </div>
+        <div class="glass-card p-5 rounded-xl">
+          <div class="font-mono text-brand-400 font-semibold mb-1 text-sm">gpgkit restore &lt;backup-file&gt;</div>
+          <p class="text-xs text-slate-400">在新机器上还原备份，自动恢复 Ultimate 最终信任度，当场生成临时测试签名完成闭环验证。</p>
+        </div>
+        <div class="glass-card p-5 rounded-xl">
+          <div class="font-mono text-brand-400 font-semibold mb-1 text-sm">gpgkit extend [--by 2y]</div>
+          <p class="text-xs text-slate-400">一键为主密钥和所有子密钥续期，避免密钥过期导致 git commit 签名失效。</p>
+        </div>
+        <div class="glass-card p-5 rounded-xl">
+          <div class="font-mono text-brand-400 font-semibold mb-1 text-sm">gpgkit doctor</div>
+          <p class="text-xs text-slate-400">全面体检：gpg 引擎、备份存在性与可解密性、口令文件安全性，无参数自检并输出一句话结论。</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-slate-800/80 py-10 text-center text-xs text-slate-500 font-mono">
+    <p>Part of the <a href="../index.html" class="text-slate-400 hover:text-white transition">li-tools</a> suite • Created with passion for developer experience</p>
+  </footer>
+
+  <script>
+    const commands = {
+      brew: 'brew install lihu/tools/gpgkit',
+      shell: 'curl -fsSL https://tools.lihu.me/install.sh | bash -s gpgkit',
+      npm: 'npx @lihu/gpgkit status'
+    };
+
+    function setTab(tab) {
+      document.getElementById('install-code').innerText = commands[tab];
+      document.querySelectorAll('#install-tabs button').forEach(btn => {
+        btn.className = 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+      });
+      document.getElementById('tab-' + tab).className = 'px-3 py-1.5 rounded-lg bg-brand-500/20 text-brand-400 border border-brand-500/30 transition';
+    }
+
+    function copyCode() {
+      const code = document.getElementById('install-code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        document.getElementById('copy-icon').innerText = '✔';
+        document.getElementById('copy-text').innerText = 'Copied!';
+        setTimeout(() => {
+          document.getElementById('copy-icon').innerText = '📋';
+          document.getElementById('copy-text').innerText = 'Copy';
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

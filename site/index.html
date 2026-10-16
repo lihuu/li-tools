@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>li-tools — Modern Developer CLI Toolchain</title>
+  <meta name="description" content="A curated suite of modern, zero-config developer CLI tools powered by Java 25 and GraalVM Native Image.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0b0f19; }
+    .glass-card {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.25s ease-in-out;
+    }
+    .glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.18);
+      transform: translateY(-2px);
+    }
+    .hero-glow {
+      background: radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.15) 0%, rgba(16, 185, 129, 0.1) 40%, transparent 70%);
+    }
+  </style>
+</head>
+<body class="text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-white relative">
+  <div class="absolute inset-0 hero-glow pointer-events-none h-[600px]"></div>
+
+  <!-- Navigation -->
+  <header class="border-b border-slate-800/80 sticky top-0 z-50 bg-[#0b0f19]/80 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <span class="font-bold text-lg tracking-tight flex items-center gap-2">
+          <span class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center text-xs font-mono font-bold text-white shadow-lg">li</span>
+          li-tools
+        </span>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Suite v0.1.0</span>
+      </div>
+
+      <nav class="flex items-center space-x-6 text-sm">
+        <a href="#suite" class="text-slate-400 hover:text-white transition">Tools</a>
+        <a href="#philosophy" class="text-slate-400 hover:text-white transition">Philosophy</a>
+        <a href="#install" class="text-slate-400 hover:text-white transition">Install</a>
+        <a href="https://github.com/lihuu/li-tools" target="_blank" rel="noopener" class="text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+          <span>GitHub</span>
+          <span class="text-xs">↗</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="max-w-6xl mx-auto px-6 pt-20 pb-28">
+    <div class="text-center max-w-3xl mx-auto mb-16">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-800/80 border border-slate-700 text-slate-300 text-xs font-mono mb-6 backdrop-blur">
+        <span>⚡</span> Powered by Java 25 • GraalVM Native Image • Triple-Platform Equity
+      </div>
+      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+        Modern developer tools,<br>
+        <span class="bg-gradient-to-r from-indigo-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">zero bullshit</span>.
+      </h1>
+      <p class="text-lg text-slate-400 leading-relaxed">
+        告别冗长参数、晦涩配置文件与平台碎片化。坚持“约定大于配置”与全平台平权，为工程生产力打造极致愉悦的命令行体验。
+      </p>
+    </div>
+
+    <!-- The Tools Suite Grid -->
+    <div id="suite" class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-24">
+      
+      <!-- GPGKIT Card -->
+      <a href="gpgkit/index.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-indigo-500/20 hover:border-indigo-500/50 block">
+        <div class="absolute -right-12 -top-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-indigo-500/20 transition-all"></div>
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <span class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl font-bold shadow-inner">🔑</span>
+            <div>
+              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-indigo-300 transition">gpgkit</h2>
+              <span class="text-xs font-mono text-indigo-400">GPG Key Lifecycle Manager</span>
+            </div>
+          </div>
+          <span class="text-slate-500 group-hover:text-indigo-400 transition transform group-hover:translate-x-1">→</span>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed mb-6">
+          让“换一台机器就丢 GPG 密钥”彻底成为历史。带闭环回环校验的导出还原、自动续期、安全体检，收进一个直觉命令。
+        </p>
+        <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-indigo-300 border border-indigo-950/60 mb-5 flex items-center justify-between">
+          <span>$ gpgkit backup</span>
+          <span class="text-emerald-400 text-[10px] font-semibold">✔ Loopback Tested</span>
+        </div>
+        <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Zero Dependencies</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Loopback Verify</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Auto Extend</span>
+        </div>
+      </a>
+
+      <!-- CERTKIT Card -->
+      <a href="certkit/index.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-emerald-500/20 hover:border-emerald-500/50 block">
+        <div class="absolute -right-12 -top-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-500/20 transition-all"></div>
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <span class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl font-bold shadow-inner">🔒</span>
+            <div>
+              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-emerald-300 transition">certkit</h2>
+              <span class="text-xs font-mono text-emerald-400">Zero-config SSL/TLS Knife</span>
+            </div>
+          </div>
+          <span class="text-slate-500 group-hover:text-emerald-400 transition transform group-hover:translate-x-1">→</span>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed mb-6">
+          忘掉 OpenSSL 复杂的配置文件。智能嗅探 IP/域名自动配置 SAN，本地 CA 自动复用，单参数格式互转，跨平台免提权信任注入。
+        </p>
+        <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-emerald-300 border border-emerald-950/60 mb-5 flex items-center justify-between">
+          <span>$ certkit gen localhost</span>
+          <span class="text-emerald-400 text-[10px] font-semibold">✔ Green Lock Ready</span>
+        </div>
+        <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Smart SAN Detection</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Local CA</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Win 11 certutil</span>
+        </div>
+      </a>
+
+    </div>
+
+    <!-- Philosophy -->
+    <div id="philosophy" class="max-w-4xl mx-auto mb-24">
+      <h3 class="text-2xl font-bold mb-10 text-center tracking-tight">核心设计哲学 (Core Tenets)</h3>
+      <div class="grid sm:grid-cols-3 gap-6">
+        <div class="glass-card p-6 rounded-xl">
+          <div class="text-2xl mb-3">🧭</div>
+          <h4 class="font-bold text-base mb-2 text-white">约定大于配置</h4>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            位置参数智能推导类型，输出就地落盘，默认复用本地基准基础设施。把 90% 的日常意图用 0 配置完成。
+          </p>
+        </div>
+        <div class="glass-card p-6 rounded-xl">
+          <div class="text-2xl mb-3">⚖️</div>
+          <h4 class="font-bold text-base mb-2 text-white">全平台平权</h4>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            macOS、Linux、Windows 11 并驾齐驱。深度适配 Windows 免提权证书注入与 Git 路径嗅探，杜绝系统二等公民。
+          </p>
+        </div>
+        <div class="glass-card p-6 rounded-xl">
+          <div class="text-2xl mb-3">⚡</div>
+          <h4 class="font-bold text-base mb-2 text-white">极致原生启动</h4>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Java 25 架构经 GraalVM Native Image 编译为毫秒级原生可执行二进制，无需安装 JVM，开箱即用。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Installation -->
+    <div id="install" class="max-w-3xl mx-auto glass-card rounded-2xl p-8 mb-16">
+      <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+        <span>📦</span> 统一矩阵安装 (Get the Suite)
+      </h3>
+      
+      <!-- Tabs -->
+      <div class="flex space-x-2 border-b border-slate-800 pb-3 mb-5 text-sm font-mono" id="install-tabs">
+        <button onclick="setTab('brew')" id="tab-brew" class="px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 transition">Homebrew</button>
+        <button onclick="setTab('shell')" id="tab-shell" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">Shell Script</button>
+        <button onclick="setTab('npm')" id="tab-npm" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">NPM</button>
+      </div>
+
+      <div class="bg-black/60 rounded-lg p-4 font-mono text-sm flex items-center justify-between border border-slate-800">
+        <code id="install-code" class="text-indigo-300">brew tap lihu/tools && brew install gpgkit certkit</code>
+        <button onclick="copyCode()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded border border-slate-700 transition flex items-center gap-1.5">
+          <span id="copy-icon">📋</span>
+          <span id="copy-text">Copy</span>
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="border-t border-slate-800/80 py-12 text-center text-xs text-slate-500 font-mono">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <span class="w-5 h-5 rounded bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center text-[10px] font-mono font-bold text-white">li</span>
+        <span>li-tools Monorepo Suite</span>
+      </div>
+      <div>Crafted for high developer velocity • Apache-2.0 License</div>
+      <div class="flex gap-4">
+        <a href="gpgkit/index.html" class="hover:text-indigo-400 transition">gpgkit</a>
+        <a href="certkit/index.html" class="hover:text-emerald-400 transition">certkit</a>
+        <a href="https://github.com/lihuu/li-tools" target="_blank" rel="noopener" class="hover:text-white transition">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const commands = {
+      brew: 'brew tap lihu/tools && brew install gpgkit certkit',
+      shell: 'curl -fsSL https://tools.lihu.me/install.sh | bash',
+      npm: 'npm install -g @lihu/tools'
+    };
+
+    function setTab(tab) {
+      document.getElementById('install-code').innerText = commands[tab];
+      document.querySelectorAll('#install-tabs button').forEach(btn => {
+        btn.className = 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+      });
+      document.getElementById('tab-' + tab).className = 'px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 transition';
+    }
+
+    function copyCode() {
+      const code = document.getElementById('install-code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        document.getElementById('copy-icon').innerText = '✔';
+        document.getElementById('copy-text').innerText = 'Copied!';
+        setTimeout(() => {
+          document.getElementById('copy-icon').innerText = '📋';
+          document.getElementById('copy-text').innerText = 'Copy';
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
