@@ -33,8 +33,47 @@ public final class Openssl {
                 throw new IllegalStateException("openssl exited with non-zero code: " + exitCode);
             }
         } catch (IOException | InterruptedException e) {
-            throw new IllegalStateException("OpenSSL is not installed or not found in PATH (" + opensslPath + "). Please install openssl first.", e);
+            throw new IllegalStateException(missingOpensslMessage(), e);
         }
+    }
+
+    public String getVersion() {
+        try {
+            Process process = new ProcessBuilder(opensslPath, "version")
+                .redirectErrorStream(true)
+                .start();
+            String out = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+            int code = process.waitFor();
+            return (code == 0) ? out : "Unknown (exit code " + code + ")";
+        } catch (Exception e) {
+            return "Unavailable (" + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()) + ")";
+        }
+    }
+
+    public String resolveBinaryPath() {
+        try {
+            Process process = new ProcessBuilder("which", opensslPath)
+                .redirectErrorStream(true)
+                .start();
+            String out = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+            int code = process.waitFor();
+            return (code == 0 && !out.isEmpty()) ? out : opensslPath;
+        } catch (Exception e) {
+            return opensslPath;
+        }
+    }
+
+    public static String missingOpensslMessage() {
+        return """
+            ✖ OpenSSL is not installed or not found in PATH.
+
+            certkit relies on OpenSSL for cryptographic operations.
+            Please install it with one command:
+              macOS:         brew install openssl
+              Ubuntu/Debian: sudo apt update && sudo apt install -y openssl
+              RHEL/Fedora:   sudo dnf install -y openssl
+              Alpine Linux:  apk add openssl
+            """;
     }
 
     public CertInfo generateSelfSigned(

@@ -24,7 +24,8 @@ import java.util.concurrent.Callable;
         Main.CheckCommand.class,
         Main.ConvertCommand.class,
         Main.TrustCommand.class,
-        Main.RawCommand.class
+        Main.RawCommand.class,
+        Main.DoctorCommand.class
     }
 )
 public final class Main implements Callable<Integer> {
@@ -463,6 +464,109 @@ public final class Main implements Callable<Integer> {
                 }
             } catch (Exception e) {
                 System.err.println("certkit trust uninstall: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+                return 1;
+            }
+        }
+    }
+
+    @Command(name = "doctor", description = "Check environment health, OpenSSL availability, and trust store status")
+    static class DoctorCommand implements Callable<Integer> {
+        @ParentCommand
+        private Main parent;
+
+        @Override
+        public Integer call() {
+            String osName = System.getProperty("os.name");
+            String osArch = System.getProperty("os.arch");
+            String osVer = System.getProperty("os.version");
+
+            Openssl openssl = new Openssl();
+            String opensslPath = openssl.resolveBinaryPath();
+            String opensslVersion = openssl.getVersion();
+            boolean opensslOk = !opensslVersion.startsWith("Unavailable") && !opensslVersion.startsWith("Unknown");
+
+            TrustStore ts = new TrustStore();
+            TrustStore.Platform platform = ts.getPlatform();
+            boolean platformSupported = platform != TrustStore.Platform.UNSUPPORTED;
+
+            boolean hasCa = Defaults.hasDefaultCa();
+            Path caCert = Defaults.defaultCaCert();
+            boolean caTrusted = false;
+            long caDays = 0;
+            if (hasCa) {
+                try {
+                    CertInfo caInfo = CertParser.parse(caCert);
+                    caDays = caInfo.daysRemaining();
+                    var trustRes = ts.check(caCert);
+                    caTrusted = trustRes.success();
+                } catch (Exception ignored) {}
+            }
+
+            if (parent != null && parent.json) {
+                System.out.println("""
+                    {
+                      "os": {
+                        "name": "%s",
+                        "arch": "%s",
+                        "version": "%s"
+                      },
+                      "openssl": {
+                        "installed": %s,
+                        "path": "%s",
+                        "version": "%s"
+                      },
+                      "trustStore": {
+                        "platform": "%s",
+                        "supported": %s
+                      },
+                      "defaultCa": {
+                        "initialized": %s,
+                        "path": "%s",
+                        "trusted": %s,
+                        "daysRemaining": %d
+                      },
+                      "allReady": %s
+                    }
+                    """.formatted(
+                        osName, osArch, osVer,
+                        opensslOk, opensslPath.replace("\\", "\\\\"), opensslVersion.replace("\"", "\\\""),
+                        platform, platformSupported,
+                        hasCa, caCert.toAbsolutePath().toString().replace("\\", "\\\\"), caTrusted, caDays,
+                        opensslOk
+                    ).trim());
+                return opensslOk ? 0 : 1;
+            }
+
+            System.out.println("certkit doctor — Environment & Health Diagnostics:\n");
+            System.out.printf("  [✓] Operating System:   %s %s (%s)\n", osName, osVer, osArch);
+
+            if (opensslOk) {
+                System.out.printf("  [✓] OpenSSL Engine:     %s (%s)\n", opensslPath, opensslVersion);
+            } else {
+                System.out.println("  [✖] OpenSSL Engine:     NOT FOUND IN PATH");
+                System.out.println("      " + Openssl.missingOpensslMessage().trim().replace("\n", "\n      "));
+            }
+
+            if (platformSupported) {
+                System.out.printf("  [✓] System Trust Store: %s (Supported)\n", platform);
+            } else {
+                System.out.println("  [ℹ] System Trust Store: Manual certificate installation required for this OS");
+            }
+
+            if (hasCa) {
+                System.out.printf("  [✓] Local Root CA:      %s (%d days remaining, %s)\n",
+                    caCert, caDays, caTrusted ? "Trusted in Keychain" : "Not yet trusted");
+            } else {
+                System.out.printf("  [ℹ] Local Root CA:      Not initialized (%s not found)\n", caCert);
+                System.out.println("      💡 Tip: Run 'certkit ca' once to enable trusted green-lock browser support.");
+            }
+
+            System.out.println();
+            if (opensslOk) {
+                System.out.println("✔ Core cryptographic engine is ready!");
+                return 0;
+            } else {
+                System.err.println("✖ Blocking issues found. Please install OpenSSL before using certkit.");
                 return 1;
             }
         }
