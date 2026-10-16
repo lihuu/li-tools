@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.lihuu</groupId>
+        <artifactId>li-tools</artifactId>
+        <version>0.1.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>gpgkit</artifactId>
+    <packaging>jar</packaging>
+    <name>gpgkit</name>
+    <description>One command for the whole life of a GPG key: generate, back up, restore, extend, sign, publish, check.</description>
+
+    <properties>
+        <main.class>io.github.lihuu.gpgkit.Main</main.class>
+    </properties>
+
+    <!--
+      No runtime dependency, and that is the design, not an unfinished file.
+
+      Native Image cannot see through reflection, a ServiceLoader scan, or a library's dynamic
+      class loading: a class reached only that way compiles fine, passes every JVM test, and is
+      missing from the executable. Every dependency is one more place that can happen. The one
+      thing this tool wanted a library for — JSON output — is forty lines of StringBuilder in
+      Json.java, which is less code than the metadata a serializer would need.
+
+      GraalVM's own native-maven-plugin is deliberately not used either: build-native.sh drives
+      native-image directly, so the build has no plugin downloads and no second place where the
+      image configuration lives.
+
+      The one exception is JUnit below, and it is test scope only.
+    -->
+    <dependencies>
+        <!--
+          Test scope, and the only dependency in the file. It is invisible to Native Image: the
+          executable is built from target/classes with an empty classpath, so nothing declared here
+          can end up in it. The alternative — assertions hand-rolled into a main() — would put this
+          project's tests out of step with every other repository on this machine for no gain, and a
+          test suite nobody can run the usual way is a test suite nobody runs.
+        -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.11.4</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.11.4</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>gpgkit</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.0</version>
+                <configuration>
+                    <release>25</release>
+                </configuration>
+            </plugin>
+            <!--
+              A Main-Class manifest is what makes `mvn package` produce something `java -jar` can
+              run. The JVM jar is the development and diagnosis path; the distribution target
+              stays the native executable.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>${main.class}</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
