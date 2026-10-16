@@ -61,3 +61,23 @@ certkit check github.com:443
 certkit convert --in cert.pem [--key key.pem] --out cert.p12 [--passphrase-file F]
 ```
 - 支持 PEM、PKCS12 (.p12/.pfx)、DER 互转。
+
+### 5) `certkit trust`
+跨平台管理自建 CA 根证书的系统受信任状态（支持 macOS 与 Linux）：
+```bash
+certkit trust install <ca-cert.pem> [--system]
+certkit trust check <ca-cert.pem>
+certkit trust uninstall <ca-cert.pem> [--system]
+```
+- **macOS 机制**：
+  - 默认（用户钥匙串，通常免 sudo）：安装至登录钥匙串并标记信任根：
+    `security add-trusted-cert -d -r trustRoot -k ~/Library/Keychains/login.keychain-db <ca.crt>`
+  - `--system`（全局系统钥匙串，需 sudo）：
+    `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain <ca.crt>`
+- **Linux 机制**：
+  - 自动探测系统发行版：
+    - Debian / Ubuntu：写入 `/usr/local/share/ca-certificates/` 并运行 `update-ca-certificates`
+    - RHEL / Fedora / CentOS：写入 `/etc/pki/ca-trust/source/anchors/` 并运行 `update-ca-trust extract`
+    - Arch Linux：写入 `/etc/ca-certificates/trust-source/anchors/` 并运行 `trust extract-compat`
+  - 权限不足时优雅打印需要执行的单行 `sudo` 命令，不盲目报错。
+
