@@ -11,24 +11,22 @@ JDK_HOME="${JAVA_HOME:-}"
 if [ -z "$JDK_HOME" ] && [ -x /usr/libexec/java_home ]; then
     JDK_HOME="$(/usr/libexec/java_home -v 25 2>/dev/null || true)"
 fi
-if [ -z "$JDK_HOME" ]; then
-    echo "build-native.sh: set JAVA_HOME to a GraalVM for JDK 25" >&2
-    exit 1
-fi
 
-NATIVE_IMAGE="$JDK_HOME/bin/native-image"
-if [ ! -x "$NATIVE_IMAGE" ]; then
-    # native-image ships with GraalVM, not with a plain JDK, so it is not searched for. A
-    # JAVA_HOME without one is the wrong JAVA_HOME, not a reason to go looking for another.
-    echo "build-native.sh: no native-image in $JDK_HOME" >&2
+if command -v native-image >/dev/null 2>&1; then
+    NATIVE_IMAGE="$(command -v native-image)"
+elif [ -n "$JDK_HOME" ] && [ -x "$JDK_HOME/bin/native-image" ]; then
+    NATIVE_IMAGE="$JDK_HOME/bin/native-image"
+elif [ -n "$JDK_HOME" ] && [ -x "$JDK_HOME/bin/native-image.cmd" ]; then
+    NATIVE_IMAGE="$JDK_HOME/bin/native-image.cmd"
+elif [ -n "$JDK_HOME" ] && [ -x "$JDK_HOME/bin/native-image.exe" ]; then
+    NATIVE_IMAGE="$JDK_HOME/bin/native-image.exe"
+else
+    echo "build-native.sh: no native-image found in PATH or JAVA_HOME ($JDK_HOME)" >&2
     echo "build-native.sh: install GraalVM for JDK 25 and point JAVA_HOME at it" >&2
     exit 1
 fi
 
-# Compile first and let the image build only read target/classes. There is no
-# dependency:build-classpath step here, unlike the GUI project next door: this module has no
-# dependencies at all, so an empty classpath beyond its own classes is the whole story.
-mvn -q -o -DskipTests package
+mvn -q -DskipTests package
 
 # -O3 rather than the default -O2: this is a command people wait on, the build is seconds longer,
 # and the image is smaller. The level is a deliberate choice, not a default left in place.
