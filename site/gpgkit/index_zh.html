@@ -205,14 +205,15 @@
       </h3>
       
       <!-- Tabs -->
-      <div class="flex space-x-2 border-b border-slate-800 pb-3 mb-5 text-sm font-mono" id="install-tabs">
-        <button onclick="setTab('brew')" id="tab-brew" class="px-3 py-1.5 rounded-lg bg-brand-500/20 text-brand-400 border border-brand-500/30 transition">Homebrew</button>
-        <button onclick="setTab('shell')" id="tab-shell" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">Shell 脚本</button>
-        <button onclick="setTab('npm')" id="tab-npm" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">NPM / NPX</button>
+      <div class="flex flex-wrap gap-2 border-b border-slate-800 pb-3 mb-5 text-sm font-mono" id="install-tabs">
+        <button onclick="setTab('shell')" id="tab-shell" class="px-3 py-1.5 rounded-lg bg-brand-500/20 text-brand-400 border border-brand-500/30 transition">macOS / Linux</button>
+        <button onclick="setTab('ps1')" id="tab-ps1" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">Windows 11 (PowerShell)</button>
+        <button onclick="setTab('releases')" id="tab-releases" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">GitHub Releases</button>
+        <button onclick="setTab('brew')" id="tab-brew" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">Homebrew (筹备中)</button>
       </div>
 
       <div class="bg-black/60 rounded-lg p-4 font-mono text-sm flex items-center justify-between border border-slate-800">
-        <code id="install-code" class="text-brand-300">brew install lihu/tools/gpgkit</code>
+        <code id="install-code" class="text-brand-300">curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash -s gpgkit</code>
         <button onclick="copyCode()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded border border-slate-700 transition flex items-center gap-1.5">
           <span id="copy-icon">📋</span>
           <span id="copy-text">复制</span>
@@ -312,9 +313,10 @@
 
   <script>
     const commands = {
-      brew: 'brew install lihu/tools/gpgkit',
-      shell: 'curl -fsSL https://tools.lihu.me/install.sh | bash -s gpgkit',
-      npm: 'npx @lihu/gpgkit status'
+      shell: 'curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash -s gpgkit',
+      ps1: 'irm https://lihuu.github.io/li-tools/install.ps1 | iex',
+      releases: 'https://github.com/lihuu/li-tools/releases/latest',
+      brew: 'brew install lihuu/tools/gpgkit # (筹备中)'
     };
 
     function setTab(tab) {
