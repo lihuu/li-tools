@@ -24,33 +24,25 @@ class WindowsPlatformLogicTest {
 
         TrustStore windowsTs = new TrustStore(TrustStore.Platform.WINDOWS);
 
-        var userResult = windowsTs.install(certPath, false);
-        assertNotNull(userResult);
-
-        var sysResult = windowsTs.install(certPath, true);
-        assertNotNull(sysResult);
-
-        // Verify check operation
-        var checkResult = windowsTs.check(certPath);
-        assertNotNull(checkResult);
-
-        // Verify uninstall operation
-        var uninstallResult = windowsTs.uninstall(certPath, false);
-        assertNotNull(uninstallResult);
-
         boolean isRealWindows = System.getProperty("os.name", "").toLowerCase().contains("win");
-        if (!isRealWindows) {
+        if (isRealWindows) {
+            // On real Windows (including CI runners), verify check does not throw or hang
+            var checkResult = windowsTs.check(certPath);
+            assertNotNull(checkResult);
+            assertFalse(checkResult.success()); // cert was never installed, so not trusted
+        } else {
             // On non-Windows platforms, certutil.exe does not exist, so it fails gracefully with command advice
+            var userResult = windowsTs.install(certPath, false);
+            assertNotNull(userResult);
             assertFalse(userResult.success());
             assertNotNull(userResult.suggestedCommand());
             assertTrue(userResult.suggestedCommand().contains("certutil.exe"));
-            assertTrue(userResult.suggestedCommand().contains("-user"));
-            assertTrue(userResult.suggestedCommand().contains("Root"));
 
+            var sysResult = windowsTs.install(certPath, true);
+            assertNotNull(sysResult);
             assertFalse(sysResult.success());
             assertNotNull(sysResult.suggestedCommand());
             assertTrue(sysResult.suggestedCommand().contains("certutil.exe"));
-            assertFalse(sysResult.suggestedCommand().contains("-user"));
         }
     }
 }

@@ -125,13 +125,13 @@ public final class TrustStore {
 
         if (platform == Platform.WINDOWS) {
             // Attempt to remove from both CurrentUser and LocalMachine stores
-            CommandResult resUser = runSilently(List.of("certutil.exe", "-delstore", "-user", "Root", info.subjectCn()));
-            CommandResult resSys = runSilently(List.of("certutil.exe", "-delstore", "Root", info.subjectCn()));
+            CommandResult resUser = runSilently(List.of("certutil.exe", "-f", "-delstore", "-user", "Root", info.subjectCn()));
+            CommandResult resSys = runSilently(List.of("certutil.exe", "-f", "-delstore", "Root", info.subjectCn()));
 
             if (resUser.exitCode == 0 || resSys.exitCode == 0) {
                 return new TrustResult(true, "Successfully removed CA from Windows Root store: " + info.subjectCn(), null);
             } else {
-                return new TrustResult(false, "Failed to remove from Windows store: " + resUser.output.trim(), "certutil.exe -delstore Root " + info.subjectCn());
+                return new TrustResult(false, "Failed to remove from Windows store: " + resUser.output.trim(), "certutil.exe -f -delstore Root " + info.subjectCn());
             }
         }
 
@@ -168,28 +168,28 @@ public final class TrustStore {
         String certAbsPath = caCert.toAbsolutePath().toString();
 
         if (system) {
-            CommandResult res = runSilently(List.of("certutil.exe", "-addstore", "Root", certAbsPath));
+            CommandResult res = runSilently(List.of("certutil.exe", "-f", "-addstore", "Root", certAbsPath));
             if (res.exitCode == 0) {
                 return new TrustResult(true, "Successfully installed and trusted CA in Windows LocalMachine Root store", null);
             } else {
-                return new TrustResult(false, "Failed to write to LocalMachine store: " + res.output.trim(), "Run as Administrator: certutil.exe -addstore Root " + certAbsPath);
+                return new TrustResult(false, "Failed to write to LocalMachine store: " + res.output.trim(), "Run as Administrator: certutil.exe -f -addstore Root " + certAbsPath);
             }
         }
 
         // Try CurrentUser first (requires interactive UI in desktop session)
-        CommandResult userRes = runSilently(List.of("certutil.exe", "-user", "-addstore", "Root", certAbsPath));
+        CommandResult userRes = runSilently(List.of("certutil.exe", "-f", "-user", "-addstore", "Root", certAbsPath));
         if (userRes.exitCode == 0) {
             return new TrustResult(true, "Successfully installed and trusted CA in Windows CurrentUser Root store", null);
         }
 
         // If in headless SSH/CI without GUI, CurrentUser -addstore will fail with ERROR_NOT_SUPPORTED.
         // Try fallback to LocalMachine store automatically if user has admin rights
-        CommandResult sysRes = runSilently(List.of("certutil.exe", "-addstore", "Root", certAbsPath));
+        CommandResult sysRes = runSilently(List.of("certutil.exe", "-f", "-addstore", "Root", certAbsPath));
         if (sysRes.exitCode == 0) {
             return new TrustResult(true, "Successfully installed and trusted CA in Windows LocalMachine Root store (Headless Mode)", null);
         }
 
-        String suggest = "certutil.exe -user -addstore Root " + certAbsPath + " (or with Admin: certutil.exe -addstore Root " + certAbsPath + ")";
+        String suggest = "certutil.exe -f -user -addstore Root " + certAbsPath + " (or with Admin: certutil.exe -f -addstore Root " + certAbsPath + ")";
         return new TrustResult(false, "Failed to write to Windows certificate store: " + userRes.output.trim(), suggest);
     }
 
@@ -238,9 +238,25 @@ public final class TrustStore {
             Process p = new ProcessBuilder(cmd)
                 .redirectErrorStream(true)
                 .start();
-            String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            int code = p.waitFor();
-            return new CommandResult(code, out);
+            p.getOutputStream().close();
+
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            Thread readerThread = new Thread(() -> {
+                try {
+                    p.getInputStream().transferTo(baos);
+                } catch (IOException ignored) {}
+            });
+            readerThread.setDaemon(true);
+            readerThread.start();
+
+            boolean finished = p.waitFor(6, java.util.concurrent.TimeUnit.SECONDS);
+            if (!finished) {
+                p.destroyForcibly();
+                readerThread.interrupt();
+                return new CommandResult(-1, "Process timed out after 6 seconds: " + String.join(" ", cmd));
+            }
+            readerThread.join(500);
+            return new CommandResult(p.exitValue(), baos.toString(StandardCharsets.UTF_8));
         } catch (Exception e) {
             return new CommandResult(-1, e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
         }
