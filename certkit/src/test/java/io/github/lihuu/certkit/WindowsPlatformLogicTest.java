@@ -3,7 +3,6 @@ package io.github.lihuu.certkit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,7 +17,6 @@ class WindowsPlatformLogicTest {
 
     @Test
     void windowsInstallCommandStructure(@TempDir Path tempDir) throws Exception {
-        // Generate a dummy valid certificate for parser
         Openssl openssl = new Openssl();
         Path certPath = tempDir.resolve("win-test-ca.crt");
         Path keyPath = tempDir.resolve("win-test-ca.key");
@@ -26,14 +24,32 @@ class WindowsPlatformLogicTest {
 
         TrustStore windowsTs = new TrustStore(TrustStore.Platform.WINDOWS);
 
-        // In macOS environment, running certutil.exe will fail to start process gracefully and return a TrustResult with command advice
         var userResult = windowsTs.install(certPath, false);
         assertNotNull(userResult);
-        // Should have attempted certutil.exe
-        assertFalse(userResult.success()); // Because we're currently on macOS runner, certutil.exe is not installed
 
         var sysResult = windowsTs.install(certPath, true);
         assertNotNull(sysResult);
-        assertFalse(sysResult.success());
+
+        // Verify check operation
+        var checkResult = windowsTs.check(certPath);
+        assertNotNull(checkResult);
+
+        // Verify uninstall operation
+        var uninstallResult = windowsTs.uninstall(certPath, false);
+        assertNotNull(uninstallResult);
+
+        boolean isRealWindows = System.getProperty("os.name", "").toLowerCase().contains("win");
+        if (!isRealWindows) {
+            // On non-Windows platforms, certutil.exe does not exist, so it fails gracefully with command advice
+            assertFalse(userResult.success());
+            assertNotNull(userResult.suggestedCommand());
+            assertTrue(userResult.suggestedCommand().contains("certutil.exe"));
+            assertTrue(userResult.suggestedCommand().contains("-user Root"));
+
+            assertFalse(sysResult.success());
+            assertNotNull(sysResult.suggestedCommand());
+            assertTrue(sysResult.suggestedCommand().contains("certutil.exe"));
+            assertFalse(sysResult.suggestedCommand().contains("-user"));
+        }
     }
 }
