@@ -1,0 +1,91 @@
+name: Release Native Binaries
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-native:
+    name: Build Native on ${{ matrix.os }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: amd64
+            binary-ext: ""
+          - os: macos-latest
+            platform: darwin
+            arch: arm64
+            binary-ext: ""
+          - os: windows-latest
+            platform: windows
+            arch: amd64
+            binary-ext: ".exe"
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up GraalVM for JDK 25
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '25'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache: 'maven'
+
+      - name: Build gpgkit Native Binary
+        shell: bash
+        run: |
+          cd gpgkit
+          ./build-native.sh
+          cp "target/gpgkit${{ matrix.binary-ext }}" "../gpgkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}"
+
+      - name: Build certkit Native Binary
+        shell: bash
+        run: |
+          cd certkit
+          ./build-native.sh
+          cp "target/certkit${{ matrix.binary-ext }}" "../certkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}"
+
+      - name: Upload Binary Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            gpgkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}
+            certkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: build-native
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate SHA-256 Checksums
+        run: |
+          cd release-assets
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
