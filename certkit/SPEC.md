@@ -73,12 +73,21 @@ certkit convert cert.pem --key ./my.key --out /other/app.pfx --pass "MySecret"
 ```
 
 ### 5) `certkit trust`
-系统证书受信任状态管理：
+系统证书受信任状态管理（支持 macOS, Linux, Windows 11）：
 ```bash
 certkit trust install [ca-cert] [--system]     # 缺省时默认安装 ~/.certkit/ca/ca.crt
 certkit trust check [ca-cert]                  # 缺省时默认检查 ~/.certkit/ca/ca.crt
 certkit trust uninstall [ca-cert] [--system]
 ```
+- **macOS**：
+  - 默认（用户钥匙串免 sudo）：`security add-trusted-cert -d -r trustRoot -k ~/Library/Keychains/login.keychain-db <ca.crt>`
+  - `--system`：`sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain <ca.crt>`
+- **Windows 11**：
+  - 默认（CurrentUser 免 UAC 提权）：`certutil.exe -addstore -user Root <ca.crt>`
+  - `--system`（LocalMachine 需管理员）：`certutil.exe -addstore Root <ca.crt>`
+- **Linux**：
+  - 自动根据发行版复制到系统 anchors 目录并执行 `update-ca-certificates` / `update-ca-trust`。
+
 
 ### 6) `certkit raw <openssl-args...>`
 底层原生 OpenSSL 命令直接透传（100% 逃生门）：

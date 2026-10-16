@@ -15,6 +15,7 @@ public final class TrustStore {
         LINUX_DEBIAN,
         LINUX_RHEL,
         LINUX_ARCH,
+        WINDOWS,
         UNSUPPORTED
     }
 
@@ -36,6 +37,9 @@ public final class TrustStore {
         String os = System.getProperty("os.name", "").toLowerCase();
         if (os.contains("mac") || os.contains("darwin")) {
             return Platform.MACOS;
+        }
+        if (os.contains("win")) {
+            return Platform.WINDOWS;
         }
         if (os.contains("linux")) {
             Path osRelease = Path.of("/etc/os-release");
@@ -66,6 +70,7 @@ public final class TrustStore {
 
         return switch (platform) {
             case MACOS -> installMacos(caCert, system, info);
+            case WINDOWS -> installWindows(caCert, system, info);
             case LINUX_DEBIAN, LINUX_RHEL, LINUX_ARCH -> installLinux(caCert, info);
             default -> new TrustResult(false, "Unsupported platform for automated trust installation. Please import manually.", null);
         };
@@ -82,6 +87,13 @@ public final class TrustStore {
             CommandResult res = runSilently(cmd);
             boolean trusted = res.exitCode == 0 && res.output.contains(info.subjectCn());
             return new TrustResult(trusted, trusted ? "CA certificate is present in macOS Keychain." : "CA certificate not found in macOS Keychain.", null);
+        }
+
+        if (platform == Platform.WINDOWS) {
+            List<String> cmd = List.of("certutil.exe", "-store", "-user", "Root", info.subjectCn());
+            CommandResult res = runSilently(cmd);
+            boolean trusted = res.exitCode == 0 && res.output.contains(info.subjectCn());
+            return new TrustResult(trusted, trusted ? "CA certificate is present in Windows Root store." : "CA certificate not found in Windows Root store.", null);
         }
 
         return new TrustResult(false, "Platform check for Linux trust store is best verified via curl/openssl.", null);
@@ -103,6 +115,23 @@ public final class TrustStore {
                 return new TrustResult(true, "Successfully removed trust settings for " + info.subjectCn(), null);
             } else {
                 return new TrustResult(false, "Failed to remove trust: " + res.output.trim(), "security remove-trusted-cert " + caCert.toAbsolutePath());
+            }
+        }
+
+        if (platform == Platform.WINDOWS) {
+            List<String> cmd = new ArrayList<>();
+            cmd.add("certutil.exe");
+            cmd.add("-delstore");
+            if (!system) {
+                cmd.add("-user");
+            }
+            cmd.add("Root");
+            cmd.add(info.subjectCn());
+            CommandResult res = runSilently(cmd);
+            if (res.exitCode == 0) {
+                return new TrustResult(true, "Successfully removed CA from Windows Root store: " + info.subjectCn(), null);
+            } else {
+                return new TrustResult(false, "Failed to remove from Windows store: " + res.output.trim(), String.join(" ", cmd));
             }
         }
 
@@ -132,6 +161,25 @@ public final class TrustStore {
         } else {
             String suggestCmd = (system ? "sudo " : "") + String.join(" ", cmd);
             return new TrustResult(false, "Keychain write denied. Admin privileges required.", suggestCmd);
+        }
+    }
+
+    private TrustResult installWindows(Path caCert, boolean system, CertInfo info) {
+        List<String> cmd = new ArrayList<>();
+        cmd.add("certutil.exe");
+        cmd.add("-addstore");
+        if (!system) {
+            cmd.add("-user");
+        }
+        cmd.add("Root");
+        cmd.add(caCert.toAbsolutePath().toString());
+
+        CommandResult res = runSilently(cmd);
+        if (res.exitCode == 0) {
+            return new TrustResult(true, "Successfully installed and trusted CA in Windows Root store (" + (system ? "LocalMachine" : "CurrentUser") + ")", null);
+        } else {
+            String suggestCmd = (system ? "Run as Administrator: " : "") + String.join(" ", cmd);
+            return new TrustResult(false, "Failed to write to Windows certificate store: " + res.output.trim(), suggestCmd);
         }
     }
 

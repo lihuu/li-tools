@@ -16,11 +16,36 @@ public final class Openssl {
     private final String opensslPath;
 
     public Openssl() {
-        this("openssl");
+        this(detectDefaultOpenssl());
     }
 
     public Openssl(String opensslPath) {
         this.opensslPath = opensslPath;
+    }
+
+    private static String detectDefaultOpenssl() {
+        String os = System.getProperty("os.name", "").toLowerCase();
+        if (os.contains("win")) {
+            if (canRun("openssl.exe")) return "openssl.exe";
+            if (canRun("openssl")) return "openssl";
+
+            // Common Windows installation locations
+            Path gitSsl = Path.of("C:\\Program Files\\Git\\usr\\bin\\openssl.exe");
+            if (Files.isExecutable(gitSsl)) return gitSsl.toString();
+
+            Path win64Ssl = Path.of("C:\\Program Files\\OpenSSL-Win64\\bin\\openssl.exe");
+            if (Files.isExecutable(win64Ssl)) return win64Ssl.toString();
+        }
+        return "openssl";
+    }
+
+    private static boolean canRun(String cmd) {
+        try {
+            Process p = new ProcessBuilder(cmd, "version").redirectErrorStream(true).start();
+            return p.waitFor() == 0;
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     public void checkAvailable() {
@@ -52,12 +77,13 @@ public final class Openssl {
 
     public String resolveBinaryPath() {
         try {
-            Process process = new ProcessBuilder("which", opensslPath)
+            String whichTool = System.getProperty("os.name", "").toLowerCase().contains("win") ? "where" : "which";
+            Process process = new ProcessBuilder(whichTool, opensslPath)
                 .redirectErrorStream(true)
                 .start();
             String out = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
             int code = process.waitFor();
-            return (code == 0 && !out.isEmpty()) ? out : opensslPath;
+            return (code == 0 && !out.isEmpty()) ? out.lines().findFirst().orElse(opensslPath) : opensslPath;
         } catch (Exception e) {
             return opensslPath;
         }
@@ -70,6 +96,7 @@ public final class Openssl {
             certkit relies on OpenSSL for cryptographic operations.
             Please install it with one command:
               macOS:         brew install openssl
+              Windows 11:    winget install ShiningLight.OpenSSL  (or install Git for Windows)
               Ubuntu/Debian: sudo apt update && sudo apt install -y openssl
               RHEL/Fedora:   sudo dnf install -y openssl
               Alpine Linux:  apk add openssl
