@@ -40,16 +40,16 @@
 - Modify: `site/gpgkit/index.html`, `site/gpgkit/index_zh.html`
 - Modify: `site/certkit/index.html`, `site/certkit/index_zh.html`
 
-- [ ] Step 1: Write `site/install.sh` supporting `gpgkit`, `certkit`, or both (`all`).
-- [ ] Step 2: Write `site/install.ps1` for native Windows 11 PowerShell execution.
-- [ ] Step 3: Update `site/index.html` and `site/index_zh.html` install tabs to feature:
+- [x] Step 1: Write `site/install.sh` supporting `gpgkit`, `certkit`, or both (`all`).
+- [x] Step 2: Write `site/install.ps1` for native Windows 11 PowerShell execution.
+- [x] Step 3: Update `site/index.html` and `site/index_zh.html` install tabs to feature:
   - Tab 1: Shell (macOS / Linux): `curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash`
   - Tab 2: PowerShell (Windows 11): `irm https://lihuu.github.io/li-tools/install.ps1 | iex`
   - Tab 3: GitHub Releases (Direct download links)
   - Tab 4: Package Managers (Homebrew & NPM tagged as "Coming Soon / In Preparation")
-- [ ] Step 4: Update `gpgkit/` and `certkit/` landing pages accordingly.
-- [ ] Step 5: Test `site/install.sh` syntax locally (`bash -n site/install.sh`).
-- [ ] Step 6: Commit changes with message `fix(site): ground install commands with real GitHub Pages scripts and remove fictional domains`.
+- [x] Step 4: Update `gpgkit/` and `certkit/` landing pages accordingly.
+- [x] Step 5: Test `site/install.sh` syntax locally (`bash -n site/install.sh`).
+- [x] Step 6: Commit changes with message `fix(site): ground install commands with real GitHub Pages scripts and remove fictional domains`.
 
 ---
 
@@ -58,11 +58,11 @@
 **Files:**
 - Create: `.github/workflows/ci.yml`
 
-- [ ] Step 1: Define GitHub Actions matrix for `macos-latest`, `ubuntu-latest`, and `windows-latest`.
-- [ ] Step 2: Set up Java 25 via `actions/setup-java@v4` with Maven caching.
-- [ ] Step 3: Execute `mvn clean test` across all 3 platforms on every push and pull request.
-- [ ] Step 4: Verify that surefire test runs pass on Windows (verifying `WindowsPlatformLogicTest`).
-- [ ] Step 5: Commit changes with message `ci: add cross-platform test matrix for macOS, Linux, and Windows 11`.
+- [x] Step 1: Define GitHub Actions matrix for `macos-latest`, `ubuntu-latest`, and `windows-latest`.
+- [x] Step 2: Set up Java 25 via `actions/setup-java@v4` with Maven caching.
+- [x] Step 3: Execute `mvn clean test` across all 3 platforms on every push and pull request.
+- [x] Step 4: Verify that surefire test runs pass on Windows (verifying `WindowsPlatformLogicTest`).
+- [x] Step 5: Commit changes with message `ci: add cross-platform test matrix for macOS, Linux, and Windows 11`.
 
 ---
 
@@ -71,18 +71,18 @@
 **Files:**
 - Create: `.github/workflows/release.yml`
 
-- [ ] Step 1: Configure trigger on `v*` semantic version tags (e.g., `v0.1.0`).
-- [ ] Step 2: Setup GraalVM for JDK 25 on:
+- [x] Step 1: Configure trigger on `v*` semantic version tags (e.g., `v0.1.0`).
+- [x] Step 2: Setup GraalVM for JDK 25 on:
   - macOS arm64 (`macos-latest`)
   - Linux x86_64 (`ubuntu-latest`)
   - Windows x86_64 (`windows-latest`)
-- [ ] Step 3: Build native binaries:
+- [x] Step 3: Build native binaries:
   - Linux: `gpgkit-linux-amd64`, `certkit-linux-amd64`
   - macOS: `gpgkit-darwin-arm64`, `certkit-darwin-arm64`
   - Windows: `gpgkit-windows-amd64.exe`, `certkit-windows-amd64.exe`
-- [ ] Step 4: Generate SHA-256 checksums for all release assets.
-- [ ] Step 5: Automatically create GitHub Release with release notes and attach assets.
-- [ ] Step 6: Commit changes with message `ci: add automated GraalVM Native Image release workflow`.
+- [x] Step 4: Generate SHA-256 checksums for all release assets.
+- [x] Step 5: Automatically create GitHub Release with release notes and attach assets.
+- [x] Step 6: Commit changes with message `ci: add automated GraalVM Native Image release workflow`.
 
 ---
 
@@ -91,14 +91,14 @@
 **Files:**
 - Create: `docs/WINDOWS_11_VERIFICATION.md`
 
-- [ ] Step 1: Author physical verification guide detailing:
+- [x] Step 1: Author physical verification guide detailing:
   - 1. OpenSSL detection under Git for Windows (`C:\Program Files\Git\usr\bin\openssl.exe`).
   - 2. `certkit ca` root certificate generation.
   - 3. Non-elevated `certkit trust install` via `certutil.exe -addstore -user Root`.
   - 4. Edge / Chrome browser inspection verifying green lock without administrative prompts.
   - 5. `certkit convert` P12 bundling under Windows paths (handling backslashes).
   - 6. `gpgkit backup` and `gpgkit restore` loopback verification in PowerShell.
-- [ ] Step 2: Commit checklist with message `docs: add Windows 11 physical verification test guide`.
+- [x] Step 2: Commit checklist with message `docs: add Windows 11 physical verification test guide`.
 
 ---
 
@@ -107,7 +107,7 @@
 **Files:**
 - Create: `docs/DISTRIBUTION_ROADMAP.md`
 
-- [ ] Step 1: Outline Homebrew Tap repository setup (`lihuu/homebrew-tools`).
-- [ ] Step 2: Outline Windows Scoop bucket manifest (`li-tools.json`).
-- [ ] Step 3: Outline NPM package strategy (`@lihuu/tools` wrapper CLI).
-- [ ] Step 4: Commit roadmap with message `docs: add roadmap for Homebrew, Scoop, and NPM distribution`.
+- [x] Step 1: Outline Homebrew Tap repository setup (`lihuu/homebrew-tools`).
+- [x] Step 2: Outline Windows Scoop bucket manifest (`li-tools.json`).
+- [x] Step 3: Outline NPM package strategy (`@lihuu/tools` wrapper CLI).
+- [x] Step 4: Commit roadmap with message `docs: add roadmap for Homebrew, Scoop, and NPM distribution`.
