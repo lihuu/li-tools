@@ -1,7 +1,20 @@
 # li-tools
 
-> Modern, zero-runtime-dependency CLI security & developer tools matrix.  
-> 专为开发者设计的现代命令行安全与开发小工具集合，消除陈旧命令行的“高昂认知税”。
+> **Modern, zero-runtime-dependency CLI security & developer tools matrix.**  
+> A curated suite of high-velocity developer tools designed to eliminate the cognitive burden of archaic command-line utilities.
+
+<p align="center">
+  <a href="README.md"><b>English</b></a> •
+  <a href="README_zh.md"><b>简体中文</b></a> •
+  <a href="https://lihuu.github.io/li-tools/"><b>Landing Pages & Docs</b></a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Java-25-orange?style=flat-square&logo=openjdk" alt="Java 25">
+  <img src="https://img.shields.io/badge/GraalVM-Native%20Image-blue?style=flat-square&logo=graalvm" alt="GraalVM">
+  <img src="https://img.shields.io/badge/Platforms-macOS%20%7C%20Linux%20%7C%20Windows%2011-success?style=flat-square" alt="Platforms">
+  <img src="https://img.shields.io/badge/License-Apache%202.0-blueviolet?style=flat-square" alt="License">
+</p>
 
 ---
 
@@ -9,25 +22,25 @@
 
 | Tool | Mission | Highlights | Status |
 | :--- | :--- | :--- | :--- |
-| **[`gpgkit`](gpgkit/)** | GPG 密钥全生命周期管理，让“换机器丢密钥”彻底消失 | 零运行时依赖、强制回环可验证性校验、一键备份/还原/续期/自检 | `Active` |
-| **[`certkit`](certkit/)** | SSL/TLS 证书生命周期管理，告别反人类的 OpenSSL 参数 | 约定大于配置、一键受信任 Root CA、智能域名/IP 嗅探、单参数互转、跨平台 Trust | `Active` |
+| **[`gpgkit`](gpgkit/)** | Full lifecycle management of GPG keys | Zero runtime dependencies, guaranteed loopback test verification, one-command backup/restore/extend/diagnose | `Active` |
+| **[`certkit`](certkit/)** | Modern SSL/TLS certificate Swiss Army knife | Convention over configuration, trusted local Root CA, smart domain/IP SAN auto-sniffing, single-argument format conversion, triple-platform trust | `Active` |
 
 ---
 
-## 💡 Core Principles (核心设计哲学)
+## 💡 Core Principles
 
-1. **Convention over Configuration (约定大于配置)**：
-   默认行为即最佳实践。消灭冗余的参数记忆负担，默认路径自动管理，常用配置零参数即可运行。
-2. **Three-Tier Architecture (三层架构设计)**：
-   - **快捷约定层**：符合人类本能的直觉动词与智能嗅探；
-   - **精细控制层**：完整保留所有专业级标志参数与覆盖选项；
-   - **原生透传层**：通过 `raw` 子命令（如 `certkit raw ...`）直达底层原语，永远保留 100% 逃生门。
-3. **Cross-Platform Parity (三端平权)**：
-   全套工具原生支持 **macOS**、**Linux** 与 **Windows 11**。针对各平台的凭据与信任存储（macOS Keychain、Windows CertUtil、Linux CA Anchors）做深度适配与自动降级。
-4. **Zero Runtime Dependencies (零运行时依赖)**：
-   基于 Java 25 与 GraalVM Native Image，编译产物为独立的单二进制执行文件，目标机器无需安装 JRE/JDK。
-5. **Contract First (契约先行)**：
-   每个子模块均维护权威的 `SPEC.md` 规格契约。每一个退出码、参数、默认约定均有据可查。
+1. **Convention over Configuration**:
+   Sensible defaults are standard best practices. No more memorizing tedious flags. Output paths and directories default to sane locations, and 90% of daily operations run with zero configuration.
+2. **Three-Tier Architecture**:
+   - **Fast Convention Tier**: Intuitive verbs matching human habits with smart parameter sniffing (e.g. `certkit gen localhost`);
+   - **Fine Control Tier**: Full support for flags and overrides when precision is needed;
+   - **Raw Passthrough Tier**: Built-in escape hatch via the `raw` sub-command (e.g., `certkit raw ...`) directly orchestrating the underlying engine without limitation.
+3. **Triple-Platform Equity (Cross-Platform Parity)**:
+   First-class support across **macOS**, **Linux**, and **Windows 11**. Deep native integrations with system trust stores (macOS Keychain, Linux CA anchors, and Windows 11 `certutil` current-user non-elevated injection).
+4. **Zero Runtime Dependencies**:
+   Powered by Java 25 and compiled with **GraalVM Native Image**. Produces self-contained, millisecond-startup binaries. End users do not need a JVM or JRE installed.
+5. **Contract First**:
+   Every sub-tool maintains an authoritative `SPEC.md` specification. Every exit code, flag, and convention is documented and rigorously tested.
 
 ---
 
@@ -36,14 +49,19 @@
 ```text
 li-tools/
 ├── pom.xml                     # Multi-module parent POM (Java 25, JUnit 5, Picocli dependency management)
-├── gpgkit/                     # GPG lifecycle manager (Pure JDK zero runtime dependency)
+├── site/                       # Modern landing pages deployed to GitHub Pages
+│   ├── index.html              # Suite portal homepage
+│   ├── gpgkit/index.html       # gpgkit landing page
+│   └── certkit/index.html      # certkit landing page
+├── gpgkit/                     # GPG key lifecycle manager (Pure JDK, zero runtime dependencies)
 │   ├── SPEC.md                 # Contract specifications
-│   ├── build-native.sh         # Native Image build script
+│   ├── build-native.sh         # GraalVM Native Image compilation script
 │   └── src/
-├── certkit/                    # Modern SSL/TLS toolkit (Picocli + OpenSSL orchestration)
+├── certkit/                    # SSL/TLS certificate toolkit (Picocli + OpenSSL orchestration)
 │   ├── SPEC.md                 # Contract specifications
-│   ├── build-native.sh         # Native Image build script
+│   ├── build-native.sh         # GraalVM Native Image compilation script
 │   └── src/
+├── .github/workflows/          # CI/CD and GitHub Pages automation
 └── README.md
 ```
 
@@ -51,24 +69,38 @@ li-tools/
 
 ## 🛠️ Quick Start & Build
 
-### 全模块构建与自动化测试
-在仓库根目录执行，一键完成所有模块的编译与单元/集成测试：
+### Requirements
+- **Java 25** (e.g. OpenJDK 25 or GraalVM for JDK 25)
+- **Maven 3.9+**
+- Underlying engines: `gpg` (for gpgkit), `openssl` (for certkit)
+
+### Run Tests Across All Modules
+Execute from the repository root:
 ```bash
 mvn clean test
 ```
 
-### 原生二进制编译 (GraalVM Native Image)
+### Compile Native Executable (GraalVM Native Image)
+Requires GraalVM for JDK 25 in your `JAVA_HOME`:
+
 ```bash
-# 编译 gpgkit 单文件原生可执行文件 (产物位于 gpgkit/target/gpgkit)
+# Compile standalone native binary for gpgkit (output: gpgkit/target/gpgkit)
 cd gpgkit && ./build-native.sh
 
-# 编译 certkit 单文件原生可执行文件 (产物位于 certkit/target/certkit)
+# Compile standalone native binary for certkit (output: certkit/target/certkit)
 cd certkit && ./build-native.sh
 ```
 
 ---
 
-## 📖 Sub-Tool Quick References
+## 🌐 Documentation & Web Pages
 
-- **[`gpgkit/README.md`](gpgkit/README.md)**：包含 `status`, `gen`, `backup`, `restore`, `extend`, `sign`, `publish`, `doctor` 的完整命令与备份放置规范。
-- **[`certkit/README.md`](certkit/README.md)**：包含 `gen`, `ca`, `check`, `convert`, `trust`, `doctor`, `raw` 的 30 秒上手指南与三端受信任配置说明。
+- **[Live Website & Landing Pages](https://lihuu.github.io/li-tools/)**
+- **[`gpgkit Documentation`](gpgkit/README.md)** (Available in [English](gpgkit/README.md) and [中文](gpgkit/README.zh-CN.md))
+- **[`certkit Documentation`](certkit/README.md)** (Available in [English](certkit/README.md) and [中文](certkit/README_zh.md))
+
+---
+
+## 📄 License
+
+Apache License 2.0. See [LICENSE](LICENSE) for details.

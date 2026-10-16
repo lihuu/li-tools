@@ -1,108 +1,113 @@
 # certkit
 
-> One command for the whole life of SSL/TLS certificates: generate dev certs with SAN, manage trusted local Root CA, inspect, and convert — without OpenSSL agony.  
-> 专为现代开发者设计的 SSL/TLS 证书管理工具，用“约定大于配置”彻底消除反人类的 OpenSSL 认知税。
+> **One command for the whole life of SSL/TLS certificates: generate dev certs with SAN, manage trusted local Root CA, inspect, and convert — without OpenSSL agony.**  
+> A developer-first SSL/TLS certificate toolkit adopting "Convention over Configuration" to eliminate the cognitive burden of archaic OpenSSL flags.
 
-Part of the [li-tools](../README.md) suite.
-
----
-
-## ⚡ 为什么需要 certkit？
-
-每次在本地开发、局域网微服务或测试环境配置 HTTPS 时，直接用原生 OpenSSL 的体验堪称灾难：
-- 现代浏览器（Chrome/Edge）强制要求 **SAN (Subject Alternative Name)** 扩展，老式 `CN` 证书直接报红；
-- 生成带 SAN 的证书要么写一个恶心的 `openssl.cnf`，要么记一长串易错的命令行参数；
-- 想要让浏览器全绿受信任，需要手动配自签根 CA，再根据 macOS、Linux、Windows 各自不同的命令注入系统钥匙串；
-- 转换格式（PEM <-> P12 <-> DER）每次都要翻笔记。
-
-`certkit` 将这套陈旧繁琐的流程收敛成**符合现代人直觉的几个极简动词**。
+<p align="center">
+  <a href="README.md"><b>English</b></a> •
+  <a href="README_zh.md"><b>简体中文</b></a> •
+  <a href="https://lihuu.github.io/li-tools/certkit/"><b>Landing Page</b></a> •
+  <a href="../README.md"><b>li-tools Suite</b></a>
+</p>
 
 ---
 
-## 🚀 30 秒上手指南
+## ⚡ Why certkit?
 
-### 1. 本地开发要证书？零参数直接敲！
+Configuring HTTPS for local development, microservices, or staging environments using raw OpenSSL commands is notoriously frustrating:
+- Modern browsers (Chrome, Edge, Safari) strictly require **SAN (Subject Alternative Name)**; traditional `CN`-only certificates immediately trigger security warnings.
+- Issuing a SAN-enabled certificate requires either authoring an ugly temporary `openssl.cnf` or memorizing dozens of obscure command-line flags.
+- Achieving green-lock trust in browsers requires manually generating a Root CA and memorizing different trust-store injection commands for macOS, Linux, and Windows.
+- Format conversion (`PEM` <-> `PKCS#12` <-> `DER`) requires searching through notes every single time.
+
+`certkit` encapsulates these workflows into **intuitive, developer-friendly verbs**.
+
+---
+
+## 🚀 30-Second Quick Start
+
+### 1. Need a local certificate? Zero config needed!
 ```bash
-# 在当前目录生成针对 localhost 与 127.0.0.1 的证书与私钥 (0600)
+# Generates a valid certificate and private key (mode 0600) for localhost and 127.0.0.1
 certkit gen
 
-# 支持多个域名和内网 IP（位置参数直接打，工具自动智能嗅探 IP 与域名）
+# Support multiple domains and private IPs via positional arguments (auto-sniffs IP vs DNS)
 certkit gen dev.local api.test 127.0.0.1 192.168.1.100
 ```
 
-### 2. 想要浏览器全绿锁？一键搞定受信任 Root CA
+### 2. Want green-lock trust in your browser?
 ```bash
-# 1. 一键初始化本地 Root CA（自动保存在 ~/.certkit/ca/，并自动加入系统钥匙串信任！）
+# 1. Initialize your machine's trusted local Root CA (stored under ~/.certkit/ca/ and injected into system trust)
 certkit ca
 
-# 2. 从此以后敲任何 gen，默认全自动由本地根 CA 签发！
+# 2. Any subsequent 'gen' command is automatically signed by your local Root CA!
 certkit gen myapp.local
-# ➜ 自动生成 cert.pem, key.pem 以及 fullchain.pem
-# ➜ 打开 Chrome / Edge 访问本地服务，当场享受绿色安全小锁！
+# ➜ Produces cert.pem, key.pem, and fullchain.pem
+# ➜ Open Chrome / Edge / Safari and enjoy instant HTTPS green-lock status!
 ```
 
-### 3. 检查证书状态（告别几百行 ASN.1 dump）
+### 3. Inspect certificates (No more multi-hundred-line ASN.1 dumps)
 ```bash
-# 检查当前目录 ./cert.pem
+# Inspect local certificate ./cert.pem
 certkit check
 
-# 检查远程服务（自动补齐 443 端口）
+# Probe remote service (auto-appends port 443 if omitted)
 certkit check github.com
 
-# 输出机器可读结构化 JSON
+# Structured, machine-readable JSON output
 certkit --json check cert.pem
 ```
 
-### 4. 格式无痛互转（单参数对切）
+### 4. Effortless format conversion
 ```bash
-# 自动在同目录抓取 key.pem，密码默认 changeit，产出 cert.p12
+# Automatically finds matching key.pem in the same directory and exports cert.p12 (default password: changeit)
 certkit convert cert.pem
 
-# 一键把同名 cert.p12 和 cert.der 全部齐整整生成好
+# Generate both .p12 and .der in one shot
 certkit convert cert.pem --all
 
-# 还原回文本格式
+# Unpack PKCS#12 bundle back to text PEM certificates and keys
 certkit convert bundle.p12
 ```
 
-### 5. 跨平台系统信任管理（macOS / Linux / Windows 11）
+### 5. Triple-platform system trust management
 ```bash
-# 检查当前根 CA 是否已受系统信任
+# Check if the local Root CA is trusted by the host OS
 certkit trust check
 
-# 安装到系统/用户根受信任库
+# Install root certificate to system or user trust store
 certkit trust install
 
-# 从系统卸载
+# Uninstall from trust store
 certkit trust uninstall
 ```
 
-### 6. 底层原生透传（100% 逃生门）
-遇到极端冷门需求，不需要跳出工具，直接原汁原味透传给底层系统 OpenSSL：
+### 6. Raw escape hatch (100% passthrough)
+For edge cases or advanced OpenSSL commands, execute directly without leaving the CLI:
 ```bash
 certkit raw version
 certkit raw s_client -connect github.com:443
 certkit raw x509 -in cert.pem -noout -text
 ```
 
-### 7. 健康与环境诊断
+### 7. Diagnostics and environment health
 ```bash
 certkit doctor
 ```
-一键排查操作系统、OpenSSL 执行路径、版本、钥匙串权限与本地 CA 状态。若未检测到 OpenSSL，会贴心打印当前系统对应的一键复制安装指令。
+Checks OS environment, OpenSSL binary location, version, trust store status, and CA health. If OpenSSL is missing, it prints an actionable, one-line copy-paste installation command tailored to your operating system.
 
 ---
 
-## 📐 规格契约与底层设计
+## 📐 Architecture & Contracts
 
-- **实现**：Java 25 + Picocli + GraalVM Native Image，编译为单个独立原生二进制执行文件。
-- **三层架构设计**：
-  1. **极简约定层**：默认目录、自动 IP/域名嗅探、默认受信任 CA 签发、默认密码 `changeit`；
-  2. **精细控制层**：完整保留 `--key`, `--out`, `--pass`, `--days`, `--algo`, `--ca-cert` 选项；
-  3. **原生透传层**：`certkit raw` 提供 100% 底层逃生门。
-- **跨平台支持**：
-  - **macOS**：用户登录钥匙串免密码注入 (`security`)；
-  - **Windows 11**：原生 `certutil.exe -addstore -user Root` 免提权注入，自动探测 Git for Windows 内置 OpenSSL；
-  - **Linux**：自动适配 Debian/Ubuntu、RHEL/CentOS、Arch 发行版信任库。
+- **Implementation**: Java 25 + Picocli + GraalVM Native Image, compiled into a standalone native executable.
+- **Three-Tier Architecture**:
+  1. **Convention Tier**: Sane defaults, automatic IP/DNS classification, auto-reuse of `~/.certkit/ca/`, default password `changeit`;
+  2. **Fine-Control Tier**: Full support for `--key`, `--out`, `--pass`, `--days`, `--algo`, and `--ca-cert`;
+  3. **Raw Tier**: `certkit raw` provides an unconstrained escape hatch.
+- **Cross-Platform Parity**:
+  - **macOS**: Injects into user login keychain without password prompt (`security`);
+  - **Windows 11**: Native `certutil.exe -addstore -user Root` non-elevated injection, automatic detection of Git for Windows OpenSSL;
+  - **Linux**: Auto-detects Debian/Ubuntu, RHEL/CentOS, and Arch CA trust anchors.
 
-详见完整的接口契约文件：[SPEC.md](SPEC.md)。
+See the complete contract specification in [SPEC.md](SPEC.md).
