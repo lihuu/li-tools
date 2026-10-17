@@ -82,18 +82,7 @@ brew install lihuu/tap/gpgkit
 brew install lihuu/tap/certkit
 ```
 
-### 2. NPM 全局安装 (跨平台：macOS, Linux, Windows 11)
-```bash
-# 单独安装特定工具
-npm install -g @lihuu/gpgkit
-npm install -g @lihuu/certkit
-
-# 或使用 npx 免安装直接执行
-npx @lihuu/gpgkit status
-npx @lihuu/certkit doctor
-```
-
-### 3. 一行 Shell / PowerShell 脚本安装
+### 2. 一行 Shell / PowerShell 脚本安装 (macOS, Linux & Windows 11)
 ```bash
 # macOS / Linux
 curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash

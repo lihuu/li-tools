@@ -82,18 +82,7 @@ brew install lihuu/tap/gpgkit
 brew install lihuu/tap/certkit
 ```
 
-### 2. NPM (macOS, Linux & Windows)
-```bash
-# Install individual CLI tools globally
-npm install -g @lihuu/gpgkit
-npm install -g @lihuu/certkit
-
-# Or execute directly via npx
-npx @lihuu/gpgkit status
-npx @lihuu/certkit doctor
-```
-
-### 3. One-Line Script Installer
+### 2. One-Line Script Installer (macOS, Linux & Windows 11)
 ```bash
 # macOS / Linux
 curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash

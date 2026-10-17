@@ -23,10 +23,7 @@ Use this skill whenever the user or task requires:
 # Homebrew (macOS & Linux)
 brew install lihuu/tap/certkit
 
-# NPM (Cross-Platform)
-npm install -g @lihuu/certkit
-
-# Direct Script
+# Direct Script (macOS & Linux)
 curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash -s certkit
 ```
 

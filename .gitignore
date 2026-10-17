@@ -6,6 +6,3 @@ target/
 .vscode/
 .worktrees/
 *.log
-*.tgz
-bin-dist/
-node_modules/
