@@ -2,7 +2,21 @@
 
 > Modern developer CLI toolchain featuring gpgkit and certkit, powered by Java 25 & GraalVM Native Image.
 
-li-tools is a suite of zero-runtime-dependency developer security CLI tools designed around the philosophy of "Convention over Configuration" and "Triple-Platform Parity" (macOS, Linux, and Windows 11).
+li-tools is an AI-first, zero-runtime-dependency developer security suite designed around the philosophy of "Convention over Configuration" and "Triple-Platform Parity" (macOS, Linux, and Windows 11).
+
+## AI Agent Skills (agentskills.io Standard)
+
+All tools in this suite provide native, machine-readable `SKILL.md` documents for AI coding agents (Claude Code, Gemini CLI, Cursor, Copilot CLI, OpenCode):
+
+- [Suite Skill (li-tools)](https://lihuu.github.io/li-tools/SKILL.md): Suite overview, task matrix, and installation guidelines.
+- [gpgkit Skill](https://lihuu.github.io/li-tools/gpgkit/SKILL.md): Comprehensive agent reference for GPG key generation, commit signing, and encrypted backup.
+- [certkit Skill](https://lihuu.github.io/li-tools/certkit/SKILL.md): Comprehensive agent reference for TLS certs, local root CA, multi-SAN deduction, and P12/DER conversion.
+
+### Fast Skill Installation for AI Agents
+- macOS / Linux: `curl -fsSL https://lihuu.github.io/li-tools/install-skills.sh | bash`
+- Windows PowerShell: `irm https://lihuu.github.io/li-tools/install-skills.ps1 | iex`
+
+---
 
 ## Core Projects
 
@@ -12,7 +26,8 @@ li-tools is a suite of zero-runtime-dependency developer security CLI tools desi
 ## Design Philosophy
 
 - **Convention over Configuration**: 90% of use cases run with zero flags or options.
-- **Three-Tier Architecture**: Fast convention -> Fine control -> Raw unconstrained engine passthrough.
+- **Machine-Readable**: Every command supports `--json` for robust agent automation.
+- **Three-Tier Architecture**: Fast convention -> Fine control -> Raw unconstrained engine passthrough (`raw -- ...`).
 - **Cross-Platform Parity**: macOS (Keychain), Linux (CA trust anchors), Windows 11 (`certutil.exe -user`).
 - **Zero Runtime Dependencies**: Compiled with GraalVM Native Image into single standalone binaries. No JVM or JRE required.
 
@@ -20,16 +35,18 @@ li-tools is a suite of zero-runtime-dependency developer security CLI tools desi
 
 ### gpgkit
 - `gpgkit status`: Health inspect local keys, fingerprints, expiry, and keyserver presence.
-- `gpgkit gen`: One-step key generation (default rsa4096 / 2y expiry).
+- `gpgkit gen "Name <email>"`: One-step key generation (default Ed25519 or rsa4096).
+- `gpgkit export <email>`: Export ASCII-armored public key for GitHub/GitLab.
+- `gpgkit sign <file>`: Sign file with detached ASCII-armored signature.
+- `gpgkit verify <file> <sig>`: Verify signature with structured status.
 - `gpgkit backup`: Mandatory loopback-tested encrypted backup with metadata.
-- `gpgkit restore <file>`: Restore backup archive with auto Ultimate trust restoration.
-- `gpgkit extend`: Extend key validity for master and subkeys.
-- `gpgkit doctor`: System diagnostics and safety checklist.
+- `gpgkit restore <file>`: Restore backup archive with auto trust restoration.
+- `gpgkit doctor`: System diagnostics and safety checklist (`--json` supported).
 
 ### certkit
-- `certkit gen [domain/ip]`: Smart SAN IP/DNS deduction, signed by local CA with green-lock status.
+- `certkit gen [domain/ip...]`: Smart SAN IP/DNS deduction, signed by local CA with green-lock status.
 - `certkit ca`: Initialize local machine Root CA and install into OS trust store.
-- `certkit check [file|host:port]`: Local file inspection or remote TLS handshake probe.
+- `certkit check [file|host:port]`: Local file inspection or remote TLS handshake probe (`--json` supported).
 - `certkit convert <file>`: Single-argument automatic bidirectional conversion (PEM <-> P12 <-> DER).
 - `certkit trust [ca|<cert>]`: System trust store injection (Windows 11 non-elevated certutil support).
 - `certkit raw <args...>`: Direct passthrough to host OpenSSL without escaping restrictions.

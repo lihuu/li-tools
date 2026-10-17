@@ -10,6 +10,7 @@
   <link rel="canonical" href="https://lihuu.github.io/li-tools/gpgkit/">
   <link rel="alternate" hreflang="en" href="https://lihuu.github.io/li-tools/gpgkit/">
   <link rel="alternate" hreflang="zh-Hans" href="https://lihuu.github.io/li-tools/gpgkit/index_zh.html">
+  <link rel="agent-skill" type="text/markdown" href="https://lihuu.github.io/li-tools/gpgkit/SKILL.md">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
@@ -208,6 +209,8 @@
       <div class="flex flex-wrap gap-2 border-b border-slate-800 pb-3 mb-5 text-sm font-mono" id="install-tabs">
         <button onclick="setTab('shell')" id="tab-shell" class="px-3 py-1.5 rounded-lg bg-brand-500/20 text-brand-400 border border-brand-500/30 transition">macOS / Linux</button>
         <button onclick="setTab('ps1')" id="tab-ps1" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">Windows 11 (PowerShell)</button>
+        <button onclick="setTab('agent')" id="tab-agent" class="px-3 py-1.5 rounded-lg text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/10 transition flex items-center gap-1.5"><span>🤖</span> AI Agent</button>
+        <button onclick="setTab('skills')" id="tab-skills" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5"><span>🧠</span> Install Skill</button>
         <button onclick="setTab('releases')" id="tab-releases" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">GitHub Releases</button>
         <button onclick="setTab('brew')" id="tab-brew" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">Homebrew (Preview)</button>
       </div>
@@ -304,6 +307,7 @@
     <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div>Part of the <a href="../index.html" class="text-slate-400 hover:text-white transition">li-tools</a> suite • Created with passion for developer experience</div>
       <div class="flex items-center gap-4">
+        <a href="SKILL.md" class="hover:text-emerald-400 transition">🤖 SKILL.md</a>
         <a href="index_zh.html" class="hover:text-white transition">中文版</a>
         <a href="../certkit/index.html" class="hover:text-emerald-400 transition">certkit</a>
         <a href="https://github.com/lihuu/li-tools" target="_blank" rel="noopener" class="hover:text-white transition">GitHub</a>
@@ -315,6 +319,8 @@
     const commands = {
       shell: 'curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash -s gpgkit',
       ps1: 'irm https://lihuu.github.io/li-tools/install.ps1 | iex',
+      agent: 'Please install gpgkit from https://lihuu.github.io/li-tools/ and refer to https://lihuu.github.io/li-tools/gpgkit/SKILL.md for instructions.',
+      skills: 'curl -fsSL https://lihuu.github.io/li-tools/install-skills.sh | bash',
       releases: 'https://github.com/lihuu/li-tools/releases/latest',
       brew: 'brew install lihuu/tools/gpgkit # (In preparation)'
     };
@@ -322,9 +328,9 @@
     function setTab(tab) {
       document.getElementById('install-code').innerText = commands[tab];
       document.querySelectorAll('#install-tabs button').forEach(btn => {
-        btn.className = 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+        btn.className = 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5';
       });
-      document.getElementById('tab-' + tab).className = 'px-3 py-1.5 rounded-lg bg-brand-500/20 text-brand-400 border border-brand-500/30 transition';
+      document.getElementById('tab-' + tab).className = 'px-3 py-1.5 rounded-lg bg-brand-500/20 text-brand-400 border border-brand-500/30 transition flex items-center gap-1.5';
     }
 
     function copyCode() {

@@ -93,6 +93,26 @@ cd certkit && ./build-native.sh
 
 ---
 
+## 🤖 AI Agent Integration (agentskills.io Standard)
+
+All tools in `li-tools` provide native, machine-readable `SKILL.md` specifications tailored for AI coding agents (Claude Code, Gemini CLI, Cursor, Copilot CLI, OpenCode):
+
+- **Suite Skill Guide**: [`SKILL.md`](SKILL.md) (Hosted at [https://lihuu.github.io/li-tools/SKILL.md](https://lihuu.github.io/li-tools/SKILL.md))
+- **gpgkit Skill Guide**: [`gpgkit/SKILL.md`](gpgkit/SKILL.md) (Hosted at [https://lihuu.github.io/li-tools/gpgkit/SKILL.md](https://lihuu.github.io/li-tools/gpgkit/SKILL.md))
+- **certkit Skill Guide**: [`certkit/SKILL.md`](certkit/SKILL.md) (Hosted at [https://lihuu.github.io/li-tools/certkit/SKILL.md](https://lihuu.github.io/li-tools/certkit/SKILL.md))
+
+### Install Skills for Your AI Agents
+Install skills directly into your local AI agent skill paths (`~/.agents/skills/`, `~/.gemini/skills/`, `~/.claude/skills/`):
+```bash
+# macOS / Linux
+curl -fsSL https://lihuu.github.io/li-tools/install-skills.sh | bash
+
+# Windows 11 (PowerShell)
+irm https://lihuu.github.io/li-tools/install-skills.ps1 | iex
+```
+
+---
+
 ## 🌐 Documentation & Web Pages
 
 - **[Live Website & Landing Pages](https://lihuu.github.io/li-tools/)**

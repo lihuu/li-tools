@@ -2,6 +2,22 @@
 
 This document provides a comprehensive technical reference for AI agents, LLMs, and search engines indexing the li-tools suite.
 
+## AI Agent Integration & SKILL.md Standard
+
+All tools in this suite provide native, machine-readable `SKILL.md` specifications complying with the `agentskills.io` standard:
+
+- **Suite Skill Guide**: `https://lihuu.github.io/li-tools/SKILL.md`
+- **gpgkit Skill Guide**: `https://lihuu.github.io/li-tools/gpgkit/SKILL.md`
+- **certkit Skill Guide**: `https://lihuu.github.io/li-tools/certkit/SKILL.md`
+
+### Automated Agent Installation Commands
+AI coding agents (such as Claude Code, Cursor, Gemini CLI, Copilot CLI, OpenCode) can be instructed to self-install or setup the environment:
+- **macOS / Linux**: `curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash`
+- **Windows 11 (PowerShell)**: `irm https://lihuu.github.io/li-tools/install.ps1 | iex`
+- **Agent Skill Sync**: `curl -fsSL https://lihuu.github.io/li-tools/install-skills.sh | bash`
+
+---
+
 ## Tool 1: gpgkit
 
 ### Mission
@@ -10,7 +26,7 @@ Eliminates GPG key loss and migration failures through verifiable loopback testi
 ### Key Innovations
 1. **Loopback Verification**: Whenever `gpgkit backup` runs, it exports the private key to an encrypted archive, immediately restores it inside an ephemeral isolated scratch keyring, signs a random payload, and verifies the signature. If any check fails, the backup aborts and no corrupted file is written.
 2. **Deterministic Restores**: `gpgkit restore` automatically reinstates ultimate trust (5) for the key, preventing unverified recipient warnings in Git and email clients.
-3. **Headless Execution**: External GPG commands are pinned with batch and non-interactive flags, preventing CI/CD and remote SSH sessions from hanging on GUI pinentry prompts.
+3. **Headless & Machine-Readable Execution**: External GPG commands are pinned with batch and non-interactive flags, preventing CI/CD and remote SSH sessions from hanging on GUI pinentry prompts. All commands support `--json` for Agent orchestration.
 
 ---
 
@@ -24,12 +40,12 @@ A modern SSL/TLS certificate toolkit adopting "Convention over Configuration" to
    - `certkit gen localhost dev.local 127.0.0.1 192.168.1.1`
    - Automatically determines whether an argument is an IPv4/IPv6 address or a DNS domain name, dynamically constructing X.509 v3 `subjectAltName` extensions without requiring configuration files.
 2. **Local Root CA Automation**:
-   - `~/.certkit/ca/` is automatically used as the signing authority if present.
+   - `~/.local-ca/ca.crt` (or customized path) is automatically used as the signing authority if present.
    - `certkit ca` initializes a 10-year root authority and adds it to the operating system's trust store.
 3. **Cross-Platform Trust Injection (macOS, Linux, Windows 11)**:
    - macOS: `security add-trusted-cert` into user login keychain.
    - Linux: Automatically detects `/usr/local/share/ca-certificates/` (Debian/Ubuntu), `/etc/pki/ca-trust/source/anchors/` (RHEL), and `/etc/ca-certificates/trust-source/anchors/` (Arch).
-   - Windows 11: Employs `certutil.exe -addstore -user Root` for current-user root trust injection without triggering administrative UAC prompts.
+   - Windows 11: Employs `certutil.exe -addstore -user Root` (or LocalMachine fallback in headless SSH/CI sessions) with non-interactive `-f` flags and 6-second timeouts.
 4. **Single-Argument Bidirectional Conversion**:
    - `certkit convert server.crt` automatically finds `server.key`, bundles them, and exports `server.p12` (PKCS#12).
    - `certkit convert server.p12` unpacks PEM certificates and keys.
@@ -45,7 +61,7 @@ A: No. Both gpgkit and certkit are compiled with GraalVM Native Image into stand
 A: By generating a local Root CA (`certkit ca`) and injecting it into the host's trust store. Any certificates generated via `certkit gen` are signed by this CA and automatically include SAN extensions required by Chrome, Edge, and Safari.
 
 ### Q: How is gpgkit different from standard gpg commands?
-A: Standard `gpg` commands are fragmented, difficult to remember, and leave backups unverified until catastrophe strikes. `gpgkit` enforces an automated verification loop during backup, guarantees clean rollback on failure, and manages the entire lifecycle with human-friendly verbs.
+A: Standard `gpg` commands are fragmented, difficult to remember, and leave backups unverified until catastrophe strikes. `gpgkit` enforces an automated verification loop during backup, guarantees clean rollback on failure, and manages the entire lifecycle with human-friendly verbs and structured JSON output.
 
 ### Q: What operating systems are supported?
 A: macOS (Apple Silicon & Intel), Linux (glibc-based distributions), and Windows 11 (native PowerShell/cmd and WSL).

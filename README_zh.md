@@ -93,6 +93,26 @@ cd certkit && ./build-native.sh
 
 ---
 
+## 🤖 AI Agent 深度集成 (agentskills.io 标准)
+
+`li-tools` 套件内的所有工具均原生提供面向 AI 编码智能体（Claude Code, Gemini CLI, Cursor, Copilot CLI, OpenCode 等）的标准 `SKILL.md`：
+
+- **套件总技能文档**: [`SKILL.md`](SKILL.md)（在线访问：[https://lihuu.github.io/li-tools/SKILL.md](https://lihuu.github.io/li-tools/SKILL.md)）
+- **gpgkit 技能文档**: [`gpgkit/SKILL.md`](gpgkit/SKILL.md)（在线访问：[https://lihuu.github.io/li-tools/gpgkit/SKILL.md](https://lihuu.github.io/li-tools/gpgkit/SKILL.md)）
+- **certkit 技能文档**: [`certkit/SKILL.md`](certkit/SKILL.md)（在线访问：[https://lihuu.github.io/li-tools/certkit/SKILL.md](https://lihuu.github.io/li-tools/certkit/SKILL.md)）
+
+### 为你的 AI 智能体一键安装技能
+一键将技能下载并导入到本地 Agent 技能目录（如 `~/.agents/skills/`、`~/.gemini/skills/`、`~/.claude/skills/`）：
+```bash
+# macOS / Linux
+curl -fsSL https://lihuu.github.io/li-tools/install-skills.sh | bash
+
+# Windows 11 (PowerShell)
+irm https://lihuu.github.io/li-tools/install-skills.ps1 | iex
+```
+
+---
+
 ## 🌐 在线文档与展示页面
 
 - **[在线落地页与文档中心](https://lihuu.github.io/li-tools/)**
