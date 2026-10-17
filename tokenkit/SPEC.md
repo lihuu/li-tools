@@ -22,9 +22,18 @@
 ## 1. 形态与技术栈
 
 - **模块位置**：`li-tools/tokenkit`
-- **语言与标准**：**Java 25 + GraalVM Native Image**，最终输出为**零运行时依赖的单一独立原生可执行文件**（`target/tokenkit`）。
-- **核心组件**：
-  - CLI 框架：`info.picocli:picocli`
+- **基础脚手架规范**：全面继承 [lihuu/java-cli](https://github.com/lihuu/java-cli) 作为标准工程模板，遵循其架构分层与代码整洁纪律。
+- **语言与构建**：**Java 25 + Maven + GraalVM Native Image**，最终输出为**零运行时依赖的单一独立原生可执行文件**（`target/tokenkit`）。
+- **工程分层标准（严格对齐 java-cli）**：
+  - `io.github.lihuu.tokenkit.app`：负责 CLI 入口装配、`ApplicationInfo` 版本动态注入与显式依赖构造（零业务代码）。
+  - `io.github.lihuu.tokenkit.cli`：负责 Picocli 注解解析、参数路由、`OutputStyle` 语义色彩输出与退出码映射。
+  - `io.github.lihuu.tokenkit.core`：负责纯业务领域（数据存储、加解密管道、密钥管理），**绝对不依赖 Picocli 或 CLI 层**。
+- **代码纪律**：
+  - 显式声明所有局部类型，**禁止使用 `var`**（包括测试）。
+  - 全面采用纯构造器显式注入（Constructor Injection），严禁引入 Spring/Guice 等 DI 框架或运行时反射扫描。
+  - 公共方法入参及返回值显式标注 `@NotNull` / `@Nullable`（来自 `org.jetbrains:annotations`）。
+- **核心依赖**：
+  - CLI 框架：`info.picocli:picocli` (配合 `picocli-codegen` 在编译期生成 Native 元数据)
   - 存储引擎：内嵌式 `org.xerial:sqlite-jdbc`（引擎全打包内嵌，目标机器**无需预装 SQLite**）
   - 密码学引擎：纯 JDK 25 原生 `javax.crypto` (AES-256-GCM)，无任何外部 C/OpenSSL 动态链接依赖。
 - **调用原则**：支持交互式友好终端展示，全量命令均支持 `--json`、静默模式与标准 Unix 管道流输入。

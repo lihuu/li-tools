@@ -26,6 +26,18 @@
   - CI/CD：支持环境变量 `TOKENKIT_MASTER_KEY` 逃生门。
 - **自包含零依赖**：基于 Java 25 + GraalVM Native Image 编译为单二进制文件，无需宿主机预装 JRE 或 SQLite。
 
+### 1.3 工程基线与标准模板 (Scaffolding Template)
+全面继承 [lihuu/java-cli](https://github.com/lihuu/java-cli) 作为子模块标准脚手架规范：
+- **严格架构分层**：
+  - `app`：入口装配、ApplicationInfo 版本动态读取、构造器依赖注入；
+  - `cli`：Picocli 命令面、OutputStyle 终端语义色彩控制器、退出码映射；
+  - `core`：纯领域核心逻辑（加解密、密钥管理、SQLite 存储），严禁反向依赖 CLI 或 Picocli。
+- **编码与工程纪律**：
+  - 禁止使用 `var`（包括测试代码），显式声明全部局部类型；
+  - 全面使用显式构造器注入，严禁引入 DI 框架或运行时反射；
+  - 核心入参与返回值严格使用 `@NotNull` / `@Nullable`（JetBrains Annotations）标注；
+  - 遵循 TDD 开发模式，通过面向接口与依赖注入实现无需 Mock 项目私有逻辑的极速测试。
+
 ---
 
 ## 2. 架构与组件设计 (Architecture & Components)
