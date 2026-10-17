@@ -13,7 +13,7 @@ fi
 
 echo "==> Logged in as: $CURRENT_USER"
 
-PACKAGES=("gpgkit" "certkit" "tools")
+PACKAGES=("gpgkit" "certkit")
 
 for pkg in "${PACKAGES[@]}"; do
   PKG_DIR="$ROOT_DIR/npm/packages/$pkg"

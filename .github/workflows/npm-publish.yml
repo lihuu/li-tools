@@ -27,7 +27,7 @@ jobs:
             exit 1
           fi
           
-          for pkg in gpgkit certkit tools; do
+          for pkg in gpgkit certkit; do
             echo "Publishing npm/packages/$pkg..."
             npm publish ./npm/packages/$pkg --access public
           done

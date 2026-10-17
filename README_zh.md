@@ -84,10 +84,7 @@ brew install lihuu/tap/certkit
 
 ### 2. NPM 全局安装 (跨平台：macOS, Linux, Windows 11)
 ```bash
-# 全局安装套件（同时包含 gpgkit 与 certkit）
-npm install -g @lihuu/tools
-
-# 或单独安装特定工具
+# 单独安装特定工具
 npm install -g @lihuu/gpgkit
 npm install -g @lihuu/certkit
 

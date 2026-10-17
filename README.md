@@ -84,10 +84,7 @@ brew install lihuu/tap/certkit
 
 ### 2. NPM (macOS, Linux & Windows)
 ```bash
-# Install suite globally
-npm install -g @lihuu/tools
-
-# Or install individual CLI tools
+# Install individual CLI tools globally
 npm install -g @lihuu/gpgkit
 npm install -g @lihuu/certkit
 
