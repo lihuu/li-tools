@@ -37,6 +37,7 @@ If an AI agent needs to install the tools in a workspace:
 ```text
 Please install li-tools (gpgkit & certkit):
 - Homebrew (macOS/Linux): `brew tap lihuu/tap && brew install gpgkit certkit`
+- Scoop (Windows): `scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install gpgkit certkit`
 - macOS / Linux Shell: `curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash`
 - Windows PowerShell: `irm https://lihuu.github.io/li-tools/install.ps1 | iex`
 - Verify with `gpgkit --help` and `certkit --version`.

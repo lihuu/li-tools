@@ -82,7 +82,16 @@ brew install lihuu/tap/gpgkit
 brew install lihuu/tap/certkit
 ```
 
-### 2. 一行 Shell / PowerShell 脚本安装 (macOS, Linux & Windows 11)
+### 2. Scoop 官方桶 (Windows 11)
+```powershell
+# 添加官方 Bucket 源
+scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket
+
+# 安装全部工具
+scoop install gpgkit certkit
+```
+
+### 3. 一行 Shell / PowerShell 脚本安装 (macOS, Linux & Windows 11)
 ```bash
 # macOS / Linux
 curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash

@@ -271,6 +271,7 @@
         <button onclick="setTab('shell')" id="tab-shell" class="px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 transition">macOS / Linux</button>
         <button onclick="setTab('ps1')" id="tab-ps1" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">Windows 11 (PowerShell)</button>
         <button onclick="setTab('brew')" id="tab-brew" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">Homebrew</button>
+        <button onclick="setTab('scoop')" id="tab-scoop" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">Scoop (Windows)</button>
         <button onclick="setTab('agent')" id="tab-agent" class="px-3 py-1.5 rounded-lg text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/10 transition flex items-center gap-1.5"><span>🤖</span> AI Agent 指令</button>
         <button onclick="setTab('skills')" id="tab-skills" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5"><span>🧠</span> 安装 Agent 技能</button>
         <button onclick="setTab('releases')" id="tab-releases" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">GitHub Releases</button>
@@ -337,7 +338,8 @@
       agent: '请帮我安装 li-tools 套件 (gpgkit & certkit): https://lihuu.github.io/li-tools/ 并查阅 https://lihuu.github.io/li-tools/SKILL.md 执行初始化。',
       skills: 'curl -fsSL https://lihuu.github.io/li-tools/install-skills.sh | bash',
       releases: 'https://github.com/lihuu/li-tools/releases/latest',
-      brew: 'brew tap lihuu/tap && brew install gpgkit certkit'
+      brew: 'brew tap lihuu/tap && brew install gpgkit certkit',
+      scoop: 'scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install gpgkit certkit'
     };
 
     function setTab(tab) {

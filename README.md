@@ -82,7 +82,16 @@ brew install lihuu/tap/gpgkit
 brew install lihuu/tap/certkit
 ```
 
-### 2. One-Line Script Installer (macOS, Linux & Windows 11)
+### 2. Scoop (Windows)
+```powershell
+# Add lihuu's official bucket
+scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket
+
+# Install tools
+scoop install gpgkit certkit
+```
+
+### 3. One-Line Script Installer (macOS, Linux & Windows 11)
 ```bash
 # macOS / Linux
 curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash

@@ -23,6 +23,10 @@ Use this skill whenever the user or task requires:
 # Homebrew (macOS & Linux)
 brew install lihuu/tap/gpgkit
 
+# Scoop (Windows)
+scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket
+scoop install gpgkit
+
 # Direct Script (macOS & Linux)
 curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash -s gpgkit
 ```

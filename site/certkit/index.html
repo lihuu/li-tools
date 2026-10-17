@@ -211,6 +211,7 @@
         <button onclick="setTab('shell')" id="tab-shell" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition">macOS / Linux</button>
         <button onclick="setTab('ps1')" id="tab-ps1" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">Windows 11 (PowerShell)</button>
         <button onclick="setTab('brew')" id="tab-brew" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">Homebrew</button>
+        <button onclick="setTab('scoop')" id="tab-scoop" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">Scoop (Windows)</button>
         <button onclick="setTab('agent')" id="tab-agent" class="px-3 py-1.5 rounded-lg text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/10 transition flex items-center gap-1.5"><span>🤖</span> AI Agent</button>
         <button onclick="setTab('skills')" id="tab-skills" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5"><span>🧠</span> Install Skill</button>
         <button onclick="setTab('releases')" id="tab-releases" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">GitHub Releases</button>
@@ -327,7 +328,8 @@
       agent: 'Please install certkit from https://lihuu.github.io/li-tools/ and refer to https://lihuu.github.io/li-tools/certkit/SKILL.md for instructions.',
       skills: 'curl -fsSL https://lihuu.github.io/li-tools/install-skills.sh | bash',
       releases: 'https://github.com/lihuu/li-tools/releases/latest',
-      brew: 'brew install lihuu/tap/certkit'
+      brew: 'brew install lihuu/tap/certkit',
+      scoop: 'scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install certkit'
     };
 
     function setTab(tab) {
