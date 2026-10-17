@@ -65,9 +65,49 @@ li-tools/
 └── README.md
 ```
 
+## 🚀 极速安装方式
+
+根据您的开发习惯选择合适的包管理工具或安装脚本：
+
+### 1. Homebrew 官方统一源 (macOS & Linux)
+```bash
+# 添加官方统一 Tap
+brew tap lihuu/tap
+
+# 安装全部工具
+brew install gpgkit certkit
+
+# 或者不预先 Tap，直接按需单行安装：
+brew install lihuu/tap/gpgkit
+brew install lihuu/tap/certkit
+```
+
+### 2. NPM 全局安装 (跨平台：macOS, Linux, Windows 11)
+```bash
+# 全局安装套件（同时包含 gpgkit 与 certkit）
+npm install -g @lihuu/tools
+
+# 或单独安装特定工具
+npm install -g @lihuu/gpgkit
+npm install -g @lihuu/certkit
+
+# 或使用 npx 免安装直接执行
+npx @lihuu/gpgkit status
+npx @lihuu/certkit doctor
+```
+
+### 3. 一行 Shell / PowerShell 脚本安装
+```bash
+# macOS / Linux
+curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash
+
+# Windows 11 (PowerShell)
+irm https://lihuu.github.io/li-tools/install.ps1 | iex
+```
+
 ---
 
-## 🛠️ 快速上手与本地构建
+## 🛠️ 源码构建与本地调试
 
 ### 运行环境要求
 - **Java 25**（如 OpenJDK 25 或 GraalVM for JDK 25）

@@ -17,6 +17,19 @@ Use this skill whenever the user or task requires:
 5. Inspecting local certificate files or querying remote `host:port` TLS connections.
 6. Converting certificates between PEM, PKCS#12 (`.p12`/`.pfx`), and binary DER formats (e.g. for Java, Docker, or iOS).
 
+## Installation
+
+```bash
+# Homebrew (macOS & Linux)
+brew install lihuu/tap/certkit
+
+# NPM (Cross-Platform)
+npm install -g @lihuu/certkit
+
+# Direct Script
+curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash -s certkit
+```
+
 ---
 
 ## Command Reference

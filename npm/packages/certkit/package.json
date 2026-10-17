@@ -1,0 +1,43 @@
+{
+  "name": "@lihuu/certkit",
+  "version": "0.1.0",
+  "description": "Zero-dependency CLI for enterprise PKI and certificate management without OpenSSL agony.",
+  "keywords": [
+    "tls",
+    "ssl",
+    "x509",
+    "pki",
+    "ca",
+    "certificates",
+    "truststore",
+    "openssl",
+    "cli"
+  ],
+  "homepage": "https://lihuu.github.io/li-tools/certkit",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lihuu/li-tools.git",
+    "directory": "npm/packages/certkit"
+  },
+  "author": "lihuu",
+  "license": "MIT",
+  "bin": {
+    "certkit": "./bin/certkit.js"
+  },
+  "scripts": {
+    "postinstall": "node ./scripts/postinstall.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "scripts/",
+    "README.md",
+    "package.json"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

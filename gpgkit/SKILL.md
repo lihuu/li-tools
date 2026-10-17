@@ -17,6 +17,19 @@ Use this skill whenever the user or task requires:
 5. Safely creating encrypted backups or restoring GPG keyrings.
 6. Auditing environment readiness and GnuPG installation status.
 
+## Installation
+
+```bash
+# Homebrew (macOS & Linux)
+brew install lihuu/tap/gpgkit
+
+# NPM (Cross-Platform)
+npm install -g @lihuu/gpgkit
+
+# Direct Script
+curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash -s gpgkit
+```
+
 ---
 
 ## Command Reference

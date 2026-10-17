@@ -1,0 +1,43 @@
+{
+  "name": "@lihuu/tools",
+  "version": "0.1.0",
+  "description": "Developer tool suite: gpgkit (GPG key lifecycle) + certkit (TLS/SSL certificate management).",
+  "keywords": [
+    "gpg",
+    "pki",
+    "tls",
+    "ssl",
+    "certificates",
+    "cli",
+    "developer-tools"
+  ],
+  "homepage": "https://lihuu.github.io/li-tools",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lihuu/li-tools.git",
+    "directory": "npm/packages/tools"
+  },
+  "author": "lihuu",
+  "license": "MIT",
+  "bin": {
+    "gpgkit": "./bin/gpgkit.js",
+    "certkit": "./bin/certkit.js",
+    "li-tools": "./bin/li-tools.js"
+  },
+  "scripts": {
+    "postinstall": "node ./scripts/postinstall.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "scripts/",
+    "README.md",
+    "package.json"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

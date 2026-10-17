@@ -65,9 +65,49 @@ li-tools/
 └── README.md
 ```
 
+## 🚀 Installation
+
+Choose your preferred package manager or installer:
+
+### 1. Homebrew (macOS & Linux)
+```bash
+# Add lihuu's official tap
+brew tap lihuu/tap
+
+# Install tools
+brew install gpgkit certkit
+
+# Or install individually without tapping first:
+brew install lihuu/tap/gpgkit
+brew install lihuu/tap/certkit
+```
+
+### 2. NPM (macOS, Linux & Windows)
+```bash
+# Install suite globally
+npm install -g @lihuu/tools
+
+# Or install individual CLI tools
+npm install -g @lihuu/gpgkit
+npm install -g @lihuu/certkit
+
+# Or execute directly via npx
+npx @lihuu/gpgkit status
+npx @lihuu/certkit doctor
+```
+
+### 3. One-Line Script Installer
+```bash
+# macOS / Linux
+curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash
+
+# Windows 11 (PowerShell)
+irm https://lihuu.github.io/li-tools/install.ps1 | iex
+```
+
 ---
 
-## 🛠️ Quick Start & Build
+## 🛠️ Quick Start & Build from Source
 
 ### Requirements
 - **Java 25** (e.g. OpenJDK 25 or GraalVM for JDK 25)
