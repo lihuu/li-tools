@@ -8,20 +8,20 @@ li-tools is an AI-first, zero-runtime-dependency developer security suite design
 
 All tools in this suite provide native, machine-readable `SKILL.md` documents for AI coding agents (Claude Code, Gemini CLI, Cursor, Copilot CLI, OpenCode):
 
-- [Suite Skill (li-tools)](https://lihuu.github.io/li-tools/SKILL.md): Suite overview, task matrix, and installation guidelines.
-- [gpgkit Skill](https://lihuu.github.io/li-tools/gpgkit/SKILL.md): Comprehensive agent reference for GPG key generation, commit signing, and encrypted backup.
-- [certkit Skill](https://lihuu.github.io/li-tools/certkit/SKILL.md): Comprehensive agent reference for TLS certs, local root CA, multi-SAN deduction, and P12/DER conversion.
+- [Suite Skill (li-tools)](https://tools.lihu.me/SKILL.md): Suite overview, task matrix, and installation guidelines.
+- [gpgkit Skill](https://tools.lihu.me/gpgkit/SKILL.md): Comprehensive agent reference for GPG key generation, commit signing, and encrypted backup.
+- [certkit Skill](https://tools.lihu.me/certkit/SKILL.md): Comprehensive agent reference for TLS certs, local root CA, multi-SAN deduction, and P12/DER conversion.
 
 ### Fast Skill Installation for AI Agents
-- macOS / Linux: `curl -fsSL https://lihuu.github.io/li-tools/install-skills.sh | bash`
-- Windows PowerShell: `irm https://lihuu.github.io/li-tools/install-skills.ps1 | iex`
+- macOS / Linux: `curl -fsSL https://tools.lihu.me/install-skills.sh | bash`
+- Windows PowerShell: `irm https://tools.lihu.me/install-skills.ps1 | iex`
 
 ---
 
 ## Core Projects
 
-- [gpgkit](https://lihuu.github.io/li-tools/gpgkit/): One command for the whole life of a GPG key. Eliminates key loss during machine migration through automated round-trip loopback verification.
-- [certkit](https://lihuu.github.io/li-tools/certkit/): Zero-config SSL/TLS certificate Swiss Army knife. Auto-sniffs DNS/IP for SAN extensions, manages local development Root CA, performs single-parameter format conversion, and provides non-elevated Windows 11 trust injection.
+- [gpgkit](https://tools.lihu.me/gpgkit/): One command for the whole life of a GPG key. Eliminates key loss during machine migration through automated round-trip loopback verification.
+- [certkit](https://tools.lihu.me/certkit/): Zero-config SSL/TLS certificate Swiss Army knife. Auto-sniffs DNS/IP for SAN extensions, manages local development Root CA, performs single-parameter format conversion, and provides non-elevated Windows 11 trust injection.
 
 ## Design Philosophy
 
@@ -55,5 +55,5 @@ All tools in this suite provide native, machine-readable `SKILL.md` documents fo
 ## Repository & Links
 
 - GitHub: https://github.com/lihuu/li-tools
-- Landing Pages: https://lihuu.github.io/li-tools/
+- Landing Pages: https://tools.lihu.me/
 - License: Apache-2.0

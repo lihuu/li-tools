@@ -6,7 +6,7 @@
 <p align="center">
   <a href="README.md"><b>English</b></a> •
   <a href="README_zh.md"><b>简体中文</b></a> •
-  <a href="https://lihuu.github.io/li-tools/"><b>Landing Pages & Docs</b></a>
+  <a href="https://tools.lihu.me/"><b>Landing Pages & Docs</b></a>
 </p>
 
 <p align="center">
@@ -94,10 +94,10 @@ scoop install gpgkit certkit
 ### 3. One-Line Script Installer (macOS, Linux & Windows 11)
 ```bash
 # macOS / Linux
-curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash
+curl -fsSL https://tools.lihu.me/install.sh | bash
 
 # Windows 11 (PowerShell)
-irm https://lihuu.github.io/li-tools/install.ps1 | iex
+irm https://tools.lihu.me/install.ps1 | iex
 ```
 
 ---
@@ -132,25 +132,25 @@ cd certkit && ./build-native.sh
 
 All tools in `li-tools` provide native, machine-readable `SKILL.md` specifications tailored for AI coding agents (Claude Code, Gemini CLI, Cursor, Copilot CLI, OpenCode):
 
-- **Suite Skill Guide**: [`SKILL.md`](SKILL.md) (Hosted at [https://lihuu.github.io/li-tools/SKILL.md](https://lihuu.github.io/li-tools/SKILL.md))
-- **gpgkit Skill Guide**: [`gpgkit/SKILL.md`](gpgkit/SKILL.md) (Hosted at [https://lihuu.github.io/li-tools/gpgkit/SKILL.md](https://lihuu.github.io/li-tools/gpgkit/SKILL.md))
-- **certkit Skill Guide**: [`certkit/SKILL.md`](certkit/SKILL.md) (Hosted at [https://lihuu.github.io/li-tools/certkit/SKILL.md](https://lihuu.github.io/li-tools/certkit/SKILL.md))
+- **Suite Skill Guide**: [`SKILL.md`](SKILL.md) (Hosted at [https://tools.lihu.me/SKILL.md](https://tools.lihu.me/SKILL.md))
+- **gpgkit Skill Guide**: [`gpgkit/SKILL.md`](gpgkit/SKILL.md) (Hosted at [https://tools.lihu.me/gpgkit/SKILL.md](https://tools.lihu.me/gpgkit/SKILL.md))
+- **certkit Skill Guide**: [`certkit/SKILL.md`](certkit/SKILL.md) (Hosted at [https://tools.lihu.me/certkit/SKILL.md](https://tools.lihu.me/certkit/SKILL.md))
 
 ### Install Skills for Your AI Agents
 Install skills directly into your local AI agent skill paths (`~/.agents/skills/`, `~/.gemini/skills/`, `~/.claude/skills/`):
 ```bash
 # macOS / Linux
-curl -fsSL https://lihuu.github.io/li-tools/install-skills.sh | bash
+curl -fsSL https://tools.lihu.me/install-skills.sh | bash
 
 # Windows 11 (PowerShell)
-irm https://lihuu.github.io/li-tools/install-skills.ps1 | iex
+irm https://tools.lihu.me/install-skills.ps1 | iex
 ```
 
 ---
 
 ## 🌐 Documentation & Web Pages
 
-- **[Live Website & Landing Pages](https://lihuu.github.io/li-tools/)**
+- **[Live Website & Landing Pages](https://tools.lihu.me/)**
 - **[`gpgkit Documentation`](gpgkit/README.md)** (Available in [English](gpgkit/README.md) and [中文](gpgkit/README.zh-CN.md))
 - **[`certkit Documentation`](certkit/README.md)** (Available in [English](certkit/README.md) and [中文](certkit/README_zh.md))
 

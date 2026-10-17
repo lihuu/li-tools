@@ -2,7 +2,7 @@
 # Installs gpgkit & certkit skills into AI agent skill directories.
 $ErrorActionPreference = "Stop"
 
-$baseUrl = "https://lihuu.github.io/li-tools"
+$baseUrl = "https://tools.lihu.me"
 
 Write-Host "🤖 Installing li-tools Agent Skills (gpgkit & certkit)..." -ForegroundColor Cyan
 

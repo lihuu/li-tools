@@ -3,9 +3,9 @@
 # li-tools installer (macOS & Linux)
 # Installs gpgkit and certkit to ~/.local/bin
 # Usage:
-#   curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash
-#   curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash -s gpgkit
-#   curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash -s certkit
+#   curl -fsSL https://tools.lihu.me/install.sh | bash
+#   curl -fsSL https://tools.lihu.me/install.sh | bash -s gpgkit
+#   curl -fsSL https://tools.lihu.me/install.sh | bash -s certkit
 # ==============================================================================
 set -euo pipefail
 

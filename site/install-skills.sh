@@ -3,7 +3,7 @@
 # Installs gpgkit & certkit skills into AI agent skill directories.
 set -euo pipefail
 
-BASE_URL="https://lihuu.github.io/li-tools"
+BASE_URL="https://tools.lihu.me"
 
 echo "🤖 Installing li-tools Agent Skills (gpgkit & certkit)..."
 

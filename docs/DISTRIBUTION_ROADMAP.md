@@ -16,7 +16,7 @@
 ```ruby
 class Certkit < Formula
   desc "One command for SSL/TLS certificates without OpenSSL agony"
-  homepage "https://lihuu.github.io/li-tools/certkit/"
+  homepage "https://tools.lihu.me/certkit/"
   version "0.1.0"
   
   on_macos do
@@ -61,7 +61,7 @@ brew install certkit gpgkit
 {
   "version": "0.1.0",
   "description": "One command for SSL/TLS certificates without OpenSSL agony",
-  "homepage": "https://lihuu.github.io/li-tools/certkit/",
+  "homepage": "https://tools.lihu.me/certkit/",
   "license": "Apache-2.0",
   "architecture": {
     "64bit": {

@@ -3,48 +3,48 @@
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <!-- Portal Homepage -->
   <url>
-    <loc>https://lihuu.github.io/li-tools/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://lihuu.github.io/li-tools/" />
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lihuu.github.io/li-tools/index_zh.html" />
+    <loc>https://tools.lihu.me/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/index_zh.html" />
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://lihuu.github.io/li-tools/index_zh.html</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://lihuu.github.io/li-tools/" />
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lihuu.github.io/li-tools/index_zh.html" />
+    <loc>https://tools.lihu.me/index_zh.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/index_zh.html" />
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <!-- gpgkit Landing Page -->
   <url>
-    <loc>https://lihuu.github.io/li-tools/gpgkit/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://lihuu.github.io/li-tools/gpgkit/" />
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lihuu.github.io/li-tools/gpgkit/index_zh.html" />
+    <loc>https://tools.lihu.me/gpgkit/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/gpgkit/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/gpgkit/index_zh.html" />
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://lihuu.github.io/li-tools/gpgkit/index_zh.html</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://lihuu.github.io/li-tools/gpgkit/" />
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lihuu.github.io/li-tools/gpgkit/index_zh.html" />
+    <loc>https://tools.lihu.me/gpgkit/index_zh.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/gpgkit/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/gpgkit/index_zh.html" />
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <!-- certkit Landing Page -->
   <url>
-    <loc>https://lihuu.github.io/li-tools/certkit/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://lihuu.github.io/li-tools/certkit/" />
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lihuu.github.io/li-tools/certkit/index_zh.html" />
+    <loc>https://tools.lihu.me/certkit/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/certkit/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/certkit/index_zh.html" />
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://lihuu.github.io/li-tools/certkit/index_zh.html</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://lihuu.github.io/li-tools/certkit/" />
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lihuu.github.io/li-tools/certkit/index_zh.html" />
+    <loc>https://tools.lihu.me/certkit/index_zh.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/certkit/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/certkit/index_zh.html" />
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

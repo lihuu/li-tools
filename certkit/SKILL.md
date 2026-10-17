@@ -28,7 +28,7 @@ scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket
 scoop install certkit
 
 # Direct Script (macOS & Linux)
-curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash -s certkit
+curl -fsSL https://tools.lihu.me/install.sh | bash -s certkit
 ```
 
 ---

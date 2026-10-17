@@ -6,7 +6,7 @@
 <p align="center">
   <a href="README.md"><b>English</b></a> •
   <a href="README_zh.md"><b>简体中文</b></a> •
-  <a href="https://lihuu.github.io/li-tools/certkit/"><b>Landing Page</b></a> •
+  <a href="https://tools.lihu.me/certkit/"><b>Landing Page</b></a> •
   <a href="../README.md"><b>li-tools Suite</b></a>
 </p>
 

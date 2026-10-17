@@ -2,7 +2,7 @@
 # li-tools installer for Windows 11 (PowerShell)
 # Installs gpgkit.exe and certkit.exe to $HOME\.local\bin
 # Usage in PowerShell:
-#   irm https://lihuu.github.io/li-tools/install.ps1 | iex
+#   irm https://tools.lihu.me/install.ps1 | iex
 # ==============================================================================
 param(
     [string]$Target = "all"

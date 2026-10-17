@@ -6,7 +6,7 @@
 <p align="center">
   <a href="README.md"><b>English</b></a> •
   <a href="README_zh.md"><b>简体中文</b></a> •
-  <a href="https://lihuu.github.io/li-tools/"><b>在线落地页与文档</b></a>
+  <a href="https://tools.lihu.me/"><b>在线落地页与文档</b></a>
 </p>
 
 <p align="center">
@@ -94,10 +94,10 @@ scoop install gpgkit certkit
 ### 3. 一行 Shell / PowerShell 脚本安装 (macOS, Linux & Windows 11)
 ```bash
 # macOS / Linux
-curl -fsSL https://lihuu.github.io/li-tools/install.sh | bash
+curl -fsSL https://tools.lihu.me/install.sh | bash
 
 # Windows 11 (PowerShell)
-irm https://lihuu.github.io/li-tools/install.ps1 | iex
+irm https://tools.lihu.me/install.ps1 | iex
 ```
 
 ---
@@ -132,25 +132,25 @@ cd certkit && ./build-native.sh
 
 `li-tools` 套件内的所有工具均原生提供面向 AI 编码智能体（Claude Code, Gemini CLI, Cursor, Copilot CLI, OpenCode 等）的标准 `SKILL.md`：
 
-- **套件总技能文档**: [`SKILL.md`](SKILL.md)（在线访问：[https://lihuu.github.io/li-tools/SKILL.md](https://lihuu.github.io/li-tools/SKILL.md)）
-- **gpgkit 技能文档**: [`gpgkit/SKILL.md`](gpgkit/SKILL.md)（在线访问：[https://lihuu.github.io/li-tools/gpgkit/SKILL.md](https://lihuu.github.io/li-tools/gpgkit/SKILL.md)）
-- **certkit 技能文档**: [`certkit/SKILL.md`](certkit/SKILL.md)（在线访问：[https://lihuu.github.io/li-tools/certkit/SKILL.md](https://lihuu.github.io/li-tools/certkit/SKILL.md)）
+- **套件总技能文档**: [`SKILL.md`](SKILL.md)（在线访问：[https://tools.lihu.me/SKILL.md](https://tools.lihu.me/SKILL.md)）
+- **gpgkit 技能文档**: [`gpgkit/SKILL.md`](gpgkit/SKILL.md)（在线访问：[https://tools.lihu.me/gpgkit/SKILL.md](https://tools.lihu.me/gpgkit/SKILL.md)）
+- **certkit 技能文档**: [`certkit/SKILL.md`](certkit/SKILL.md)（在线访问：[https://tools.lihu.me/certkit/SKILL.md](https://tools.lihu.me/certkit/SKILL.md)）
 
 ### 为你的 AI 智能体一键安装技能
 一键将技能下载并导入到本地 Agent 技能目录（如 `~/.agents/skills/`、`~/.gemini/skills/`、`~/.claude/skills/`）：
 ```bash
 # macOS / Linux
-curl -fsSL https://lihuu.github.io/li-tools/install-skills.sh | bash
+curl -fsSL https://tools.lihu.me/install-skills.sh | bash
 
 # Windows 11 (PowerShell)
-irm https://lihuu.github.io/li-tools/install-skills.ps1 | iex
+irm https://tools.lihu.me/install-skills.ps1 | iex
 ```
 
 ---
 
 ## 🌐 在线文档与展示页面
 
-- **[在线落地页与文档中心](https://lihuu.github.io/li-tools/)**
+- **[在线落地页与文档中心](https://tools.lihu.me/)**
 - **[`gpgkit 说明文档`](gpgkit/README.md)**（提供 [英文版](gpgkit/README.md) 与 [中文版](gpgkit/README.zh-CN.md)）
 - **[`certkit 说明文档`](certkit/README.md)**（提供 [英文版](certkit/README.md) 与 [中文版](certkit/README_zh.md)）
 
