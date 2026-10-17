@@ -212,44 +212,81 @@ tokenkit profile rm <name>          # 删除环境 (同时级联删除该环境�
 #### 8) `tokenkit backup <subcommand>`
 本地安全快照备份与还原（保障本机数据安全、防手抖误删）：
 ```bash
-# 1. 创建本地备份（默认以时间戳归档至数据目录下 backups/ 目录）
+# 1. 创建本地备份（默认自动以时间戳生成文件名，保存至数据目录下 backups/ 目录，免输路径）
 tokenkit backup create
-tokenkit backup create --out /path/to/tokenkit-backup.db
+# 输出：✔ 成功创建本地数据库备份: ~/.config/tokenkit/backups/tokenkit-backup-20261018-013000.db
+
+# 显式指定输出文件
+tokenkit backup create --out /path/to/my-backup.db
 
 # 2. 列出本地历史备份
 tokenkit backup list
 
 # 3. 从备份还原（还原前自动保存就地快照，防意外覆写）
-tokenkit backup restore /path/to/tokenkit-backup.db
+tokenkit backup restore /path/to/my-backup.db
 ```
-- **机制与范围**：利用 SQLite 在线备份机制原子化导出全量数据库副本。
-- **定位**：本地备份文件保留原始机器加密形态，适用于本机系统重装前备份或误操作回滚；若需迁移至不同机器或跨系统，请使用 `migrate` 命令。
+- **定位**：本地备份文件保留原始机器 Master Key 密文状态，适用于本机系统重装前备份或误操作回滚；若需迁移至不同机器或跨系统，请使用 `export / import`。
 
-#### 9) `tokenkit migrate <subcommand>`
-跨机器、跨操作系统（macOS / Windows 11 / Linux）安全迁移：
-由于各操作系统原生安全机制（macOS Keychain 与 Windows DPAPI）不互通，直接拷贝 SQLite 文件到异构平台无法解密。`migrate` 提供安全的**“解密 -> 中转保护 -> 目标平台重加密”**通道。
+#### 9) `tokenkit export [options]` (跨机/跨平台安全导出)
+将 Token 解密并封装为可移植中转包（或明文 JSON），用于跨操作系统（macOS / Windows 11 / Linux）或新老机器迁移：
 ```bash
-# 1. 导出迁移包 (默认交互提示输入中转传输密码，打包为高强度 AES-256-GCM 加密迁移包)
-tokenkit migrate export --out tokens-export.tkbundle
-tokenkit migrate export --profile work --out work-tokens.tkbundle
+# 1. 极简导出：无需任何参数，默认导出当前 profile，自动生成时间戳文件名，交互提示输入中转密码
+tokenkit export
+# 终端输出高亮提示：
+# ✔ 成功导出 8 个 Token (加密迁移包)!
+#   文件位置: ./tokenkit-export-20261018-013000.tkbundle
 
-# 2. 导出明文 JSON (显式声明 --unencrypted，供人工核对或外部系统对接)
-tokenkit migrate export --unencrypted --out tokens.json
+# 2. 导出全部环境
+tokenkit export --all
 
-# 3. 在目标新机器/新系统上导入 (输入中转密码解密，自动由目标系统 Master Key 重新加密入库)
-tokenkit migrate import tokens-export.tkbundle
-tokenkit migrate import tokens.json
+# 3. 指定输出路径与导出指定 Profile
+tokenkit export --profile work --out ./work-tokens.tkbundle
 
-# 导入冲突选项：
-tokenkit migrate import tokens-export.tkbundle --overwrite   # 覆盖同名 Token (以导入为准)
-tokenkit migrate import tokens-export.tkbundle --skip        # 跳过同名 Token (保留本地原值)
+# 4. 导出明文 JSON（显式声明 --unencrypted，供人工核查或第三方系统接入）
+tokenkit export --unencrypted
+# 输出: ./tokenkit-export-20261018-013000.json
 ```
-- **导出流**：通过当前机器本地 Master Key 解密 Token，读取用户设置的一次性中转密码（或 `--passphrase`），派生传输密钥后以 AES-256-GCM 封装为可移植的 `.tkbundle`；若显式指定 `--unencrypted`，则输出格式化明文 JSON。
-- **导入流**：在目标平台解密中转包，读取目标平台本地 Master Key（若新平台尚未初始化则自动注册并托管到系统 Keychain/DPAPI），将 Token 用新密钥重新加密后原子写入目标 SQLite 库。
+- **默认文件名约定**：
+  - 加密包：`./tokenkit-export-YYYYMMDD-HHmmss.tkbundle`
+  - 明文包：`./tokenkit-export-YYYYMMDD-HHmmss.json`
+- **加密机制**：使用源机器 Master Key 解密选定 Token，提示用户输入一次性中转口令（或 `--passphrase`），通过 PBKDF2-HMAC-SHA256 派生传输密钥后以 AES-256-GCM 封装为 `.tkbundle`；若带 `--unencrypted` 则输出格式化明文 JSON。
+
+#### 10) `tokenkit import <file> [options]` (跨机/跨平台安全导入)
+在目标机器/系统上导入迁移包，解密后使用目标机器的本地 Master Key 重新加密入库：
+```bash
+# 1. 极简导入：默认冲突跳过 (--skip)，输入中转密码即完成
+tokenkit import tokenkit-export-20261018-013000.tkbundle
+
+# 2. 覆盖模式：若目标存在同名 Token 则强制覆盖
+tokenkit import tokenkit-export-20261018-013000.tkbundle --overwrite
+```
+- **冲突策略**：
+  - **默认策略为 `--skip`**：若当前库中已存在同名 Token，保留本地原值，安全跳过；
+  - **`--overwrite` / `-f`**：强制使用导入文件中的 Token 覆盖本地同名记录。
+- **彩色详细结果反馈（标准输出格式）**：
+  导入完成后，必须输出清晰美观的彩色摘要，区分新增、跳过与覆盖明细：
+  ```text
+  ✔ 导入完成！(共处理 7 个 Token)
+    • 新增导入: 5 个 (OPENAI_API_KEY, ANTHROPIC_API_KEY, AWS_KEY, ...)
+    • 冲突跳过: 2 个 [已存在] (GITHUB_TOKEN, DB_PASSWORD)
+    • 覆盖更新: 0 个
+  ```
 
 ---
 
-## 5. 跨平台安全性与异常防护
+## 5. CLI 彩色终端输出规范 (Color & Terminal UX)
+
+为提供现代极客手感并减少心智负担，所有控制台输出默认附带符合直觉的 ANSI 颜色高亮（遵循 `NO_COLOR` 环境变量或全局 `--no-color` 开关）：
+- **成功状态与新增记录**：亮绿 (`\u001B[32;1m`)，前缀 `✔`
+- **警告与冲突跳过**：明黄 (`\u001B[33;1m`)，前缀 `⚠`
+- **高亮关键信息（文件名、路径、Token 标识名）**：青色 (`\u001B[36;1m`)
+- **错误与异常提示**：亮红 (`\u001B[31;1m`)，前缀 `✖`
+- **脱敏遮罩、时间戳与次要说明**：弱化灰色 (`\u001B[90m`)
+- **命令语法与示例**：粗体白色 (`\u001B[1m`)
+
+---
+
+## 6. 跨平台安全性与异常防护
 
 1. **认证加密防篡改 (AEAD)**：
    - 必须使用 `AES/GCM/NoPadding`。

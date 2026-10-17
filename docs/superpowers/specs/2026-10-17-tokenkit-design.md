@@ -41,7 +41,8 @@ flowchart TD
         CmdRm["rm (删除)"]
         CmdProfile["profile (环境切换)"]
         CmdBackup["backup (本地快照灾备)"]
-        CmdMigrate["migrate (跨平台解密迁移)"]
+        CmdExport["export (跨平台解密导出)"]
+        CmdImport["import (跨平台重加密导入)"]
     end
 
     subgraph Core_Services["核心服务层"]
@@ -100,45 +101,55 @@ flowchart TD
 
 ---
 
-## 5. 本地备份与跨平台迁移机制 (Backup & Cross-Platform Migration)
+## 5. 本地备份与跨平台迁移机制 (`backup`, `export`, `import`)
 
 ### 5.1 本地快照备份 (`backup`)
 - **定位**：同机灾备与误删回滚。
-- **机制**：通过 SQLite 在线安全备份接口（Online Backup API），原子导出全量 `.db` 物理快照至 `backups/` 目录。
+- **机制**：通过 SQLite 在线安全备份接口（Online Backup API），原子导出全量 `.db` 物理快照至 `backups/` 目录。缺省 `--out` 时自动生成时间戳文件名 `tokenkit-backup-YYYYMMDD-HHmmss.db`。
 - **安全性**：保留当前机器 Master Key 密文状态，不额外增加未受保护的中间文件。
 
-### 5.2 跨平台解密与重加密迁移 (`migrate`)
+### 5.2 跨平台解密与重加密迁移 (`export` & `import`)
 - **痛点解决**：
-  macOS Keychain 与 Windows DPAPI 绑定的主密钥**物理不可跨操作系统迁移**，若直接拷走 `tokens.db`，在异构平台上将彻底无法解密。
-- **迁移协议流 (`.tkbundle`)**：
-  1. **解密导出 (Export)**：
-     - 使用源平台的本地 Master Key 解密数据库中选定的 Token；
-     - 提示用户输入一次性传输密码（Transfer Passphrase，或由 `--passphrase` 传入）；
-     - 使用 PBKDF2-HMAC-SHA256（100,000 次迭代 + 16 字节随机盐）派生传输密钥；
-     - 采用 AES-256-GCM 将解密后的 Token 列表与元数据封装为紧凑的 `.tkbundle` 传输包；
-     - （支持 `--unencrypted` 导出为标准格式化明文 JSON，供审计与多系统对接）。
-  2. **中转导入 (Import)**：
-     - 在目标平台上读取 `.tkbundle`，提示用户输入传输密码并验证 GCM 标签解密数据；
-     - 读取目标平台的本地 Master Key（若新平台尚未生成则由本地 Keychain/DPAPI 自动生成并托管）；
-     - 将所有 Token 使用目标平台的新 Master Key 逐一重新加密；
-     - 原子事务写入目标平台的 SQLite 数据库，支持 `--overwrite` 或 `--skip` 冲突处理。
+  macOS Keychain 与 Windows DPAPI 绑定的主密钥**物理不可跨操作系统迁移**，若直接拷走 `tokens.db`，在异构平台上将彻底无法解密。因此设计一级子命令 `export` 与 `import`：
+- **`tokenkit export` (解密导出)**：
+  1. 使用源平台的本地 Master Key 解密数据库中选定的 Token；
+  2. 缺省输出路径时，自动生成 `./tokenkit-export-YYYYMMDD-HHmmss.tkbundle`（或明文 `./tokenkit-export-YYYYMMDD-HHmmss.json`）；
+  3. 提示用户输入一次性传输密码（Transfer Passphrase，或由 `--passphrase` 传入）；
+  4. 使用 PBKDF2-HMAC-SHA256（100,000 次迭代 + 16 字节随机盐）派生传输密钥，采用 AES-256-GCM 封装为紧凑的 `.tkbundle` 传输包；
+  5. （支持 `--unencrypted` 导出为标准格式化明文 JSON，供审计与多系统对接）。
+- **`tokenkit import <file>` (重加密导入)**：
+  1. 在目标平台上读取 `.tkbundle`，提示用户输入传输密码并验证 GCM 标签解密数据；
+  2. 读取目标平台的本地 Master Key（若新平台尚未生成则由本地 Keychain/DPAPI 自动生成并托管）；
+  3. 将所有 Token 使用目标平台的新 Master Key 逐一重新加密并写入目标 SQLite 库；
+  4. **冲突策略**：默认跳过同名记录（`--skip`），保护本地既有 Token；支持显式 `--overwrite` / `-f` 覆盖；
+  5. **彩色终端摘要反馈**：导入完成后输出醒目的 ANSI 彩色明细（绿色显示新增、黄色显示跳过项、青色显示覆盖项）。
 
 ---
 
-## 6. 验收标准与测试矩阵 (Acceptance Criteria)
+## 6. CLI 彩色终端规范 (Color & Terminal UX)
+- 遵循工业级终端着色规范（支持 `NO_COLOR` / `--no-color` 开关）：
+  - 成功与新增：亮绿 (`\u001B[32;1m`)，前缀 `✔`
+  - 警告与跳过：明黄 (`\u001B[33;1m`)，前缀 `⚠`
+  - 路径与标识：青色 (`\u001B[36;1m`)
+  - 失败与异常：亮红 (`\u001B[31;1m`)，前缀 `✖`
+  - 脱敏与时间：灰色 (`\u001B[90m`)
+
+---
+
+## 7. 验收标准与测试矩阵 (Acceptance Criteria)
 
 1. **单元测试 (Unit Tests)**：
    - `CryptoEngineTest`：验证 AES-256-GCM 正常加解密、篡改数据抛出异常、空/长/多行 PEM 载荷兼容性。
    - `MasterKeyProviderTest`：验证环境变量注入、本地文件保护及 Mock 系统调用。
    - `SqliteRepositoryTest`：验证 DDL 自动初始化、Token CRUD、联合唯一索引冲突处理、Profile 级联删除。
-   - `MigrationEngineTest`：验证中转包加密导出、跨密钥环境解密重加密导入、明文 JSON 互通性、密码错误拒绝解密。
+   - `MigrationEngineTest`：验证 `export` 加密中转包、跨密钥环境 `import` 解密重加密入库、默认 skip 策略、overwrite 策略、明文 JSON 互通性、密码错误拒绝解密。
 2. **端到端集成测试 (E2E Tests)**：
    - `tokenkit set OPENAI_API_KEY sk-test-123` 成功存入。
    - `tokenkit get OPENAI_API_KEY` 精确输出 `sk-test-123`。
    - `tokenkit env` 在 100 个 Token 规模下全量输出耗时 < 10ms，且格式兼容 Zsh、Bash 与 PowerShell。
    - `tokenkit run -- sh -c 'echo $OPENAI_API_KEY'` 成功在子进程打印环境变量。
-   - `tokenkit backup create` 与 `tokenkit backup restore` 成功还原历史版本。
-   - `tokenkit migrate export` 与 `tokenkit migrate import` 在切换临时 Master Key 下成功解密并重加密迁移。
+   - `tokenkit backup create`（免参自动生成文件名）与 `tokenkit backup restore` 成功还原历史版本。
+   - `tokenkit export`（免参自动生成时间戳文件）与 `tokenkit import` 成功在隔离环境下跨 Key 迁移，并正确彩色高亮输出新增/跳过清单。
 3. **跨平台验证 (Cross-Platform Verification)**：
    - macOS (arm64 & x86_64) 本地运行与 Native Image 构建。
    - Windows 11 (x64) DPAPI 与 PowerShell 注入测试。
