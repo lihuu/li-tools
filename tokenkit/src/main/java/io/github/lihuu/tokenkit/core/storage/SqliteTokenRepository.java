@@ -25,21 +25,32 @@ import io.github.lihuu.tokenkit.core.model.VaultMetadata;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public final class SqliteTokenRepository {
+public final class SqliteTokenRepository implements AutoCloseable {
     private static final String CANARY_PLAINTEXT = "tokenkit-vault-canary-v1";
     private static final String SCHEMA_VERSION = "1";
 
     private final Path dbPath;
     private final MasterKeyProvider keyProvider;
     private final String jdbcUrl;
+    private Connection sharedConnection;
+    private volatile boolean schemaInitialized = false;
 
     public SqliteTokenRepository(@NotNull Path dbPath, @NotNull MasterKeyProvider keyProvider) {
         this.dbPath = Objects.requireNonNull(dbPath, "dbPath must not be null");
         this.keyProvider = Objects.requireNonNull(keyProvider, "keyProvider must not be null");
-        this.jdbcUrl = "jdbc:sqlite:" + dbPath.toAbsolutePath();
+        this.jdbcUrl = "jdbc:sqlite:" + dbPath.toAbsolutePath() + "?journal_mode=WAL&synchronous=NORMAL&foreign_keys=ON&busy_timeout=3000";
     }
 
-    private Connection getConnection() throws SQLException {
+    private synchronized Connection connection() throws SQLException {
+        if (sharedConnection == null || sharedConnection.isClosed()) {
+            ensureDatabaseDirectory();
+            sharedConnection = DriverManager.getConnection(jdbcUrl);
+        }
+        ensureSchema(sharedConnection);
+        return sharedConnection;
+    }
+
+    private void ensureDatabaseDirectory() throws SQLException {
         Path parent = dbPath.getParent();
         if (parent != null && !Files.exists(parent)) {
             try {
@@ -48,16 +59,40 @@ public final class SqliteTokenRepository {
                 throw new SQLException("Failed to create database directory: " + parent, e);
             }
         }
-        Connection connection = DriverManager.getConnection(jdbcUrl);
-        try (Statement stmt = connection.createStatement()) {
-            stmt.execute("PRAGMA journal_mode = WAL;");
-            stmt.execute("PRAGMA foreign_keys = ON;");
+    }
+
+    private void ensureSchema(Connection conn) throws SQLException {
+        if (schemaInitialized) {
+            return;
         }
-        return connection;
+        try {
+            if (isSchemaPresent(conn)) {
+                schemaInitialized = true;
+                return;
+            }
+            initializeSchemaInternal(conn);
+            schemaInitialized = true;
+        } catch (GeneralSecurityException e) {
+            throw new SQLException("Failed to initialize security canary: " + e.getMessage(), e);
+        }
+    }
+
+    private boolean isSchemaPresent(Connection conn) throws SQLException {
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT 1 FROM sqlite_master WHERE type='table' AND name='profiles' LIMIT 1")) {
+            return rs.next();
+        }
     }
 
     public synchronized void initializeSchema() throws SQLException, GeneralSecurityException {
-        try (Connection conn = getConnection()) {
+        Connection conn = connection();
+        initializeSchemaInternal(conn);
+        schemaInitialized = true;
+    }
+
+    private void initializeSchemaInternal(Connection conn) throws SQLException, GeneralSecurityException {
+        boolean oldAutoCommit = conn.getAutoCommit();
+        try {
             conn.setAutoCommit(false);
             try (Statement stmt = conn.createStatement()) {
                 stmt.execute("""
@@ -108,16 +143,18 @@ public final class SqliteTokenRepository {
                 conn.rollback();
                 throw e;
             }
+        } finally {
+            conn.setAutoCommit(oldAutoCommit);
         }
 
         // Verify or create canary
-        verifyOrCreateCanary();
+        verifyOrCreateCanary(conn);
     }
 
-    private void verifyOrCreateCanary() throws SQLException, GeneralSecurityException {
+    private void verifyOrCreateCanary(Connection conn) throws SQLException, GeneralSecurityException {
         byte[] masterKey = keyProvider.getOrCreateMasterKey();
-        Optional<String> canaryNonceHex = getMetadata("canary_nonce");
-        Optional<String> canaryCiphertextHex = getMetadata("canary_ciphertext");
+        Optional<String> canaryNonceHex = getMetadata(conn, "canary_nonce");
+        Optional<String> canaryCiphertextHex = getMetadata(conn, "canary_ciphertext");
 
         if (canaryNonceHex.isPresent() && canaryCiphertextHex.isPresent()) {
             byte[] nonce = HexFormat.of().parseHex(canaryNonceHex.get());
@@ -133,17 +170,20 @@ public final class SqliteTokenRepository {
                     CANARY_PLAINTEXT.getBytes(StandardCharsets.UTF_8),
                     masterKey
             );
-            saveMetadata("schema_version", SCHEMA_VERSION);
-            saveMetadata("canary_nonce", HexFormat.of().formatHex(payload.nonce()));
-            saveMetadata("canary_ciphertext", HexFormat.of().formatHex(payload.ciphertext()));
+            saveMetadata(conn, "schema_version", SCHEMA_VERSION);
+            saveMetadata(conn, "canary_nonce", HexFormat.of().formatHex(payload.nonce()));
+            saveMetadata(conn, "canary_ciphertext", HexFormat.of().formatHex(payload.ciphertext()));
         }
     }
 
     public synchronized void saveMetadata(@NotNull String key, @NotNull String value) throws SQLException {
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                     "INSERT INTO vault_metadata (key, value) VALUES (?, ?) " +
-                             "ON CONFLICT(key) DO UPDATE SET value = excluded.value")) {
+        saveMetadata(connection(), key, value);
+    }
+
+    private void saveMetadata(Connection conn, @NotNull String key, @NotNull String value) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO vault_metadata (key, value) VALUES (?, ?) " +
+                        "ON CONFLICT(key) DO UPDATE SET value = excluded.value")) {
             ps.setString(1, key);
             ps.setString(2, value);
             ps.executeUpdate();
@@ -151,8 +191,11 @@ public final class SqliteTokenRepository {
     }
 
     public synchronized Optional<String> getMetadata(@NotNull String key) throws SQLException {
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT value FROM vault_metadata WHERE key = ?")) {
+        return getMetadata(connection(), key);
+    }
+
+    private Optional<String> getMetadata(Connection conn, @NotNull String key) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT value FROM vault_metadata WHERE key = ?")) {
             ps.setString(1, key);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -165,19 +208,19 @@ public final class SqliteTokenRepository {
 
     public synchronized void saveToken(@NotNull Token token) throws SQLException {
         Objects.requireNonNull(token, "token must not be null");
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement("""
-                     INSERT INTO tokens (id, profile, name, kind, nonce, ciphertext, description, tags, expires_at, created_at, updated_at)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                     ON CONFLICT(profile, name) DO UPDATE SET
-                         kind = excluded.kind,
-                         nonce = excluded.nonce,
-                         ciphertext = excluded.ciphertext,
-                         description = excluded.description,
-                         tags = excluded.tags,
-                         expires_at = excluded.expires_at,
-                         updated_at = excluded.updated_at
-                     """)) {
+        Connection conn = connection();
+        try (PreparedStatement ps = conn.prepareStatement("""
+                INSERT INTO tokens (id, profile, name, kind, nonce, ciphertext, description, tags, expires_at, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(profile, name) DO UPDATE SET
+                    kind = excluded.kind,
+                    nonce = excluded.nonce,
+                    ciphertext = excluded.ciphertext,
+                    description = excluded.description,
+                    tags = excluded.tags,
+                    expires_at = excluded.expires_at,
+                    updated_at = excluded.updated_at
+                """)) {
             ps.setString(1, token.id());
             ps.setString(2, token.profile());
             ps.setString(3, token.name());
@@ -198,10 +241,10 @@ public final class SqliteTokenRepository {
     }
 
     public synchronized Optional<Token> findToken(@NotNull String profile, @NotNull String name) throws SQLException {
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                     "SELECT id, profile, name, kind, nonce, ciphertext, description, tags, expires_at, created_at, updated_at " +
-                             "FROM tokens WHERE profile = ? AND name = ?")) {
+        Connection conn = connection();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT id, profile, name, kind, nonce, ciphertext, description, tags, expires_at, created_at, updated_at " +
+                        "FROM tokens WHERE profile = ? AND name = ?")) {
             ps.setString(1, profile);
             ps.setString(2, name);
             try (ResultSet rs = ps.executeQuery()) {
@@ -214,10 +257,10 @@ public final class SqliteTokenRepository {
     }
 
     public synchronized List<Token> findTokensByProfile(@NotNull String profile) throws SQLException {
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                     "SELECT id, profile, name, kind, nonce, ciphertext, description, tags, expires_at, created_at, updated_at " +
-                             "FROM tokens WHERE profile = ? ORDER BY name ASC")) {
+        Connection conn = connection();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT id, profile, name, kind, nonce, ciphertext, description, tags, expires_at, created_at, updated_at " +
+                        "FROM tokens WHERE profile = ? ORDER BY name ASC")) {
             ps.setString(1, profile);
             try (ResultSet rs = ps.executeQuery()) {
                 List<Token> result = new ArrayList<>();
@@ -230,8 +273,8 @@ public final class SqliteTokenRepository {
     }
 
     public synchronized List<Token> findAllTokens() throws SQLException {
-        try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement();
+        Connection conn = connection();
+        try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(
                      "SELECT id, profile, name, kind, nonce, ciphertext, description, tags, expires_at, created_at, updated_at " +
                              "FROM tokens ORDER BY profile ASC, name ASC")) {
@@ -244,8 +287,8 @@ public final class SqliteTokenRepository {
     }
 
     public synchronized boolean deleteToken(@NotNull String profile, @NotNull String name) throws SQLException {
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement("DELETE FROM tokens WHERE profile = ? AND name = ?")) {
+        Connection conn = connection();
+        try (PreparedStatement ps = conn.prepareStatement("DELETE FROM tokens WHERE profile = ? AND name = ?")) {
             ps.setString(1, profile);
             ps.setString(2, name);
             return ps.executeUpdate() > 0;
@@ -253,8 +296,8 @@ public final class SqliteTokenRepository {
     }
 
     public synchronized List<Profile> listProfiles() throws SQLException {
-        try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement();
+        Connection conn = connection();
+        try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT name, description, is_active, created_at FROM profiles ORDER BY name ASC")) {
             List<Profile> result = new ArrayList<>();
             while (rs.next()) {
@@ -270,8 +313,8 @@ public final class SqliteTokenRepository {
     }
 
     public synchronized Optional<Profile> findProfile(@NotNull String name) throws SQLException {
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT name, description, is_active, created_at FROM profiles WHERE name = ?")) {
+        Connection conn = connection();
+        try (PreparedStatement ps = conn.prepareStatement("SELECT name, description, is_active, created_at FROM profiles WHERE name = ?")) {
             ps.setString(1, name);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -288,70 +331,71 @@ public final class SqliteTokenRepository {
     }
 
     public synchronized void saveProfile(@NotNull Profile profile) throws SQLException {
-        try (Connection conn = getConnection()) {
+        Connection conn = connection();
+        boolean oldAutoCommit = conn.getAutoCommit();
+        try {
             conn.setAutoCommit(false);
-            try {
-                if (profile.active()) {
-                    try (Statement stmt = conn.createStatement()) {
-                        stmt.execute("UPDATE profiles SET is_active = 0;");
-                    }
+            if (profile.active()) {
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("UPDATE profiles SET is_active = 0;");
                 }
-                try (PreparedStatement ps = conn.prepareStatement("""
-                        INSERT INTO profiles (name, description, is_active, created_at)
-                        VALUES (?, ?, ?, ?)
-                        ON CONFLICT(name) DO UPDATE SET
-                            description = excluded.description,
-                            is_active = excluded.is_active
-                        """)) {
-                    ps.setString(1, profile.name());
-                    ps.setString(2, profile.description());
-                    ps.setInt(3, profile.active() ? 1 : 0);
-                    ps.setLong(4, profile.createdAt());
-                    ps.executeUpdate();
-                }
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw e;
             }
+            try (PreparedStatement ps = conn.prepareStatement("""
+                    INSERT INTO profiles (name, description, is_active, created_at)
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT(name) DO UPDATE SET
+                        description = excluded.description,
+                        is_active = excluded.is_active
+                    """)) {
+                ps.setString(1, profile.name());
+                ps.setString(2, profile.description());
+                ps.setInt(3, profile.active() ? 1 : 0);
+                ps.setLong(4, profile.createdAt());
+                ps.executeUpdate();
+            }
+            conn.commit();
+        } catch (SQLException e) {
+            conn.rollback();
+            throw e;
+        } finally {
+            conn.setAutoCommit(oldAutoCommit);
         }
     }
 
     public synchronized boolean setActiveProfile(@NotNull String name) throws SQLException {
-        try (Connection conn = getConnection()) {
+        Connection conn = connection();
+        boolean oldAutoCommit = conn.getAutoCommit();
+        try {
             conn.setAutoCommit(false);
-            try {
-                // Check if profile exists
-                try (PreparedStatement check = conn.prepareStatement("SELECT 1 FROM profiles WHERE name = ?")) {
-                    check.setString(1, name);
-                    try (ResultSet rs = check.executeQuery()) {
-                        if (!rs.next()) {
-                            conn.rollback();
-                            return false;
-                        }
+            try (PreparedStatement check = conn.prepareStatement("SELECT 1 FROM profiles WHERE name = ?")) {
+                check.setString(1, name);
+                try (ResultSet rs = check.executeQuery()) {
+                    if (!rs.next()) {
+                        conn.rollback();
+                        return false;
                     }
                 }
-                // Reset active profile
-                try (Statement stmt = conn.createStatement()) {
-                    stmt.execute("UPDATE profiles SET is_active = 0;");
-                }
-                // Activate chosen profile
-                try (PreparedStatement update = conn.prepareStatement("UPDATE profiles SET is_active = 1 WHERE name = ?")) {
-                    update.setString(1, name);
-                    update.executeUpdate();
-                }
-                conn.commit();
-                return true;
-            } catch (SQLException e) {
-                conn.rollback();
-                throw e;
             }
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("UPDATE profiles SET is_active = 0;");
+            }
+            try (PreparedStatement update = conn.prepareStatement("UPDATE profiles SET is_active = 1 WHERE name = ?")) {
+                update.setString(1, name);
+                update.executeUpdate();
+            }
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            conn.rollback();
+            throw e;
+        } finally {
+            conn.setAutoCommit(oldAutoCommit);
         }
     }
 
     public synchronized @NotNull String getActiveProfileName() throws SQLException {
-        try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement();
+        Connection conn = connection();
+        try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT name FROM profiles WHERE is_active = 1 LIMIT 1")) {
             if (rs.next()) {
                 return rs.getString("name");
@@ -364,26 +408,28 @@ public final class SqliteTokenRepository {
         if ("default".equals(name)) {
             throw new IllegalArgumentException("The 'default' profile cannot be deleted");
         }
-        try (Connection conn = getConnection()) {
+        Connection conn = connection();
+        boolean oldAutoCommit = conn.getAutoCommit();
+        try {
             conn.setAutoCommit(false);
-            try {
-                int affected;
-                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM profiles WHERE name = ?")) {
-                    ps.setString(1, name);
-                    affected = ps.executeUpdate();
-                }
-                try (Statement stmt = conn.createStatement();
-                     ResultSet rs = stmt.executeQuery("SELECT 1 FROM profiles WHERE is_active = 1")) {
-                    if (!rs.next()) {
-                        stmt.execute("UPDATE profiles SET is_active = 1 WHERE name = 'default'");
-                    }
-                }
-                conn.commit();
-                return affected > 0;
-            } catch (SQLException e) {
-                conn.rollback();
-                throw e;
+            int affected;
+            try (PreparedStatement ps = conn.prepareStatement("DELETE FROM profiles WHERE name = ?")) {
+                ps.setString(1, name);
+                affected = ps.executeUpdate();
             }
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery("SELECT 1 FROM profiles WHERE is_active = 1")) {
+                if (!rs.next()) {
+                    stmt.execute("UPDATE profiles SET is_active = 1 WHERE name = 'default'");
+                }
+            }
+            conn.commit();
+            return affected > 0;
+        } catch (SQLException e) {
+            conn.rollback();
+            throw e;
+        } finally {
+            conn.setAutoCommit(oldAutoCommit);
         }
     }
 
@@ -406,9 +452,22 @@ public final class SqliteTokenRepository {
         }
 
         String escapedPath = destinationPath.toAbsolutePath().toString().replace("'", "''");
-        try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement()) {
+        Connection conn = connection();
+        try (Statement stmt = conn.createStatement()) {
             stmt.execute("VACUUM INTO '" + escapedPath + "';");
+        }
+    }
+
+    @Override
+    public synchronized void close() {
+        if (sharedConnection != null) {
+            try {
+                if (!sharedConnection.isClosed()) {
+                    sharedConnection.close();
+                }
+            } catch (SQLException ignored) {
+            }
+            sharedConnection = null;
         }
     }
 

@@ -222,6 +222,7 @@ public final class BackupCommand implements Callable<Integer> {
                     repository.backupTo(preRestorePath);
                 }
 
+                repository.close();
                 Files.copy(src, dbPath, StandardCopyOption.REPLACE_EXISTING);
                 out.println(outputStyle.success("成功还原数据库: " + src.toAbsolutePath()));
                 return 0;

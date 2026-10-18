@@ -1,6 +1,7 @@
 package io.github.lihuu.tokenkit.app;
 
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
@@ -31,9 +32,38 @@ public final class CliApplication {
         PrintWriter err = new PrintWriter(System.err, true);
         Path dbPath = DatabaseConfig.defaultDatabasePath();
         Path configDir = dbPath.getParent() != null ? dbPath.getParent() : Path.of(".");
+        configureSqliteNativeCache(configDir);
         MasterKeyProvider keyProvider = CompositeMasterKeyProvider.defaultProvider(configDir);
         int exitCode = run(args, dbPath, keyProvider, out, err, System.getenv(), System.console() != null);
         System.exit(exitCode);
+    }
+
+    private static void configureSqliteNativeCache(@NotNull Path configDir) {
+        try {
+            Path libDir = configDir.resolve("lib");
+            String libName = org.sqlite.util.LibraryLoaderUtil.getNativeLibName();
+            Path cachedLib = libDir.resolve(libName);
+            if (!Files.exists(cachedLib)) {
+                Files.createDirectories(libDir);
+                String resourcePath = org.sqlite.util.LibraryLoaderUtil.getNativeLibResourcePath() + "/" + libName;
+                try (java.io.InputStream in = org.sqlite.SQLiteJDBCLoader.class.getResourceAsStream(resourcePath)) {
+                    if (in != null) {
+                        Path tempTarget = libDir.resolve(libName + ".tmp");
+                        Files.copy(in, tempTarget, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                        Files.move(tempTarget, cachedLib, java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+            }
+            if (Files.exists(cachedLib)) {
+                System.setProperty("org.sqlite.lib.path", libDir.toAbsolutePath().toString());
+            }
+            Path cacheDir = configDir.resolve(".cache");
+            if (!Files.exists(cacheDir)) {
+                Files.createDirectories(cacheDir);
+            }
+            System.setProperty("org.sqlite.tmpdir", cacheDir.toAbsolutePath().toString());
+        } catch (Exception ignored) {
+        }
     }
 
     public static int run(
@@ -72,10 +102,7 @@ public final class CliApplication {
 
         OutputStyle outputStyle = OutputStyle.of(env, interactive, noColorFlag);
 
-        try {
-            SqliteTokenRepository repository = new SqliteTokenRepository(dbPath, keyProvider);
-            repository.initializeSchema();
-
+        try (SqliteTokenRepository repository = new SqliteTokenRepository(dbPath, keyProvider)) {
             CliCommand rootCommand = new CliCommand(out);
             CommandLine cmd = new CommandLine(rootCommand);
             cmd.setOut(out);

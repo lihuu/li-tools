@@ -11,6 +11,7 @@ public final class CompositeMasterKeyProvider implements MasterKeyProvider {
     private final Map<String, String> environment;
     private final String osName;
     private final Path configDir;
+    private volatile byte[] cachedKey;
 
     public CompositeMasterKeyProvider(@NotNull Map<String, String> environment, @NotNull String osName, @NotNull Path configDir) {
         this.environment = Map.copyOf(Objects.requireNonNull(environment, "environment must not be null"));
@@ -28,6 +29,21 @@ public final class CompositeMasterKeyProvider implements MasterKeyProvider {
 
     @Override
     public byte @NotNull [] getOrCreateMasterKey() throws GeneralSecurityException {
+        byte[] cached = cachedKey;
+        if (cached != null) {
+            return cached.clone();
+        }
+        synchronized (this) {
+            if (cachedKey != null) {
+                return cachedKey.clone();
+            }
+            byte[] resolved = resolveMasterKey();
+            cachedKey = resolved.clone();
+            return resolved;
+        }
+    }
+
+    private byte[] resolveMasterKey() throws GeneralSecurityException {
         // Priority 1: Environment variable
         EnvMasterKeyProvider envProvider = new EnvMasterKeyProvider(environment);
         if (envProvider.isAvailable()) {
