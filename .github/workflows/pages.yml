@@ -38,3 +38,25 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Ping Search Engines (IndexNow)
+        run: |
+          echo "Pinging IndexNow for Bing and AI Search Engines..."
+          curl -s -o /dev/null -w "IndexNow Status: %{http_code}\n" -X POST "https://api.indexnow.org/indexnow" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            -d '{
+              "host": "tools.lihu.me",
+              "key": "c6bb5a53b6386d2fdfd867988ff31490", # gitleaks:allow
+              "keyLocation": "https://tools.lihu.me/c6bb5a53b6386d2fdfd867988ff31490.txt",
+              "urlList": [
+                "https://tools.lihu.me/",
+                "https://tools.lihu.me/index_zh.html",
+                "https://tools.lihu.me/tokenkit/",
+                "https://tools.lihu.me/tokenkit/index_zh.html",
+                "https://tools.lihu.me/gpgkit/",
+                "https://tools.lihu.me/gpgkit/index_zh.html",
+                "https://tools.lihu.me/certkit/",
+                "https://tools.lihu.me/certkit/index_zh.html",
+                "https://tools.lihu.me/llms.txt"
+              ]
+            }' || true
