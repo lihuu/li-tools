@@ -18,6 +18,8 @@ public final class CryptoEngine {
     private static final int GCM_TAG_LENGTH_BITS = 128;
     private static final int GCM_NONCE_LENGTH_BYTES = 12;
     private static final int AES_256_KEY_LENGTH_BYTES = 32;
+    public static final int DEFAULT_PBKDF2_ITERATIONS = 100_000;
+    public static final int DEFAULT_PBKDF2_KEY_LENGTH_BITS = 256;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -70,6 +72,11 @@ public final class CryptoEngine {
         Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
         cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec);
         return cipher.doFinal(ciphertext);
+    }
+
+    public static byte @NotNull [] deriveKey(char @NotNull [] passphrase, byte @NotNull [] salt)
+            throws GeneralSecurityException {
+        return deriveKey(passphrase, salt, DEFAULT_PBKDF2_ITERATIONS, DEFAULT_PBKDF2_KEY_LENGTH_BITS);
     }
 
     public static byte @NotNull [] deriveKey(char @NotNull [] passphrase, byte @NotNull [] salt, int iterations, int keyLengthBits)
