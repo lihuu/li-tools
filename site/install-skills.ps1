@@ -1,10 +1,10 @@
 # li-tools AI Agent Skill Installer for Windows PowerShell
-# Installs gpgkit & certkit skills into AI agent skill directories.
+# Installs gpgkit, certkit & tokenkit skills into AI agent skill directories.
 $ErrorActionPreference = "Stop"
 
 $baseUrl = "https://tools.lihu.me"
 
-Write-Host "🤖 Installing li-tools Agent Skills (gpgkit & certkit)..." -ForegroundColor Cyan
+Write-Host "🤖 Installing li-tools Agent Skills (gpgkit, certkit & tokenkit)..." -ForegroundColor Cyan
 
 $userHome = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
 $targetDirs = @()
@@ -35,9 +35,11 @@ foreach ($dir in $uniqueDirs) {
     Write-Host "  → Target: $dir" -ForegroundColor DarkGray
     $gpgkitDir = [System.IO.Path]::Combine($dir, "gpgkit")
     $certkitDir = [System.IO.Path]::Combine($dir, "certkit")
+    $tokenkitDir = [System.IO.Path]::Combine($dir, "tokenkit")
 
     New-Item -ItemType Directory -Force -Path $gpgkitDir | Out-Null
     New-Item -ItemType Directory -Force -Path $certkitDir | Out-Null
+    New-Item -ItemType Directory -Force -Path $tokenkitDir | Out-Null
 
     try {
         $gpgkitDest = [System.IO.Path]::Combine($gpgkitDir, "SKILL.md")
@@ -54,8 +56,16 @@ foreach ($dir in $uniqueDirs) {
     } catch {
         Write-Warning "    ⚠ Failed to download certkit skill: $_"
     }
+
+    try {
+        $tokenkitDest = [System.IO.Path]::Combine($tokenkitDir, "SKILL.md")
+        Invoke-RestMethod -Uri "$baseUrl/tokenkit/SKILL.md" -OutFile $tokenkitDest
+        Write-Host "    ✔ Installed tokenkit skill -> $tokenkitDest" -ForegroundColor Green
+    } catch {
+        Write-Warning "    ⚠ Failed to download tokenkit skill: $_"
+    }
 }
 
 Write-Host ""
 Write-Host "✅ All skills installed successfully!" -ForegroundColor Green
-Write-Host "AI coding agents will now automatically recognize and operate gpgkit & certkit." -ForegroundColor Cyan
+Write-Host "AI coding agents will now automatically recognize and operate gpgkit, certkit & tokenkit." -ForegroundColor Cyan

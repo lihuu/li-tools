@@ -1,6 +1,6 @@
 # li-tools
 
-> Modern developer CLI toolchain featuring gpgkit and certkit, powered by Java 25 & GraalVM Native Image.
+> Modern developer CLI toolchain featuring gpgkit, certkit, and tokenkit, powered by Java 25 & GraalVM Native Image.
 
 li-tools is an AI-first, zero-runtime-dependency developer security suite designed around the philosophy of "Convention over Configuration" and "Triple-Platform Parity" (macOS, Linux, and Windows 11).
 
@@ -11,6 +11,7 @@ All tools in this suite provide native, machine-readable `SKILL.md` documents fo
 - [Suite Skill (li-tools)](https://tools.lihu.me/SKILL.md): Suite overview, task matrix, and installation guidelines.
 - [gpgkit Skill](https://tools.lihu.me/gpgkit/SKILL.md): Comprehensive agent reference for GPG key generation, commit signing, and encrypted backup.
 - [certkit Skill](https://tools.lihu.me/certkit/SKILL.md): Comprehensive agent reference for TLS certs, local root CA, multi-SAN deduction, and P12/DER conversion.
+- [tokenkit Skill](https://tools.lihu.me/tokenkit/SKILL.md): Comprehensive agent reference for encrypted API keys, sub-10ms terminal shell injection, and process isolation.
 
 ### Fast Skill Installation for AI Agents
 - macOS / Linux: `curl -fsSL https://tools.lihu.me/install-skills.sh | bash`
@@ -22,13 +23,14 @@ All tools in this suite provide native, machine-readable `SKILL.md` documents fo
 
 - [gpgkit](https://tools.lihu.me/gpgkit/): One command for the whole life of a GPG key. Eliminates key loss during machine migration through automated round-trip loopback verification.
 - [certkit](https://tools.lihu.me/certkit/): Zero-config SSL/TLS certificate Swiss Army knife. Auto-sniffs DNS/IP for SAN extensions, manages local development Root CA, performs single-parameter format conversion, and provides non-elevated Windows 11 trust injection.
+- [tokenkit](https://tools.lihu.me/tokenkit/): Modern encrypted universal token manager with embedded SQLite. Sub-10ms terminal shell injection (`tokenkit env`), AES-256-GCM + PBKDF2 encryption, child process injection (`tokenkit run`), profile isolation, and password-protected cross-machine migration bundles (`.tkbundle`).
 
 ## Design Philosophy
 
 - **Convention over Configuration**: 90% of use cases run with zero flags or options.
 - **Machine-Readable**: Every command supports `--json` for robust agent automation.
 - **Three-Tier Architecture**: Fast convention -> Fine control -> Raw unconstrained engine passthrough (`raw -- ...`).
-- **Cross-Platform Parity**: macOS (Keychain), Linux (CA trust anchors), Windows 11 (`certutil.exe -user`).
+- **Cross-Platform Parity**: macOS (Keychain), Linux (CA trust anchors / 0600 keyfiles), Windows 11 (`certutil.exe -user` / DPAPI).
 - **Zero Runtime Dependencies**: Compiled with GraalVM Native Image into single standalone binaries. No JVM or JRE required.
 
 ## Key Capabilities & CLI Usage
@@ -51,6 +53,19 @@ All tools in this suite provide native, machine-readable `SKILL.md` documents fo
 - `certkit trust [ca|<cert>]`: System trust store injection (Windows 11 non-elevated certutil support).
 - `certkit raw <args...>`: Direct passthrough to host OpenSSL without escaping restrictions.
 - `certkit doctor`: OpenSSL availability, path sniffing, and environment health check.
+
+### tokenkit
+- `tokenkit set <name> [val]`: Store or update an encrypted API token (args, stdin, or masked console).
+- `tokenkit get <name> [--clip]`: Retrieve decrypted token value or copy directly to OS clipboard.
+- `tokenkit list [--profile <p>]`: Masked tabular token overview (`sk-pr••••a8B3`) and `--json`.
+- `tokenkit env [--shell <sh>]`: Sub-10ms shell environment export (`zsh`, `pwsh`, `fish`).
+- `tokenkit run -- <cmd...>`: Run command with decrypted tokens injected into isolated child process.
+- `tokenkit profile <list|create|use|rm>`: Multi-profile isolation (`default`, `work`, `staging`).
+- `tokenkit backup <create|list|restore>`: Local encrypted zero-lock database snapshots.
+- `tokenkit export [--all]`: Portable PBKDF2 + AES-GCM encrypted migration bundle (`.tkbundle`).
+- `tokenkit import <bundle> [--overwrite]`: Cross-platform import with default conflict skipping and colored report.
+- `tokenkit rm <name...>`: Delete one or more tokens (`-y` supported).
+
 
 ## Repository & Links
 

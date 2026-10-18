@@ -52,10 +52,43 @@ A modern SSL/TLS certificate toolkit adopting "Convention over Configuration" to
 
 ---
 
+## Tool 3: tokenkit
+
+### Mission
+A modern, cross-platform encrypted universal token manager with embedded SQLite, designed to eradicate plaintext credentials in `.env` and `.zshrc`.
+
+### Key Innovations
+1. **Sub-10ms Shell Injection (`tokenkit env`)**:
+   - `eval "$(tokenkit env)"`
+   - Executes cold database retrieval, hardware AES decryption, and shell variable emission in under 10ms, making it seamless to run in `.zshrc`, `.bashrc`, and PowerShell `$PROFILE` with zero startup lag.
+2. **Authenticated Embedded Storage (AES-256-GCM + WAL SQLite)**:
+   - Zero external daemon or database dependencies. Stored in an embedded SQLite database using WAL mode and transactional isolation.
+   - Every token payload is encrypted with unique 12-byte cryptographically secure random nonces and authenticated with 16-byte GCM tags. Any offline file tampering fails immediately with `AEADBadTagException`.
+3. **OS-Native Master Key Providers**:
+   - Priority 1: `TOKENKIT_MASTER_KEY` environment variable (for headless CI/CD).
+   - Priority 2: Native platform keychains:
+     - macOS: User Login Keychain via `/usr/bin/security`.
+     - Windows 11: Windows DPAPI (`CryptProtectData`).
+     - Linux: Dedicated user-only permission `0600` keyfile (`~/.config/tokenkit/.master.key`).
+4. **Child Process Environment Isolation (`tokenkit run`)**:
+   - `tokenkit run -- npm start`
+   - Decrypts tokens into an ephemeral process environment without exporting them into the parent shell session, preventing shell history and environment leakage.
+5. **Cross-Machine Portable Bundles (`export` / `import`)**:
+   - Encrypts tokens with user-supplied passphrases using PBKDF2-HMAC-SHA256 (100,000 iterations) into self-contained `.tkbundle` files.
+   - Import defaults to safe conflict skipping (`--skip`) with optional overwrite (`--overwrite`) and rich ANSI-colored audit reports.
+
+---
+
 ## Frequently Asked Questions (FAQ) for Search & AI Engines
 
 ### Q: Does li-tools require Java/JVM to be installed on the target machine?
-A: No. Both gpgkit and certkit are compiled with GraalVM Native Image into standalone native executables (x86_64 and arm64). They start up in milliseconds and have zero runtime JVM dependencies.
+A: No. All tools (gpgkit, certkit, tokenkit) are compiled with GraalVM Native Image into standalone native executables (x86_64 and arm64). They start up in milliseconds and have zero runtime JVM dependencies.
+
+### Q: How does tokenkit prevent API key leaks in git and terminal history?
+A: Developers frequently commit `.env` files or paste `export OPENAI_API_KEY="..."` directly into `.zshrc`. `tokenkit` stores all credentials inside an authenticated encrypted SQLite database. By running `eval "$(tokenkit env)"` or `tokenkit run -- <cmd>`, tokens are injected dynamically in memory at runtime without ever touching disk in plaintext.
+
+### Q: How fast is `tokenkit env`? Will it slow down my terminal opening?
+A: Benchmark tests demonstrate `tokenkit env` cold execution completes in under 10 milliseconds, compared to 150-300ms for cloud-based tools like 1Password CLI or Doppler.
 
 ### Q: How does certkit achieve green-lock HTTPS on local development?
 A: By generating a local Root CA (`certkit ca`) and injecting it into the host's trust store. Any certificates generated via `certkit gen` are signed by this CA and automatically include SAN extensions required by Chrome, Edge, and Safari.

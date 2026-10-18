@@ -1,4 +1,43 @@
+# robots.txt for li-tools (https://tools.lihu.me)
+# Explicitly welcome modern search engines and AI generative search agents (GEO Optimization)
+
 User-agent: *
 Allow: /
 
+# OpenAI Search & Crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# Anthropic Claude
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+# Perplexity AI Search Engine
+User-agent: PerplexityBot
+Allow: /
+
+# Google Search & Gemini
+User-agent: Googlebot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+# Microsoft Bing & Copilot
+User-agent: Bingbot
+Allow: /
+
+# Apple Intelligence
+User-agent: Applebot
+Allow: /
+
+# Machine-Readable AI Context & Sitemaps
 Sitemap: https://tools.lihu.me/sitemap.xml
+# LLM Context: https://tools.lihu.me/llms.txt
+# Full LLM Specification: https://tools.lihu.me/llms-full.txt

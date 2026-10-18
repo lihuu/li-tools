@@ -3,28 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>li-tools — Modern Developer Security CLI Matrix | Zero-config SSL & GPG Tools</title>
-  <meta name="description" content="A curated suite of zero-runtime-dependency developer CLI security tools powered by Java 25 & GraalVM Native Image. Featuring gpgkit and certkit with cross-platform parity on macOS, Linux, and Windows 11.">
-  <meta name="keywords" content="developer tools, gpg, ssl, tls, openssl alternative, certkit, gpgkit, java 25, graalvm native image, windows 11 certutil, x509, developer experience">
+  <title>li-tools — Modern Developer Security CLI Matrix | gpgkit, certkit &amp; tokenkit</title>
+  <meta name="description" content="A curated suite of zero-runtime-dependency developer CLI security tools powered by Java 25 &amp; GraalVM Native Image. Featuring gpgkit, certkit, and tokenkit with cross-platform parity on macOS, Linux, and Windows 11.">
+  <meta name="keywords" content="developer tools, gpg, ssl, tls, openssl alternative, token manager, api key manager, certkit, gpgkit, tokenkit, java 25, graalvm native image, windows 11 certutil, developer experience">
   <meta name="author" content="lihuu">
   <link rel="canonical" href="https://tools.lihu.me/">
   <link rel="alternate" hreflang="en" href="https://tools.lihu.me/">
   <link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/index_zh.html">
+  <link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="agent-skill" type="text/markdown" href="https://tools.lihu.me/SKILL.md">
-  <link rel="alternate" type="text/markdown" href="https://tools.lihu.me/llms.txt">
+  <link rel="help" type="text/plain" href="https://tools.lihu.me/llms.txt" title="LLM Context">
 
   <!-- Open Graph / Facebook / LinkedIn -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://tools.lihu.me/">
   <meta property="og:title" content="li-tools — Modern Developer Security CLI Matrix">
-  <meta property="og:description" content="Zero-config SSL/TLS and GPG lifecycle toolchain. Native binaries for macOS, Linux, and Windows 11.">
+  <meta property="og:description" content="Zero-config SSL/TLS, GPG, and Encrypted Token toolchain. Native binaries for macOS, Linux, and Windows 11.">
+  <meta property="og:image" content="https://tools.lihu.me/assets/og-image.svg">
   <meta property="og:site_name" content="li-tools">
   <meta property="og:locale" content="en_US">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="li-tools — Modern Developer Security CLI Matrix">
-  <meta name="twitter:description" content="A curated suite of modern developer CLI tools powered by Java 25 and GraalVM Native Image.">
+  <meta name="twitter:description" content="Curated suite of modern developer CLI tools powered by Java 25 and GraalVM Native Image.">
+  <meta name="twitter:image" content="https://tools.lihu.me/assets/og-image.svg">
 
   <!-- Schema.org JSON-LD for Search & AI Engines (GEO Optimization) -->
   <script type="application/ld+json">
@@ -36,7 +40,7 @@
         "name": "li-tools",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "macOS, Linux, Windows 11",
-        "description": "Modern developer CLI toolchain featuring gpgkit and certkit, powered by Java 25 and GraalVM Native Image.",
+        "description": "Modern developer CLI toolchain featuring gpgkit, certkit, and tokenkit, powered by Java 25 and GraalVM Native Image.",
         "url": "https://tools.lihu.me/",
         "license": "https://opensource.org/licenses/Apache-2.0",
         "offers": {
@@ -51,6 +55,17 @@
         }
       },
       {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "li-tools",
+            "item": "https://tools.lihu.me/"
+          }
+        ]
+      },
+      {
         "@type": "FAQPage",
         "mainEntity": [
           {
@@ -58,7 +73,7 @@
             "name": "What is li-tools?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "li-tools is a collection of zero-runtime-dependency developer security CLI tools designed to eliminate the cognitive burden of archaic commands. It includes gpgkit for GPG key lifecycle management and certkit for zero-config SSL/TLS certificates."
+              "text": "li-tools is a collection of zero-runtime-dependency developer security CLI tools designed to eliminate the cognitive burden of archaic commands. It includes gpgkit for GPG key lifecycle management, certkit for zero-config SSL/TLS certificates, and tokenkit for encrypted universal API tokens."
             }
           },
           {
@@ -71,10 +86,10 @@
           },
           {
             "@type": "Question",
-            "name": "Does it support Windows 11?",
+            "name": "What tools are included in li-tools?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes, li-tools maintains strict Triple-Platform Equity across macOS, Linux, and Windows 11, including non-elevated root trust injection via certutil.exe on Windows 11."
+              "text": "The suite currently includes gpgkit (GPG key lifecycle & backup), certkit (SSL/TLS certs & local CA), and tokenkit (encrypted token manager with sub-10ms shell injection)."
             }
           }
         ]
@@ -175,7 +190,7 @@
     </div>
 
     <!-- The Tools Suite Grid -->
-    <div id="suite" class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-24">
+    <div id="suite" class="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-24">
       
       <!-- GPGKIT Card -->
       <a href="gpgkit/index.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-indigo-500/20 hover:border-indigo-500/50 block">
@@ -228,6 +243,33 @@
           <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Smart SAN Detection</span>
           <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Local CA</span>
           <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Win 11 certutil</span>
+        </div>
+      </a>
+
+      <!-- TOKENKIT Card -->
+      <a href="tokenkit/index.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-amber-500/20 hover:border-amber-500/50 block">
+        <div class="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-500/20 transition-all"></div>
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <span class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-2xl font-bold shadow-inner">🪙</span>
+            <div>
+              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-amber-300 transition">tokenkit</h2>
+              <span class="text-xs font-mono text-amber-400">Zero-Friction Token Vault</span>
+            </div>
+          </div>
+          <span class="text-slate-500 group-hover:text-amber-400 transition transform group-hover:translate-x-1">→</span>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed mb-6">
+          Eliminate leaked .env files and plaintext tokens. AES-256-GCM encrypted SQLite vault, sub-10ms shell memory injection, and cross-platform profile switching.
+        </p>
+        <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-amber-300 border border-amber-950/60 mb-5 flex items-center justify-between">
+          <span>$ eval $(tokenkit env)</span>
+          <span class="text-emerald-400 text-[10px] font-semibold">✔ Zero Disk Leak</span>
+        </div>
+        <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">AES-256-GCM</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Sub-10ms Hook</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Embedded SQLite</span>
         </div>
       </a>
 
@@ -309,6 +351,12 @@
             Every backup operation enforces a mandatory round-trip loopback test inside an isolated scratch keyring. It restores the backup and verifies a test signature on the spot before saving the file.
           </p>
         </div>
+        <div class="glass-card p-6 rounded-xl">
+          <h4 class="font-bold text-white mb-2">How does tokenkit protect against accidental .env leaks and token theft?</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            tokenkit never stores plaintext secrets in repository working trees or files. Secrets reside in an AES-256-GCM encrypted embedded SQLite store (<code class="text-amber-400">~/.tokenkit/tokens.db</code>) and are injected directly into active shell memory via <code class="text-amber-400">eval $(tokenkit env)</code> in sub-10ms.
+          </p>
+        </div>
       </div>
     </div>
 
@@ -324,6 +372,7 @@
       <div class="flex items-center gap-4">
         <a href="gpgkit/index.html" class="hover:text-indigo-400 transition">gpgkit</a>
         <a href="certkit/index.html" class="hover:text-emerald-400 transition">certkit</a>
+        <a href="tokenkit/index.html" class="hover:text-amber-400 transition">tokenkit</a>
         <a href="SKILL.md" class="hover:text-emerald-400 transition">🤖 SKILL.md</a>
         <a href="llms.txt" class="hover:text-indigo-400 transition">llms.txt</a>
         <a href="index_zh.html" class="hover:text-white transition">中文版</a>
@@ -336,11 +385,11 @@
     const commands = {
       shell: 'curl -fsSL https://tools.lihu.me/install.sh | bash',
       ps1: 'irm https://tools.lihu.me/install.ps1 | iex',
-      agent: 'Please install li-tools (gpgkit & certkit) from https://tools.lihu.me/ and refer to https://tools.lihu.me/SKILL.md for CLI instructions.',
+      agent: 'Please install li-tools (gpgkit, certkit & tokenkit) from https://tools.lihu.me/ and refer to https://tools.lihu.me/SKILL.md for CLI instructions.',
       skills: 'curl -fsSL https://tools.lihu.me/install-skills.sh | bash',
       releases: 'https://github.com/lihuu/li-tools/releases/latest',
-      brew: 'brew tap lihuu/tap && brew install gpgkit certkit',
-      scoop: 'scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install gpgkit certkit'
+      brew: 'brew tap lihuu/tap && brew install gpgkit certkit tokenkit',
+      scoop: 'scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install gpgkit certkit tokenkit'
     };
 
     function setTab(tab) {

@@ -6,6 +6,7 @@
 #   curl -fsSL https://tools.lihu.me/install.sh | bash
 #   curl -fsSL https://tools.lihu.me/install.sh | bash -s gpgkit
 #   curl -fsSL https://tools.lihu.me/install.sh | bash -s certkit
+#   curl -fsSL https://tools.lihu.me/install.sh | bash -s tokenkit
 # ==============================================================================
 set -euo pipefail
 
@@ -61,12 +62,16 @@ case "${TARGET}" in
   certkit)
     install_tool "certkit"
     ;;
+  tokenkit)
+    install_tool "tokenkit"
+    ;;
   all|"")
     install_tool "gpgkit"
     install_tool "certkit"
+    install_tool "tokenkit"
     ;;
   *)
-    echo "❌ Unknown target: ${TARGET}. Valid targets: all, gpgkit, certkit"
+    echo "❌ Unknown target: ${TARGET}. Valid targets: all, gpgkit, certkit, tokenkit"
     exit 1
     ;;
 esac

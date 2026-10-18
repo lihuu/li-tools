@@ -44,9 +44,11 @@ function Install-Tool([string]$ToolName) {
 switch ($Target.ToLower()) {
     "gpgkit" { Install-Tool "gpgkit" }
     "certkit" { Install-Tool "certkit" }
+    "tokenkit" { Install-Tool "tokenkit" }
     default  {
         Install-Tool "gpgkit"
         Install-Tool "certkit"
+        Install-Tool "tokenkit"
     }
 }
 
