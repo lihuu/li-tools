@@ -33,4 +33,8 @@ public final class DatabaseConfig {
 
         return Path.of(userHome, ".config", "tokenkit", DEFAULT_DB_FILENAME);
     }
+
+    public static @NotNull Path defaultDatabasePath() {
+        return resolveDatabasePath(System.getenv());
+    }
 }

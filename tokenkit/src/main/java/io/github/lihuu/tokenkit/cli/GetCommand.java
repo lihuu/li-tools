@@ -76,7 +76,8 @@ public final class GetCommand implements Callable<Integer> {
                 }
             }
 
-            out.println(secretValue);
+            out.print(secretValue);
+            out.flush();
             return 0;
         } catch (Exception e) {
             err.println(outputStyle.error("Failed to decrypt token: " + e.getMessage()));
