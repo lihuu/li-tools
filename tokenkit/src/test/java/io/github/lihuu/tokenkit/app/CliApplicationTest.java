@@ -54,7 +54,7 @@ class CliApplicationTest {
 
         assertEquals(0, exitCode);
         String output = out.toString();
-        assertTrue(output.contains("0.1.0"));
+        assertTrue(output.contains(ApplicationInfo.load().version()));
     }
 
     @Test
