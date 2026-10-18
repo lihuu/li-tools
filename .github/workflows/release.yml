@@ -57,6 +57,13 @@ jobs:
           ./build-native.sh
           cp "target/certkit${{ matrix.binary-ext }}" "../certkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}"
 
+      - name: Build tokenkit Native Binary
+        shell: bash
+        run: |
+          cd tokenkit
+          ./build-native.sh
+          cp "target/tokenkit${{ matrix.binary-ext }}" "../tokenkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}"
+
       - name: Upload Binary Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -64,6 +71,7 @@ jobs:
           path: |
             gpgkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}
             certkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}
+            tokenkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}
 
   publish-release:
     name: Publish GitHub Release
