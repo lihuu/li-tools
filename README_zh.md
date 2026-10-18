@@ -24,6 +24,7 @@
 | :--- | :--- | :--- | :--- |
 | **[`gpgkit`](gpgkit/)** | GPG 密钥全生命周期管理，终结“换机器丢密钥” | 零运行时依赖、强制回环可验证性校验、一键备份/还原/续期/自检 | `Active` |
 | **[`certkit`](certkit/)** | 现代 SSL/TLS 证书瑞士军刀，告别反人类的 OpenSSL 参数 | 约定大于配置、一键受信任本地 Root CA、智能域名/IP SAN 嗅探、单参数互转、三端系统受信 | `Active` |
+| **[`tokenkit`](tokenkit/)** | 现代通用敏感 Token/API Key 加密管理器，终结明文密钥泄露 | 内嵌强加密 SQLite、AES-256-GCM + PBKDF2、<10ms 终端极速环境变量注入 (`tokenkit env`)、跨系统安全加密迁移包 | `Active` |
 
 ---
 
@@ -58,6 +59,10 @@ li-tools/
 │   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
 │   └── src/
 ├── certkit/                    # SSL/TLS 证书管理工具 (Picocli + OpenSSL 现代化编排)
+│   ├── SPEC.md                 # 接口与行为规格契约
+│   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
+│   └── src/
+├── tokenkit/                   # 通用 Token 与敏感凭据加密管理工具 (Picocli + 内嵌 SQLite)
 │   ├── SPEC.md                 # 接口与行为规格契约
 │   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
 │   └── src/
