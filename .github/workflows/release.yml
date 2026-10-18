@@ -11,22 +11,22 @@ permissions:
 
 jobs:
   build-native:
-    name: Build Native on ${{ matrix.os }} (${{ matrix.arch }})
-    runs-on: ${{ matrix.os }}
+    name: Build Native on ${{ matrix.platform }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.runs-on }}
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - runs-on: ubuntu-latest
             platform: linux
             arch: amd64
             binary-ext: ""
-          - os: macos-latest
+          - runs-on: [self-hosted, macOS, ARM64]
             platform: darwin
             arch: arm64
             binary-ext: ""
-          - os: windows-latest
+          - runs-on: windows-latest
             platform: windows
             arch: amd64
             binary-ext: ".exe"
