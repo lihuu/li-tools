@@ -288,19 +288,32 @@ public final class SqliteTokenRepository {
     }
 
     public synchronized void saveProfile(@NotNull Profile profile) throws SQLException {
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement("""
-                     INSERT INTO profiles (name, description, is_active, created_at)
-                     VALUES (?, ?, ?, ?)
-                     ON CONFLICT(name) DO UPDATE SET
-                         description = excluded.description,
-                         is_active = excluded.is_active
-                     """)) {
-            ps.setString(1, profile.name());
-            ps.setString(2, profile.description());
-            ps.setInt(3, profile.active() ? 1 : 0);
-            ps.setLong(4, profile.createdAt());
-            ps.executeUpdate();
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                if (profile.active()) {
+                    try (Statement stmt = conn.createStatement()) {
+                        stmt.execute("UPDATE profiles SET is_active = 0;");
+                    }
+                }
+                try (PreparedStatement ps = conn.prepareStatement("""
+                        INSERT INTO profiles (name, description, is_active, created_at)
+                        VALUES (?, ?, ?, ?)
+                        ON CONFLICT(name) DO UPDATE SET
+                            description = excluded.description,
+                            is_active = excluded.is_active
+                        """)) {
+                    ps.setString(1, profile.name());
+                    ps.setString(2, profile.description());
+                    ps.setInt(3, profile.active() ? 1 : 0);
+                    ps.setLong(4, profile.createdAt());
+                    ps.executeUpdate();
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
         }
     }
 
@@ -351,10 +364,26 @@ public final class SqliteTokenRepository {
         if ("default".equals(name)) {
             throw new IllegalArgumentException("The 'default' profile cannot be deleted");
         }
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement("DELETE FROM profiles WHERE name = ?")) {
-            ps.setString(1, name);
-            return ps.executeUpdate() > 0;
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                int affected;
+                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM profiles WHERE name = ?")) {
+                    ps.setString(1, name);
+                    affected = ps.executeUpdate();
+                }
+                try (Statement stmt = conn.createStatement();
+                     ResultSet rs = stmt.executeQuery("SELECT 1 FROM profiles WHERE is_active = 1")) {
+                    if (!rs.next()) {
+                        stmt.execute("UPDATE profiles SET is_active = 1 WHERE name = 'default'");
+                    }
+                }
+                conn.commit();
+                return affected > 0;
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
         }
     }
 
