@@ -14,6 +14,7 @@
     <modules>
         <module>gpgkit</module>
         <module>certkit</module>
+        <module>tokenkit</module>
     </modules>
 
         <properties>
