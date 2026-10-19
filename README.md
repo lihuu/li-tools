@@ -50,6 +50,9 @@
 ```text
 li-tools/
 ├── pom.xml                     # Multi-module parent POM (Java 25, JUnit 5, Picocli dependency management)
+├── cli-common/                 # Shared CLI foundation (OutputStyle, JsonWriter, CliRunner shell, formatters)
+│   ├── src/
+│   └── pom.xml
 ├── site/                       # Modern landing pages deployed to GitHub Pages
 │   ├── index.html              # Suite portal homepage
 │   ├── gpgkit/index.html       # gpgkit landing page
@@ -69,6 +72,19 @@ li-tools/
 ├── .github/workflows/          # CI/CD and GitHub Pages automation
 └── README.md
 ```
+
+## 🧩 Shared CLI Architecture (`cli-common`)
+
+All tools in `li-tools` build upon the unified `cli-common` engine, ensuring identical interaction UX, exit code semantics, and developer experience across the entire matrix:
+
+- **Unified CLI Runner Shell (`CliRunner`, `GlobalOptionsMixin`)**: Standardized Picocli execution harness providing uniform flags (`--json`, `--quiet`, `--no-color`, `--debug`), strict exit code contracts (`0 = OK`, `1 = FAILURE`, `2 = USAGE`), and automatic UTF-8 stream pinning.
+- **Terminal Visual Styling (`OutputStyle`)**: Automatic detection of interactive TTY vs piped output, full compliance with the [NO_COLOR](https://no-color.org/) standard, and unified semantic glyphs (`✔`, `⚠`, `✖`, `ℹ`, `💡`).
+- **Zero-Reflection Streaming JSON (`JsonWriter`)**: Lightweight, GraalVM Native Image-friendly JSON serializer without runtime reflection.
+- **Terminal Formatters**: Auto-aligning key-value printers (`KeyValueFormatter`), Unicode box-drawing tables with ANSI-safe width calculation (`TableFormatter`), and secret masking utilities (`TextMasker`).
+- **Platform & System Bridges**: Native clipboard interaction (`ClipboardUtil`), POSIX/PowerShell/Fish environment variable escaping (`ShellFormatter`), and OS detection (`Platform`).
+
+Adding a new tool to `li-tools` requires zero boilerplate: simply depend on `cli-common` to inherit the exact shell, flags, formatting, and exit protocol.
+
 
 ## 🚀 Installation
 
