@@ -28,6 +28,7 @@ public final class CliApplication {
     private CliApplication() {}
 
     public static void main(String[] args) {
+        io.github.lihuu.clicommon.cli.CliRunner.pinUtf8Streams();
         PrintWriter out = new PrintWriter(System.out, true);
         PrintWriter err = new PrintWriter(System.err, true);
         Path dbPath = DatabaseConfig.defaultDatabasePath();

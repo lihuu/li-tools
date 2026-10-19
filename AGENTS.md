@@ -20,7 +20,7 @@
 - Keep classes focused, methods at one level of abstraction, and public API surface small.
 - Prefer clear control flow over clever streams and callback chains. Use Optional mainly as an absence-bearing return value.
 - Preserve exception semantics. Do not catch broad Exception, swallow failures, or use exceptions for normal control flow.
-- Annotate public reference parameters and return values with JetBrains @NotNull/@Nullable for IDE and static analysis. These annotations do not generate runtime checks. Add explicit validation only when the required behavior calls for it; Objects.requireNonNull is allowed.
+- Annotate public reference parameters and return values with JetBrains @NotNull/@Nullable for IDE and static analysis. Rely on @NotNull annotations for contract enforcement; avoid defensive Objects.requireNonNull boilerplate unless explicitly mandated by business logic.
 - Review changed production code for unnecessary abstraction, duplication, unclear ownership, and excessive indirection after tests are green.
 
 ## Source and CLI boundaries

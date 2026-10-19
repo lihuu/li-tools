@@ -4,7 +4,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
 
 /**
  * Cross-platform system clipboard integration.
@@ -13,7 +12,6 @@ public final class ClipboardUtil {
     private ClipboardUtil() {}
 
     public static boolean copyToClipboard(@NotNull String text) {
-        Objects.requireNonNull(text, "text must not be null");
         String[] command;
 
         if (Platform.isMac()) {

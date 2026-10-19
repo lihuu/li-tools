@@ -87,4 +87,11 @@ class JsonWriterTest {
         JsonWriter writer = new JsonWriter();
         assertThrows(IllegalStateException.class, () -> writer.name("outside"));
     }
+
+    @Test
+    void shouldThrowOnDanglingMemberName() {
+        JsonWriter writer = new JsonWriter();
+        writer.beginObject().name("incomplete");
+        assertThrows(IllegalStateException.class, writer::endObject);
+    }
 }

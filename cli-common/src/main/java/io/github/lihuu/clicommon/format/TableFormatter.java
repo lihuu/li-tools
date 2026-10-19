@@ -2,7 +2,6 @@ package io.github.lihuu.clicommon.format;
 
 import org.jetbrains.annotations.NotNull;
 import java.util.List;
-import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
@@ -14,9 +13,6 @@ public final class TableFormatter {
     private TableFormatter() {}
 
     public record Column(@NotNull String header, int minWidth) {
-        public Column {
-            Objects.requireNonNull(header, "header must not be null");
-        }
     }
 
     public static @NotNull String stripAnsi(@NotNull String text) {
@@ -28,8 +24,6 @@ public final class TableFormatter {
     }
 
     public static @NotNull String format(@NotNull List<Column> columns, @NotNull List<List<String>> rows) {
-        Objects.requireNonNull(columns, "columns must not be null");
-        Objects.requireNonNull(rows, "rows must not be null");
 
         int[] widths = new int[columns.size()];
         for (int c = 0; c < columns.size(); c++) {

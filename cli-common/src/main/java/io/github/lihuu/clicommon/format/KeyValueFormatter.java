@@ -3,7 +3,6 @@ package io.github.lihuu.clicommon.format;
 import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Key-value pair formatter with clean colon alignment.
@@ -12,7 +11,6 @@ public final class KeyValueFormatter {
     private KeyValueFormatter() {}
 
     public static @NotNull String format(@NotNull List<Map.Entry<String, String>> entries, int indent) {
-        Objects.requireNonNull(entries, "entries must not be null");
         if (entries.isEmpty()) {
             return "";
         }

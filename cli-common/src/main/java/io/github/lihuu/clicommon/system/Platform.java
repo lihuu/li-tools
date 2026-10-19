@@ -2,7 +2,6 @@ package io.github.lihuu.clicommon.system;
 
 import org.jetbrains.annotations.NotNull;
 import java.util.Locale;
-import java.util.Objects;
 
 /**
  * Operating system and host platform detector.
@@ -18,7 +17,6 @@ public final class Platform {
     private Platform() {}
 
     public static @NotNull OS detect(@NotNull String osName) {
-        Objects.requireNonNull(osName, "osName must not be null");
         String lower = osName.toLowerCase(Locale.ROOT);
         if (lower.contains("mac") || lower.contains("darwin")) {
             return OS.MACOS;

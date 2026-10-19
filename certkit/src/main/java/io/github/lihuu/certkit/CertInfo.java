@@ -1,5 +1,6 @@
 package io.github.lihuu.certkit;
 
+import org.jetbrains.annotations.NotNull;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -7,14 +8,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 public record CertInfo(
-    String subjectCn,
-    List<String> sans,
-    String issuer,
-    Instant notBefore,
-    Instant notAfter,
-    String sha256Fingerprint,
-    String sigAlgName,
-    String serialNumber
+    @NotNull String subjectCn,
+    @NotNull List<String> sans,
+    @NotNull String issuer,
+    @NotNull Instant notBefore,
+    @NotNull Instant notAfter,
+    @NotNull String sha256Fingerprint,
+    @NotNull String sigAlgName,
+    @NotNull String serialNumber
 ) {
     private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_INSTANT;
     private static final DateTimeFormatter HUMAN_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss 'UTC'")
@@ -32,7 +33,7 @@ public record CertInfo(
         return !isExpired() && daysRemaining() <= 90;
     }
 
-    public String statusLabel() {
+    public @NotNull String statusLabel() {
         if (isExpired()) {
             return "EXPIRED (" + Math.abs(daysRemaining()) + " days ago)";
         }
@@ -42,7 +43,7 @@ public record CertInfo(
         return "OK (" + daysRemaining() + " days remaining)";
     }
 
-    public String toHumanString() {
+    public @NotNull String toHumanString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Certificate Overview:\n");
         sb.append(String.format("  Subject CN:   %s\n", subjectCn));
@@ -57,7 +58,7 @@ public record CertInfo(
         return sb.toString();
     }
 
-    public String toJson() {
+    public @NotNull String toJson() {
         io.github.lihuu.clicommon.json.JsonWriter writer = new io.github.lihuu.clicommon.json.JsonWriter();
         writer.beginObject()
                 .name("subjectCn").value(subjectCn)

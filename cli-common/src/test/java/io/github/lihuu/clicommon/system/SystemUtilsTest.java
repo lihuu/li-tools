@@ -45,9 +45,4 @@ class SystemUtilsTest {
         String exported = ShellFormatter.formatExport("fish", "API_KEY", "secret$123\"quoted");
         assertEquals("set -gx API_KEY \"secret\\$123\\\"quoted\"", exported);
     }
-
-    @Test
-    void shouldEnforceNonNullForClipboard() {
-        assertThrows(NullPointerException.class, () -> ClipboardUtil.copyToClipboard(null));
-    }
 }

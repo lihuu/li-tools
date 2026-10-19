@@ -3,7 +3,6 @@ package io.github.lihuu.clicommon.system;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import java.util.Locale;
-import java.util.Objects;
 
 /**
  * Shell-specific environment variable export and escaping utility.
@@ -12,9 +11,6 @@ public final class ShellFormatter {
     private ShellFormatter() {}
 
     public static @NotNull String formatExport(@Nullable String shell, @NotNull String name, @NotNull String value) {
-        Objects.requireNonNull(name, "name must not be null");
-        Objects.requireNonNull(value, "value must not be null");
-
         String targetShell = (shell != null && !shell.trim().isEmpty())
                 ? shell.trim().toLowerCase(Locale.ROOT)
                 : detectDefaultShell();

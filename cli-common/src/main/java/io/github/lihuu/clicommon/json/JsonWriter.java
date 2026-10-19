@@ -4,7 +4,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Objects;
 
 /**
  * Lightweight, zero-reflection streaming JSON writer.
@@ -40,7 +39,6 @@ public final class JsonWriter {
     }
 
     public @NotNull JsonWriter name(@NotNull String name) {
-        Objects.requireNonNull(name, "name must not be null");
         if (emptyLevels.isEmpty()) {
             throw new IllegalStateException("member name outside an object");
         }
@@ -89,6 +87,9 @@ public final class JsonWriter {
     }
 
     private void close(char bracket) {
+        if (awaitingValue) {
+            throw new IllegalStateException("Expected a value before closing with " + bracket);
+        }
         if (emptyLevels.isEmpty()) {
             throw new IllegalStateException("nothing open to close with " + bracket);
         }

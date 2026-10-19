@@ -19,7 +19,6 @@
     <properties>
         <main.class>io.github.lihuu.tokenkit.app.CliApplication</main.class>
         <sqlite.jdbc.version>3.49.1.0</sqlite.jdbc.version>
-        <annotations.version>26.0.2</annotations.version>
     </properties>
 
     <dependencies>
@@ -34,7 +33,6 @@
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>${annotations.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

@@ -10,7 +10,6 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Unified CLI runner and lifecycle orchestrator for li-tools.
@@ -44,15 +43,12 @@ public final class CliRunner {
             @NotNull Map<String, String> env,
             boolean interactive
     ) {
-        Objects.requireNonNull(rootCommand, "rootCommand must not be null");
-        Objects.requireNonNull(args, "args must not be null");
-        Objects.requireNonNull(out, "out must not be null");
-        Objects.requireNonNull(err, "err must not be null");
-        Objects.requireNonNull(env, "env must not be null");
-
         boolean noColorFlag = false;
         boolean debugFlag = false;
         for (String arg : args) {
+            if ("--".equals(arg)) {
+                break;
+            }
             if ("--no-color".equals(arg)) {
                 noColorFlag = true;
             } else if ("--debug".equals(arg)) {
@@ -69,7 +65,7 @@ public final class CliRunner {
 
         cmd.setExecutionExceptionHandler((ex, commandLine, parseResult) -> {
             if (ex instanceof CliUsageException) {
-                err.println(outputStyle.error(ex.getMessage()));
+                err.println(OutputStyle.plain().error(ex.getMessage()));
                 return CliExitCode.USAGE;
             }
             if (ex instanceof CliExecutionException) {
@@ -89,7 +85,7 @@ public final class CliRunner {
 
         cmd.setParameterExceptionHandler((ex, args1) -> {
             CommandLine.UnmatchedArgumentException.printSuggestions(ex, err);
-            err.println(outputStyle.error(ex.getMessage()));
+            err.println(OutputStyle.plain().error(ex.getMessage()));
             return CliExitCode.USAGE;
         });
 
