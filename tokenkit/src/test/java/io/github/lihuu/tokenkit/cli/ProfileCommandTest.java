@@ -8,6 +8,7 @@ import io.github.lihuu.tokenkit.core.crypto.CryptoEngine;
 import io.github.lihuu.tokenkit.core.key.MasterKeyProvider;
 import io.github.lihuu.tokenkit.core.model.Profile;
 import io.github.lihuu.tokenkit.core.storage.SqliteTokenRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -29,6 +30,13 @@ class ProfileCommandTest {
         this.repository = new SqliteTokenRepository(tempDir.resolve("tokens.db"), keyProvider);
         this.repository.initializeSchema();
         this.outputStyle = OutputStyle.plain();
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (repository != null) {
+            repository.close();
+        }
     }
 
     private CommandLine createProfileCli(StringWriter out, StringWriter err) {

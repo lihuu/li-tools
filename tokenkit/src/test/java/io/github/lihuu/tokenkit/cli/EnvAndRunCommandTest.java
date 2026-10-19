@@ -10,6 +10,7 @@ import io.github.lihuu.tokenkit.core.key.MasterKeyProvider;
 import io.github.lihuu.tokenkit.core.model.Token;
 import io.github.lihuu.tokenkit.core.storage.SqliteTokenRepository;
 import io.github.lihuu.tokenkit.util.ShellFormatter;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -41,6 +42,13 @@ class EnvAndRunCommandTest {
         byte[] secretB = "secret\"val$B\nline2".getBytes();
         EncryptedPayload payloadB = CryptoEngine.encrypt(secretB, masterKey);
         repository.saveToken(new Token("id-2", "default", "TOKEN_B", "generic", payloadB.nonce(), payloadB.ciphertext(), null, null, null, 1000L, 1000L));
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (repository != null) {
+            repository.close();
+        }
     }
 
     @Test
