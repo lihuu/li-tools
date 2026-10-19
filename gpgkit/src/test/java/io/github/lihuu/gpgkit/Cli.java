@@ -64,7 +64,7 @@ final class Cli {
         List<String> command = new ArrayList<>();
         command.add(Path.of(System.getProperty("java.home"), "bin", "java").toString());
         command.add("-cp");
-        command.add(mainClasses().toString());
+        command.add(runtimeClasspath());
         command.add("io.github.lihuu.gpgkit.Main");
         command.addAll(arguments);
 
@@ -108,6 +108,25 @@ final class Cli {
         return new Result(process.exitValue(),
                 new String(stdout[0], StandardCharsets.UTF_8),
                 new String(stderr[0], StandardCharsets.UTF_8));
+    }
+
+    private static String runtimeClasspath() {
+        Path mainClasses = mainClasses();
+        List<String> entries = new ArrayList<>();
+        entries.add(mainClasses.toString());
+
+        String testCp = System.getProperty("java.class.path", "");
+        for (String entry : testCp.split(File.pathSeparator)) {
+            if (entry.isBlank()) {
+                continue;
+            }
+            if (entry.contains("junit") || entry.contains("opentest4j") || entry.contains("apiguardian")
+                    || entry.endsWith("test-classes") || entry.equals(mainClasses.toString())) {
+                continue;
+            }
+            entries.add(entry);
+        }
+        return String.join(File.pathSeparator, entries);
     }
 
     /**

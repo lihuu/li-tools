@@ -1,5 +1,7 @@
 package io.github.lihuu.gpgkit;
 
+import io.github.lihuu.clicommon.cli.CliExecutionException;
+
 /**
  * A failure the user is meant to read.
  *
@@ -11,7 +13,7 @@ package io.github.lihuu.gpgkit;
  * what keeps a stack trace from ever reaching the terminal: a failure here is a sentence, and a
  * trace would be noise the user cannot act on.
  */
-final class Failure extends RuntimeException {
+final class Failure extends CliExecutionException {
     Failure(String message) {
         super(message);
     }

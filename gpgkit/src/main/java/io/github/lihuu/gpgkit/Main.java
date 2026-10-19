@@ -1,9 +1,6 @@
 package io.github.lihuu.gpgkit;
 
-import java.io.FileDescriptor;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
+import io.github.lihuu.clicommon.cli.CliRunner;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,11 +49,7 @@ public final class Main {
               doctor                  can this machine still sign, and still publish?""";
 
     public static void main(String[] args) {
-        // The verdict lines are Chinese (SPEC §2 spells them out) and stdout's encoding follows
-        // the locale, so under LANG=C they would silently become '?' — a corrupt answer that
-        // looks like a working one. Pin both streams to UTF-8 before anything can print.
-        System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out), true, StandardCharsets.UTF_8));
-        System.setErr(new PrintStream(new FileOutputStream(FileDescriptor.err), true, StandardCharsets.UTF_8));
+        CliRunner.pinUtf8Streams();
         System.exit(run(args));
     }
 

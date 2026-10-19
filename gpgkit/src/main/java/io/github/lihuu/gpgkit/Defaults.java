@@ -1,5 +1,6 @@
 package io.github.lihuu.gpgkit;
 
+import io.github.lihuu.clicommon.cli.CliExitCode;
 import java.nio.file.Path;
 
 /**
@@ -15,9 +16,9 @@ final class Defaults {
     }
 
     /** SPEC §2: 0 success, 1 failure with the reason on stderr, 2 usage error. */
-    static final int EXIT_OK = 0;
-    static final int EXIT_FAILURE = 1;
-    static final int EXIT_USAGE = 2;
+    static final int EXIT_OK = CliExitCode.OK;
+    static final int EXIT_FAILURE = CliExitCode.FAILURE;
+    static final int EXIT_USAGE = CliExitCode.USAGE;
 
     /** SPEC §2 names this keyserver as the default for `publish`. */
     static final String KEYSERVER = "hkps://keyserver.ubuntu.com";
