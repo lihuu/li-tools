@@ -20,7 +20,7 @@ public final class EnvMasterKeyProvider implements MasterKeyProvider {
     }
 
     @Override
-    public byte @NotNull [] getOrCreateMasterKey() throws GeneralSecurityException {
+    public @NotNull byte[] getOrCreateMasterKey() throws GeneralSecurityException {
         String rawKey = environment.get(ENV_VAR_NAME);
         if (rawKey == null || rawKey.trim().isEmpty()) {
             throw new GeneralSecurityException("Environment variable " + ENV_VAR_NAME + " is not set");

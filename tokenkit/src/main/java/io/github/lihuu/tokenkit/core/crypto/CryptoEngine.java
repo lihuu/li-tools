@@ -2,7 +2,6 @@ package io.github.lihuu.tokenkit.core.crypto;
 
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
-import java.util.Objects;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
@@ -26,7 +25,7 @@ public final class CryptoEngine {
     private CryptoEngine() {
     }
 
-    public static byte @NotNull [] generateRandomBytes(int length) {
+    public static @NotNull byte[] generateRandomBytes(int length) {
         if (length <= 0) {
             throw new IllegalArgumentException("Length must be positive, got: " + length);
         }
@@ -35,10 +34,8 @@ public final class CryptoEngine {
         return bytes;
     }
 
-    public static @NotNull EncryptedPayload encrypt(byte @NotNull [] plaintext, byte @NotNull [] masterKey)
+    public static @NotNull EncryptedPayload encrypt(@NotNull byte[] plaintext, @NotNull byte[] masterKey)
             throws GeneralSecurityException {
-        Objects.requireNonNull(plaintext, "plaintext must not be null");
-        Objects.requireNonNull(masterKey, "masterKey must not be null");
         if (masterKey.length != AES_256_KEY_LENGTH_BYTES) {
             throw new IllegalArgumentException("Master key must be exactly 32 bytes for AES-256");
         }
@@ -54,11 +51,8 @@ public final class CryptoEngine {
         return new EncryptedPayload(nonce, ciphertext);
     }
 
-    public static byte @NotNull [] decrypt(byte @NotNull [] nonce, byte @NotNull [] ciphertext, byte @NotNull [] masterKey)
+    public static @NotNull byte[] decrypt(@NotNull byte[] nonce, @NotNull byte[] ciphertext, @NotNull byte[] masterKey)
             throws GeneralSecurityException {
-        Objects.requireNonNull(nonce, "nonce must not be null");
-        Objects.requireNonNull(ciphertext, "ciphertext must not be null");
-        Objects.requireNonNull(masterKey, "masterKey must not be null");
         if (masterKey.length != AES_256_KEY_LENGTH_BYTES) {
             throw new IllegalArgumentException("Master key must be exactly 32 bytes for AES-256");
         }
@@ -74,16 +68,13 @@ public final class CryptoEngine {
         return cipher.doFinal(ciphertext);
     }
 
-    public static byte @NotNull [] deriveKey(char @NotNull [] passphrase, byte @NotNull [] salt)
+    public static @NotNull byte[] deriveKey(@NotNull char[] passphrase, @NotNull byte[] salt)
             throws GeneralSecurityException {
         return deriveKey(passphrase, salt, DEFAULT_PBKDF2_ITERATIONS, DEFAULT_PBKDF2_KEY_LENGTH_BITS);
     }
 
-    public static byte @NotNull [] deriveKey(char @NotNull [] passphrase, byte @NotNull [] salt, int iterations, int keyLengthBits)
+    public static @NotNull byte[] deriveKey(@NotNull char[] passphrase, @NotNull byte[] salt, int iterations, int keyLengthBits)
             throws GeneralSecurityException {
-        Objects.requireNonNull(passphrase, "passphrase must not be null");
-        Objects.requireNonNull(salt, "salt must not be null");
-
         PBEKeySpec spec = new PBEKeySpec(passphrase, salt, iterations, keyLengthBits);
         try {
             SecretKeyFactory factory = SecretKeyFactory.getInstance(KDF_ALGORITHM);

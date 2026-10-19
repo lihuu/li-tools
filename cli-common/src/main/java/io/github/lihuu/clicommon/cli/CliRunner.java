@@ -28,7 +28,7 @@ public final class CliRunner {
         }
     }
 
-    public static int run(@NotNull Object rootCommand, String @NotNull [] args) {
+    public static int run(@NotNull Object rootCommand, @NotNull String[] args) {
         pinUtf8Streams();
         PrintWriter out = new PrintWriter(System.out, true, StandardCharsets.UTF_8);
         PrintWriter err = new PrintWriter(System.err, true, StandardCharsets.UTF_8);
@@ -37,7 +37,7 @@ public final class CliRunner {
 
     public static int run(
             @NotNull Object rootCommand,
-            String @NotNull [] args,
+            @NotNull String[] args,
             @NotNull PrintWriter out,
             @NotNull PrintWriter err,
             @NotNull Map<String, String> env,

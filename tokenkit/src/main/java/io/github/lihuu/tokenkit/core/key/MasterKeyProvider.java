@@ -5,5 +5,5 @@ import org.jetbrains.annotations.NotNull;
 
 @FunctionalInterface
 public interface MasterKeyProvider {
-    byte @NotNull [] getOrCreateMasterKey() throws GeneralSecurityException;
+    @NotNull byte[] getOrCreateMasterKey() throws GeneralSecurityException;
 }

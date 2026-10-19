@@ -33,7 +33,7 @@ public final class MacKeychainKeyProvider implements MasterKeyProvider {
     }
 
     @Override
-    public byte @NotNull [] getOrCreateMasterKey() throws GeneralSecurityException {
+    public @NotNull byte[] getOrCreateMasterKey() throws GeneralSecurityException {
         String cacheKey = service + "::" + account;
         byte[] cached = KEY_CACHE.get(cacheKey);
         if (cached != null) {

@@ -25,6 +25,7 @@
             <junit.jupiter.version>5.11.4</junit.jupiter.version>
             <picocli.version>4.7.6</picocli.version>
             <annotations.version>26.0.2</annotations.version>
+            <notnull-maven-plugin.version>1.0.0</notnull-maven-plugin.version>
             <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
             <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
             <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
@@ -74,6 +75,18 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>io.github.lihuu</groupId>
+                    <artifactId>notnull-maven-plugin</artifactId>
+                    <version>${notnull-maven-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>instrument</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${maven-compiler-plugin.version}</version>
@@ -98,5 +111,18 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>io.github.lihuu</groupId>
+                <artifactId>notnull-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>instrument</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 </project>

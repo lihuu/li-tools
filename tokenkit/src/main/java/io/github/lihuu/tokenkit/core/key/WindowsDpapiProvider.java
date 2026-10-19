@@ -17,7 +17,7 @@ public final class WindowsDpapiProvider implements MasterKeyProvider {
     }
 
     @Override
-    public byte @NotNull [] getOrCreateMasterKey() throws GeneralSecurityException {
+    public @NotNull byte[] getOrCreateMasterKey() throws GeneralSecurityException {
         try {
             if (Files.exists(keyFilePath)) {
                 byte[] key = Files.readAllBytes(keyFilePath);
