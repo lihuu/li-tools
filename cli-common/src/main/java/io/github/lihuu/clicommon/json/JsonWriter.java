@@ -45,7 +45,7 @@ public final class JsonWriter {
             throw new IllegalStateException("member name outside an object");
         }
         separate();
-        out.append(quote(name)).append(':');
+        out.append(quote(name)).append(": ");
         awaitingValue = true;
         return this;
     }

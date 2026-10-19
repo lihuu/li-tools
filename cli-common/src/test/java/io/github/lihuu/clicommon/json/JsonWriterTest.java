@@ -29,7 +29,7 @@ class JsonWriterTest {
                 .name("tag").nullValue()
                 .endObject();
 
-        assertEquals("{\"name\":\"token\",\"count\":42,\"active\":true,\"tag\":null}", writer.toString());
+        assertEquals("{\"name\": \"token\",\"count\": 42,\"active\": true,\"tag\": null}", writer.toString());
     }
 
     @Test
@@ -46,7 +46,7 @@ class JsonWriterTest {
                 .endObject()
                 .endObject();
 
-        assertEquals("{\"status\":\"OK\",\"items\":[\"a\",\"b\"],\"meta\":{\"code\":200}}", writer.toString());
+        assertEquals("{\"status\": \"OK\",\"items\": [\"a\",\"b\"],\"meta\": {\"code\": 200}}", writer.toString());
     }
 
     @Test
@@ -56,7 +56,7 @@ class JsonWriterTest {
                 .name("key\"quote").value("line1\nline2\ttab\\backslash\r")
                 .endObject();
 
-        assertEquals("{\"key\\\"quote\":\"line1\\nline2\\ttab\\\\backslash\\r\"}", writer.toString());
+        assertEquals("{\"key\\\"quote\": \"line1\\nline2\\ttab\\\\backslash\\r\"}", writer.toString());
     }
 
     @Test
@@ -66,7 +66,7 @@ class JsonWriterTest {
                 .name("message").value("已就绪 ✔")
                 .endObject();
 
-        assertEquals("{\"message\":\"已就绪 ✔\"}", writer.toString());
+        assertEquals("{\"message\": \"已就绪 ✔\"}", writer.toString());
     }
 
     @Test
