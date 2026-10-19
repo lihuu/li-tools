@@ -78,6 +78,9 @@ jobs:
     needs: build-native
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -98,3 +101,12 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
+
+      - name: Sync Homebrew Tap and Scoop Bucket
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          ECOSYSTEM_TOKEN: ${{ secrets.ECOSYSTEM_TOKEN }}
+        run: |
+          python3 scripts/sync-package-managers.py \
+            --sums release-assets/SHA256SUMS.txt \
+            --version "${GITHUB_REF_NAME#v}"

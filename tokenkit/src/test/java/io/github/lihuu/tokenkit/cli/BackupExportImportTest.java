@@ -11,6 +11,7 @@ import io.github.lihuu.tokenkit.core.crypto.EncryptedPayload;
 import io.github.lihuu.tokenkit.core.key.MasterKeyProvider;
 import io.github.lihuu.tokenkit.core.model.Token;
 import io.github.lihuu.tokenkit.core.storage.SqliteTokenRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -45,6 +46,13 @@ class BackupExportImportTest {
         sourceRepo.saveToken(new Token("id-2", "default", "KEY_B", "generic", p2.nonce(), p2.ciphertext(), "second key", "infra", null, 1000L, 1000L));
     }
 
+    @AfterEach
+    void tearDown() {
+        if (sourceRepo != null) {
+            sourceRepo.close();
+        }
+    }
+
     @Test
     void shouldExportEncryptedBundleAndImportWithConflictResolution(@TempDir Path tempDir) throws Exception {
         Path bundlePath = tempDir.resolve("export.tkbundle");
@@ -68,60 +76,61 @@ class BackupExportImportTest {
         byte[] targetMasterKey = CryptoEngine.generateRandomBytes(32);
         MasterKeyProvider targetKeyProvider = () -> targetMasterKey;
         Path targetDbPath = tempDir.resolve("target.db");
-        SqliteTokenRepository targetRepo = new SqliteTokenRepository(targetDbPath, targetKeyProvider);
-        targetRepo.initializeSchema();
+        try (SqliteTokenRepository targetRepo = new SqliteTokenRepository(targetDbPath, targetKeyProvider)) {
+            targetRepo.initializeSchema();
 
-        // Target already has KEY_A with existing value
-        EncryptedPayload existingPayload = CryptoEngine.encrypt("target-original".getBytes(StandardCharsets.UTF_8), targetMasterKey);
-        targetRepo.saveToken(new Token("target-id", "default", "KEY_A", "generic", existingPayload.nonce(), existingPayload.ciphertext(), "orig", null, null, 2000L, 2000L));
+            // Target already has KEY_A with existing value
+            EncryptedPayload existingPayload = CryptoEngine.encrypt("target-original".getBytes(StandardCharsets.UTF_8), targetMasterKey);
+            targetRepo.saveToken(new Token("target-id", "default", "KEY_A", "generic", existingPayload.nonce(), existingPayload.ciphertext(), "orig", null, null, 2000L, 2000L));
 
-        // 3. Import with default --skip behavior
-        StringWriter importOut = new StringWriter();
-        ImportCommand importCmd = new ImportCommand(
-                targetRepo,
-                targetKeyProvider,
-                outputStyle,
-                new PrintWriter(importOut, true),
-                new PrintWriter(new StringWriter(), true)
-        );
-        CommandLine importCli = new CommandLine(importCmd);
-        int importExit = importCli.execute(bundlePath.toString(), "--passphrase", "testpass123");
-        assertEquals(0, importExit);
+            // 3. Import with default --skip behavior
+            StringWriter importOut = new StringWriter();
+            ImportCommand importCmd = new ImportCommand(
+                    targetRepo,
+                    targetKeyProvider,
+                    outputStyle,
+                    new PrintWriter(importOut, true),
+                    new PrintWriter(new StringWriter(), true)
+            );
+            CommandLine importCli = new CommandLine(importCmd);
+            int importExit = importCli.execute(bundlePath.toString(), "--passphrase", "testpass123");
+            assertEquals(0, importExit);
 
-        String importOutput = importOut.toString();
-        assertTrue(importOutput.contains("冲突跳过: 1") || importOutput.contains("跳过: 1"));
-        assertTrue(importOutput.contains("新增导入: 1"));
+            String importOutput = importOut.toString();
+            assertTrue(importOutput.contains("冲突跳过: 1") || importOutput.contains("跳过: 1"));
+            assertTrue(importOutput.contains("新增导入: 1"));
 
-        // Verify KEY_A kept original value
-        Token tokenA = targetRepo.findToken("default", "KEY_A").orElseThrow();
-        byte[] decA = CryptoEngine.decrypt(tokenA.nonce(), tokenA.ciphertext(), targetMasterKey);
-        assertEquals("target-original", new String(decA, StandardCharsets.UTF_8));
+            // Verify KEY_A kept original value
+            Token tokenA = targetRepo.findToken("default", "KEY_A").orElseThrow();
+            byte[] decA = CryptoEngine.decrypt(tokenA.nonce(), tokenA.ciphertext(), targetMasterKey);
+            assertEquals("target-original", new String(decA, StandardCharsets.UTF_8));
 
-        // Verify KEY_B imported with secret-beta
-        Token tokenB = targetRepo.findToken("default", "KEY_B").orElseThrow();
-        byte[] decB = CryptoEngine.decrypt(tokenB.nonce(), tokenB.ciphertext(), targetMasterKey);
-        assertEquals("secret-beta", new String(decB, StandardCharsets.UTF_8));
+            // Verify KEY_B imported with secret-beta
+            Token tokenB = targetRepo.findToken("default", "KEY_B").orElseThrow();
+            byte[] decB = CryptoEngine.decrypt(tokenB.nonce(), tokenB.ciphertext(), targetMasterKey);
+            assertEquals("secret-beta", new String(decB, StandardCharsets.UTF_8));
 
-        // 4. Import with --overwrite
-        StringWriter overwriteOut = new StringWriter();
-        ImportCommand overwriteCmd = new ImportCommand(
-                targetRepo,
-                targetKeyProvider,
-                outputStyle,
-                new PrintWriter(overwriteOut, true),
-                new PrintWriter(new StringWriter(), true)
-        );
-        CommandLine overwriteCli = new CommandLine(overwriteCmd);
-        int overwriteExit = overwriteCli.execute(bundlePath.toString(), "--passphrase", "testpass123", "--overwrite");
-        assertEquals(0, overwriteExit);
+            // 4. Import with --overwrite
+            StringWriter overwriteOut = new StringWriter();
+            ImportCommand overwriteCmd = new ImportCommand(
+                    targetRepo,
+                    targetKeyProvider,
+                    outputStyle,
+                    new PrintWriter(overwriteOut, true),
+                    new PrintWriter(new StringWriter(), true)
+            );
+            CommandLine overwriteCli = new CommandLine(overwriteCmd);
+            int overwriteExit = overwriteCli.execute(bundlePath.toString(), "--passphrase", "testpass123", "--overwrite");
+            assertEquals(0, overwriteExit);
 
-        String overwriteOutput = overwriteOut.toString();
-        assertTrue(overwriteOutput.contains("覆盖更新: 2") || overwriteOutput.contains("覆盖: 2"));
+            String overwriteOutput = overwriteOut.toString();
+            assertTrue(overwriteOutput.contains("覆盖更新: 2") || overwriteOutput.contains("覆盖: 2"));
 
-        // Verify KEY_A updated to secret-alpha
-        Token updatedA = targetRepo.findToken("default", "KEY_A").orElseThrow();
-        byte[] decUpdatedA = CryptoEngine.decrypt(updatedA.nonce(), updatedA.ciphertext(), targetMasterKey);
-        assertEquals("secret-alpha", new String(decUpdatedA, StandardCharsets.UTF_8));
+            // Verify KEY_A updated to secret-alpha
+            Token updatedA = targetRepo.findToken("default", "KEY_A").orElseThrow();
+            byte[] decUpdatedA = CryptoEngine.decrypt(updatedA.nonce(), updatedA.ciphertext(), targetMasterKey);
+            assertEquals("secret-alpha", new String(decUpdatedA, StandardCharsets.UTF_8));
+        }
     }
 
     @Test
@@ -148,25 +157,26 @@ class BackupExportImportTest {
         // Import into fresh target repo
         byte[] targetMasterKey = CryptoEngine.generateRandomBytes(32);
         Path targetDbPath = tempDir.resolve("target-json.db");
-        SqliteTokenRepository targetRepo = new SqliteTokenRepository(targetDbPath, () -> targetMasterKey);
-        targetRepo.initializeSchema();
+        try (SqliteTokenRepository targetRepo = new SqliteTokenRepository(targetDbPath, () -> targetMasterKey)) {
+            targetRepo.initializeSchema();
 
-        StringWriter importOut = new StringWriter();
-        ImportCommand importCmd = new ImportCommand(
-                targetRepo,
-                () -> targetMasterKey,
-                outputStyle,
-                new PrintWriter(importOut, true),
-                new PrintWriter(new StringWriter(), true)
-        );
-        CommandLine importCli = new CommandLine(importCmd);
-        int importExit = importCli.execute(jsonPath.toString());
-        assertEquals(0, importExit);
+            StringWriter importOut = new StringWriter();
+            ImportCommand importCmd = new ImportCommand(
+                    targetRepo,
+                    () -> targetMasterKey,
+                    outputStyle,
+                    new PrintWriter(importOut, true),
+                    new PrintWriter(new StringWriter(), true)
+            );
+            CommandLine importCli = new CommandLine(importCmd);
+            int importExit = importCli.execute(jsonPath.toString());
+            assertEquals(0, importExit);
 
-        Optional<Token> importedA = targetRepo.findToken("default", "KEY_A");
-        assertTrue(importedA.isPresent());
-        byte[] dec = CryptoEngine.decrypt(importedA.get().nonce(), importedA.get().ciphertext(), targetMasterKey);
-        assertEquals("secret-alpha", new String(dec, StandardCharsets.UTF_8));
+            Optional<Token> importedA = targetRepo.findToken("default", "KEY_A");
+            assertTrue(importedA.isPresent());
+            byte[] dec = CryptoEngine.decrypt(importedA.get().nonce(), importedA.get().ciphertext(), targetMasterKey);
+            assertEquals("secret-alpha", new String(dec, StandardCharsets.UTF_8));
+        }
     }
 
     @Test
