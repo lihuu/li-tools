@@ -59,7 +59,7 @@ public final class ShellFormatter {
         String escaped = value
                 .replace("`", "``")
                 .replace("\"", "`\"")
-                .replace("$", "\\$");
+                .replace("$", "`$");
         return "$env:" + name + " = \"" + escaped + "\"";
     }
 

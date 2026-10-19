@@ -37,7 +37,7 @@ class SystemUtilsTest {
     @Test
     void shouldFormatShellExportForPowerShell() {
         String exported = ShellFormatter.formatExport("pwsh", "API_KEY", "secret`123\"quoted$");
-        assertEquals("$env:API_KEY = \"secret``123`\"quoted\\$\"", exported);
+        assertEquals("$env:API_KEY = \"secret``123`\"quoted`$\"", exported);
     }
 
     @Test

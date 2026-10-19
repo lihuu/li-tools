@@ -24,6 +24,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.github.lihuu</groupId>
+            <artifactId>cli-common</artifactId>
+        </dependency>
+        <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
         </dependency>
