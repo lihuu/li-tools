@@ -1,64 +1,59 @@
 package io.github.lihuu.tokenkit.cli;
 
-import java.util.Map;
-import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
+import java.util.Map;
 
+/**
+ * Adapter delegating to cli-common OutputStyle.
+ */
 public final class OutputStyle {
-    private static final OutputStyle PLAIN = new OutputStyle(false);
-    private static final OutputStyle ANSI = new OutputStyle(true);
+    private final io.github.lihuu.clicommon.style.OutputStyle delegate;
 
-    private final boolean ansi;
-
-    private OutputStyle(boolean ansi) {
-        this.ansi = ansi;
+    private OutputStyle(io.github.lihuu.clicommon.style.OutputStyle delegate) {
+        this.delegate = delegate;
     }
 
     public static @NotNull OutputStyle plain() {
-        return PLAIN;
+        return new OutputStyle(io.github.lihuu.clicommon.style.OutputStyle.plain());
     }
 
     public static @NotNull OutputStyle ansi() {
-        return ANSI;
+        return new OutputStyle(io.github.lihuu.clicommon.style.OutputStyle.ansi());
     }
 
     public static @NotNull OutputStyle of(@NotNull Map<String, String> environment, boolean interactive, boolean noColorFlag) {
-        Objects.requireNonNull(environment, "environment must not be null");
-        if (noColorFlag || environment.containsKey("NO_COLOR")) {
-            return PLAIN;
-        }
-        String term = environment.getOrDefault("TERM", "");
-        if (!interactive || term.isBlank() || "dumb".equalsIgnoreCase(term)) {
-            return PLAIN;
-        }
-        return ANSI;
+        return new OutputStyle(io.github.lihuu.clicommon.style.OutputStyle.of(environment, interactive, noColorFlag));
     }
 
     public boolean isAnsi() {
-        return ansi;
+        return delegate.isAnsi();
     }
 
     public @NotNull String success(@NotNull String text) {
-        return ansi ? "\u001b[32;1m✔ " + text + "\u001b[0m" : "✔ " + text;
+        return delegate.success(text);
     }
 
     public @NotNull String warning(@NotNull String text) {
-        return ansi ? "\u001b[33;1m⚠ " + text + "\u001b[0m" : "⚠ " + text;
+        return delegate.warning(text);
     }
 
     public @NotNull String error(@NotNull String text) {
-        return ansi ? "\u001b[31;1m✖ " + text + "\u001b[0m" : "✖ " + text;
+        return delegate.error(text);
     }
 
     public @NotNull String highlight(@NotNull String text) {
-        return ansi ? "\u001b[36;1m" + text + "\u001b[0m" : text;
+        return delegate.highlight(text);
     }
 
     public @NotNull String muted(@NotNull String text) {
-        return ansi ? "\u001b[90m" + text + "\u001b[0m" : text;
+        return delegate.muted(text);
     }
 
     public @NotNull String bold(@NotNull String text) {
-        return ansi ? "\u001b[1m" + text + "\u001b[0m" : text;
+        return delegate.bold(text);
+    }
+
+    public @NotNull io.github.lihuu.clicommon.style.OutputStyle unwrap() {
+        return delegate;
     }
 }

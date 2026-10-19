@@ -1,5 +1,6 @@
 package io.github.lihuu.certkit;
 
+import org.jetbrains.annotations.NotNull;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -7,14 +8,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 public record CertInfo(
-    String subjectCn,
-    List<String> sans,
-    String issuer,
-    Instant notBefore,
-    Instant notAfter,
-    String sha256Fingerprint,
-    String sigAlgName,
-    String serialNumber
+    @NotNull String subjectCn,
+    @NotNull List<String> sans,
+    @NotNull String issuer,
+    @NotNull Instant notBefore,
+    @NotNull Instant notAfter,
+    @NotNull String sha256Fingerprint,
+    @NotNull String sigAlgName,
+    @NotNull String serialNumber
 ) {
     private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_INSTANT;
     private static final DateTimeFormatter HUMAN_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss 'UTC'")
@@ -32,7 +33,7 @@ public record CertInfo(
         return !isExpired() && daysRemaining() <= 90;
     }
 
-    public String statusLabel() {
+    public @NotNull String statusLabel() {
         if (isExpired()) {
             return "EXPIRED (" + Math.abs(daysRemaining()) + " days ago)";
         }
@@ -42,7 +43,7 @@ public record CertInfo(
         return "OK (" + daysRemaining() + " days remaining)";
     }
 
-    public String toHumanString() {
+    public @NotNull String toHumanString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Certificate Overview:\n");
         sb.append(String.format("  Subject CN:   %s\n", subjectCn));
@@ -57,31 +58,25 @@ public record CertInfo(
         return sb.toString();
     }
 
-    public String toJson() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\n");
-        sb.append("  \"subjectCn\": \"").append(escape(subjectCn)).append("\",\n");
-        sb.append("  \"sans\": [");
-        for (int i = 0; i < sans.size(); i++) {
-            sb.append("\"").append(escape(sans.get(i))).append("\"");
-            if (i < sans.size() - 1) sb.append(", ");
+    public @NotNull String toJson() {
+        io.github.lihuu.clicommon.json.JsonWriter writer = new io.github.lihuu.clicommon.json.JsonWriter();
+        writer.beginObject()
+                .name("subjectCn").value(subjectCn)
+                .name("sans").beginArray();
+        for (String san : sans) {
+            writer.value(san);
         }
-        sb.append("],\n");
-        sb.append("  \"issuer\": \"").append(escape(issuer)).append("\",\n");
-        sb.append("  \"status\": \"").append(statusLabel()).append("\",\n");
-        sb.append("  \"isExpired\": ").append(isExpired()).append(",\n");
-        sb.append("  \"daysRemaining\": ").append(daysRemaining()).append(",\n");
-        sb.append("  \"notBefore\": \"").append(ISO.format(notBefore)).append("\",\n");
-        sb.append("  \"notAfter\": \"").append(ISO.format(notAfter)).append("\",\n");
-        sb.append("  \"sha256Fingerprint\": \"").append(sha256Fingerprint).append("\",\n");
-        sb.append("  \"algorithm\": \"").append(escape(sigAlgName)).append("\",\n");
-        sb.append("  \"serialNumber\": \"").append(serialNumber).append("\"\n");
-        sb.append("}");
-        return sb.toString();
-    }
-
-    private static String escape(String s) {
-        if (s == null) return "";
-        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+        writer.endArray()
+                .name("issuer").value(issuer)
+                .name("status").value(statusLabel())
+                .name("isExpired").value(isExpired())
+                .name("daysRemaining").value(daysRemaining())
+                .name("notBefore").value(ISO.format(notBefore))
+                .name("notAfter").value(ISO.format(notAfter))
+                .name("sha256Fingerprint").value(sha256Fingerprint)
+                .name("algorithm").value(sigAlgName)
+                .name("serialNumber").value(serialNumber)
+                .endObject();
+        return writer.toString();
     }
 }

@@ -27,18 +27,6 @@ public record Token(
     }
 
     public static @NotNull String mask(@Nullable String secret) {
-        if (secret == null || secret.isEmpty()) {
-            return "";
-        }
-        int length = secret.length();
-        if (length <= 4) {
-            return "*".repeat(length);
-        }
-        if (length <= 8) {
-            return secret.charAt(0) + "••••" + secret.charAt(length - 1);
-        }
-        String prefix = secret.substring(0, Math.min(5, length / 3));
-        String suffix = secret.substring(length - Math.min(4, length / 3));
-        return prefix + "••••" + suffix;
+        return io.github.lihuu.clicommon.format.TextMasker.mask(secret);
     }
 }

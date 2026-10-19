@@ -27,8 +27,17 @@
     -->
     <dependencies>
         <dependency>
+            <groupId>io.github.lihuu</groupId>
+            <artifactId>cli-common</artifactId>
+        </dependency>
+        <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

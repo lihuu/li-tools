@@ -12,6 +12,7 @@
     <description>Modern, zero-runtime-dependency CLI security and developer tools matrix.</description>
 
     <modules>
+        <module>cli-common</module>
         <module>gpgkit</module>
         <module>certkit</module>
         <module>tokenkit</module>
@@ -23,6 +24,7 @@
             <maven.compiler.release>25</maven.compiler.release>
             <junit.jupiter.version>5.11.4</junit.jupiter.version>
             <picocli.version>4.7.6</picocli.version>
+            <annotations.version>26.0.2</annotations.version>
             <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
             <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
             <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
@@ -32,6 +34,11 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>io.github.lihuu</groupId>
+                <artifactId>cli-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>info.picocli</groupId>
                 <artifactId>picocli</artifactId>
                 <version>${picocli.version}</version>
@@ -40,6 +47,12 @@
                 <groupId>info.picocli</groupId>
                 <artifactId>picocli-codegen</artifactId>
                 <version>${picocli.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains</groupId>
+                <artifactId>annotations</artifactId>
+                <version>${annotations.version}</version>
                 <scope>provided</scope>
             </dependency>
             <dependency>

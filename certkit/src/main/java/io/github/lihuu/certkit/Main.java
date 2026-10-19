@@ -37,6 +37,7 @@ public final class Main implements Callable<Integer> {
     boolean quiet;
 
     public static void main(String[] args) {
+        io.github.lihuu.clicommon.cli.CliRunner.pinUtf8Streams();
         int exitCode = run(args);
         if (exitCode != 0) {
             System.exit(exitCode);

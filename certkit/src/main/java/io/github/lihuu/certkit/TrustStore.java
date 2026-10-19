@@ -34,14 +34,13 @@ public final class TrustStore {
     }
 
     public static Platform detectPlatform() {
-        String os = System.getProperty("os.name", "").toLowerCase();
-        if (os.contains("mac") || os.contains("darwin")) {
+        if (io.github.lihuu.clicommon.system.Platform.isMac()) {
             return Platform.MACOS;
         }
-        if (os.contains("win")) {
+        if (io.github.lihuu.clicommon.system.Platform.isWindows()) {
             return Platform.WINDOWS;
         }
-        if (os.contains("linux")) {
+        if (io.github.lihuu.clicommon.system.Platform.isLinux()) {
             Path osRelease = Path.of("/etc/os-release");
             if (Files.exists(osRelease)) {
                 try {

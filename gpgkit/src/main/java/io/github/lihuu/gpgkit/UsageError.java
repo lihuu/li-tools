@@ -1,5 +1,7 @@
 package io.github.lihuu.gpgkit;
 
+import io.github.lihuu.clicommon.cli.CliUsageException;
+
 /**
  * A command line this tool will not act on.
  *
@@ -9,7 +11,7 @@ package io.github.lihuu.gpgkit;
  * itself and returns {@link Defaults#EXIT_USAGE} — which keeps the distinction in one place
  * instead of spreading "is this a usage error" over every check.
  */
-final class UsageError extends RuntimeException {
+final class UsageError extends CliUsageException {
     UsageError(String message) {
         super(message);
     }
