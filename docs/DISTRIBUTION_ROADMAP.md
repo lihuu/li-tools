@@ -107,4 +107,8 @@ certkit --version
 ---
 
 ## 4. GitHub Actions 自动更新流水线
-当发布新 Tag 时，通过 `.github/workflows/release.yml` 自动计算新二进制文件的 SHA-256 哈希值，并通过 `workflow_dispatch` 或 Repository Dispatch 自动向 `homebrew-tools` 与 `scoop-tools` 提交 PR，实现完全无人值守的全渠道版本同步。
+当发布新 Tag 时，通过 `.github/workflows/release.yml` 自动计算新二进制文件的 SHA-256 哈希值，并通过 `scripts/sync-package-managers.py` 携带 `ECOSYSTEM_TOKEN` 自动更新以下生态源：
+- **Homebrew Tap**: `https://github.com/lihuu/homebrew-tap` (`Formula/*.rb`)
+- **Scoop Bucket**: `https://github.com/lihuu/my-scoop-bucket` (`bucket/*.json`)
+
+实现打 Tag 发版即全渠道自动同步上架。
