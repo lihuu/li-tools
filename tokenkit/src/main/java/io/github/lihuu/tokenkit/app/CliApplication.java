@@ -68,7 +68,7 @@ public final class CliApplication {
     }
 
     public static int run(
-            String @NotNull [] args,
+            @NotNull String[] args,
             @NotNull Path dbPath,
             @NotNull MasterKeyProvider keyProvider,
             @NotNull PrintWriter out,
@@ -78,7 +78,7 @@ public final class CliApplication {
     }
 
     public static int run(
-            String @NotNull [] args,
+            @NotNull String[] args,
             @NotNull Path dbPath,
             @NotNull MasterKeyProvider keyProvider,
             @NotNull PrintWriter out,
@@ -86,12 +86,6 @@ public final class CliApplication {
             @NotNull Map<String, String> env,
             boolean interactive
     ) {
-        Objects.requireNonNull(args, "args must not be null");
-        Objects.requireNonNull(dbPath, "dbPath must not be null");
-        Objects.requireNonNull(keyProvider, "keyProvider must not be null");
-        Objects.requireNonNull(out, "out must not be null");
-        Objects.requireNonNull(err, "err must not be null");
-        Objects.requireNonNull(env, "env must not be null");
 
         boolean noColorFlag = false;
         for (String arg : args) {

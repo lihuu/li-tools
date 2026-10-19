@@ -18,10 +18,7 @@ public final class MigrationEngine {
 
     private MigrationEngine() {}
 
-    public static byte[] packBundle(@NotNull MigrationBundle bundle, char @NotNull [] passphrase) throws Exception {
-        Objects.requireNonNull(bundle, "bundle must not be null");
-        Objects.requireNonNull(passphrase, "passphrase must not be null");
-
+    public static byte[] packBundle(@NotNull MigrationBundle bundle, @NotNull char[] passphrase) throws Exception {
         String json = toJson(bundle);
         byte[] jsonBytes = json.getBytes(StandardCharsets.UTF_8);
 
@@ -44,10 +41,7 @@ public final class MigrationEngine {
         }
     }
 
-    public static MigrationBundle unpackBundle(byte @NotNull [] bundleBytes, char @NotNull [] passphrase) throws Exception {
-        Objects.requireNonNull(bundleBytes, "bundleBytes must not be null");
-        Objects.requireNonNull(passphrase, "passphrase must not be null");
-
+    public static MigrationBundle unpackBundle(@NotNull byte[] bundleBytes, @NotNull char[] passphrase) throws Exception {
         int minHeaderLen = MAGIC.length + 16 + 12 + 4;
         if (bundleBytes.length < minHeaderLen) {
             throw new IllegalArgumentException("Corrupted or incomplete bundle: file too small");
@@ -86,7 +80,7 @@ public final class MigrationEngine {
         }
     }
 
-    public static boolean isEncryptedBundle(byte @NotNull [] data) {
+    public static boolean isEncryptedBundle(@NotNull byte[] data) {
         if (data.length < MAGIC.length) {
             return false;
         }

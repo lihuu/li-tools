@@ -43,19 +43,19 @@ class TokenModelTest {
 
     @Test
     void tokenModelShouldThrowWhenMandatoryFieldsAreNull() {
-        assertThrows(NullPointerException.class, () -> new Token(
+        assertThrows(IllegalArgumentException.class, () -> new Token(
                 null, "default", "KEY", "generic", new byte[12], new byte[16], null, null, null, 0L, 0L
         ));
-        assertThrows(NullPointerException.class, () -> new Token(
+        assertThrows(IllegalArgumentException.class, () -> new Token(
                 "id", null, "KEY", "generic", new byte[12], new byte[16], null, null, null, 0L, 0L
         ));
-        assertThrows(NullPointerException.class, () -> new Token(
+        assertThrows(IllegalArgumentException.class, () -> new Token(
                 "id", "default", null, "generic", new byte[12], new byte[16], null, null, null, 0L, 0L
         ));
-        assertThrows(NullPointerException.class, () -> new Token(
+        assertThrows(IllegalArgumentException.class, () -> new Token(
                 "id", "default", "KEY", "generic", null, new byte[16], null, null, null, 0L, 0L
         ));
-        assertThrows(NullPointerException.class, () -> new Token(
+        assertThrows(IllegalArgumentException.class, () -> new Token(
                 "id", "default", "KEY", "generic", new byte[12], null, null, null, null, 0L, 0L
         ));
     }
@@ -76,7 +76,7 @@ class TokenModelTest {
         assertTrue(profile.active());
         assertEquals(1700000000000L, profile.createdAt());
 
-        assertThrows(NullPointerException.class, () -> new Profile(null, null, false, 0L));
+        assertThrows(IllegalArgumentException.class, () -> new Profile(null, null, false, 0L));
     }
 
     @Test
@@ -85,7 +85,7 @@ class TokenModelTest {
         assertEquals("schema_version", meta.key());
         assertEquals("1", meta.value());
 
-        assertThrows(NullPointerException.class, () -> new VaultMetadata(null, "1"));
-        assertThrows(NullPointerException.class, () -> new VaultMetadata("key", null));
+        assertThrows(IllegalArgumentException.class, () -> new VaultMetadata(null, "1"));
+        assertThrows(IllegalArgumentException.class, () -> new VaultMetadata("key", null));
     }
 }

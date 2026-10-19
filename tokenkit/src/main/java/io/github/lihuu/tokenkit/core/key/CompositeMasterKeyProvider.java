@@ -28,7 +28,7 @@ public final class CompositeMasterKeyProvider implements MasterKeyProvider {
     }
 
     @Override
-    public byte @NotNull [] getOrCreateMasterKey() throws GeneralSecurityException {
+    public @NotNull byte[] getOrCreateMasterKey() throws GeneralSecurityException {
         byte[] cached = cachedKey;
         if (cached != null) {
             return cached.clone();
