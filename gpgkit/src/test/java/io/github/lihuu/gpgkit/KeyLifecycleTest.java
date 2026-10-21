@@ -112,9 +112,11 @@ public final class KeyLifecycleTest {
             check("the manifest records " + key, document.contains("\"" + key + "\""), document);
         }
         check("the manifest names the key", document.contains(fingerprint), document);
-        check("the manifest records AES256", document.contains("\"cipher\":\"AES256\""), document);
+        check("the manifest records AES256",
+                document.contains("\"cipher\": \"AES256\"") || document.contains("\"cipher\":\"AES256\""), document);
         check("the manifest's sha256 is the ciphertext's sha256",
-                document.contains("\"sha256\":\"" + sha256Of(ciphertext) + "\""),
+                document.contains("\"sha256\": \"" + sha256Of(ciphertext) + "\"")
+                        || document.contains("\"sha256\":\"" + sha256Of(ciphertext) + "\""),
                 "manifest says " + document + ", openssl says " + sha256Of(ciphertext));
         check("the manifest records a restore command for its own copy",
                 document.contains(ciphertext.getFileName().toString()), document);

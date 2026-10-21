@@ -33,7 +33,7 @@ public final class Main {
               2  usage error
 
             commands:
-              status                  list local keys: fingerprint, algorithm, created,
+              status [--refresh]      list local keys: fingerprint, algorithm, created,
                                       expiry and days remaining, usage, whether the private
                                       key is here, keyserver visibility; ends with one verdict
               gen [--uid "Name <mail>"] [--expire 2y] [--algo rsa4096|ed25519]

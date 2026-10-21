@@ -105,6 +105,7 @@ final class PublishCommand {
         // never fatal: propagation is not instant, and a command that failed here would be reporting
         // its own impatience as a problem with the key.
         Keyserver.Probe probe = Keyserver.probe(keyserver, key.fingerprint(), CONFIRM_TIMEOUT);
+        new KeyserverCache().put(key.fingerprint(), probe);
         if (global.json()) {
             printJson(key, keyserver, probe);
         } else {

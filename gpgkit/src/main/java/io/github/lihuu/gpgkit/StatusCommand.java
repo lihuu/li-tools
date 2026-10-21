@@ -1,9 +1,12 @@
 package io.github.lihuu.gpgkit;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@code gpgkit status} — SPEC §2.
@@ -17,18 +20,29 @@ final class StatusCommand {
      * Short, because keyserver visibility is a nice-to-have: a status command that takes half a
      * minute whenever the network is down is a status command nobody runs.
      */
-    private static final Duration KEYSERVER_TIMEOUT = Duration.ofSeconds(8);
+    private static final Duration KEYSERVER_TIMEOUT = Duration.ofSeconds(3);
 
     private final GlobalOptions global;
+    private final KeyserverCache cache;
 
     StatusCommand(GlobalOptions global) {
+        this(global, new KeyserverCache());
+    }
+
+    StatusCommand(GlobalOptions global, KeyserverCache cache) {
         this.global = global;
+        this.cache = cache;
     }
 
     int run(List<String> args) {
-        if (!args.isEmpty()) {
-            System.err.println("gpgkit: status takes no arguments");
-            return Defaults.EXIT_USAGE;
+        boolean refresh = false;
+        for (String arg : args) {
+            if (arg.equals("--refresh") || arg.equals("-r")) {
+                refresh = true;
+            } else {
+                System.err.println("gpgkit: status: unknown argument: " + arg);
+                return Defaults.EXIT_USAGE;
+            }
         }
         Gpg gpg = new Gpg();
         if (!gpg.available()) {
@@ -40,7 +54,7 @@ final class StatusCommand {
         // The probe costs a network round trip per key, and the quiet form of this command prints
         // one line that does not depend on it. JSON does include it, so JSON pays the cost.
         Map<String, Keyserver.Probe> visibility = global.json() || !global.quiet()
-                ? probe(keys)
+                ? probe(keys, refresh)
                 : Map.of();
 
         if (global.json()) {
@@ -56,28 +70,64 @@ final class StatusCommand {
     }
 
     /**
-     * Asks about each key, and stops asking once the server has failed to answer.
-     *
-     * <p>The stopping matters: with the server down, one timeout per key would turn a two-second
-     * command into a wait proportional to the size of the keyring, for an answer that is already
-     * known.
+     * Asks about each key, using the local cache when valid to avoid remote network latency.
      */
-    private static Map<String, Keyserver.Probe> probe(List<KeyInfo> keys) {
+    private Map<String, Keyserver.Probe> probe(List<KeyInfo> keys, boolean refresh) {
         Map<String, Keyserver.Probe> visibility = new LinkedHashMap<>();
-        boolean reachable = true;
+        List<KeyInfo> toProbe = new ArrayList<>();
+
         for (KeyInfo key : keys) {
-            if (!reachable) {
-                visibility.put(key.fingerprint(),
-                        new Keyserver.Probe(Keyserver.Visibility.UNREACHABLE, "not asked"));
-                continue;
+            if (!refresh) {
+                Optional<Keyserver.Probe> cached = cache.get(key.fingerprint());
+                if (cached.isPresent()) {
+                    visibility.put(key.fingerprint(), cached.get());
+                    continue;
+                }
             }
-            Keyserver.Probe probe = Keyserver.probe(Defaults.KEYSERVER, key.fingerprint(), KEYSERVER_TIMEOUT);
-            if (probe.visibility() == Keyserver.Visibility.UNREACHABLE) {
-                reachable = false;
-            }
-            visibility.put(key.fingerprint(), probe);
+            toProbe.add(key);
         }
+
+        if (toProbe.isEmpty()) {
+            return visibility;
+        }
+
+        Map<String, Keyserver.Probe> probed = probeRemote(toProbe);
+        cache.putAll(probed);
+        visibility.putAll(probed);
         return visibility;
+    }
+
+    private static Map<String, Keyserver.Probe> probeRemote(List<KeyInfo> keys) {
+        if (keys.size() == 1) {
+            KeyInfo key = keys.get(0);
+            Keyserver.Probe probe = Keyserver.probe(Defaults.KEYSERVER, key.fingerprint(), KEYSERVER_TIMEOUT);
+            return Map.of(key.fingerprint(), probe);
+        }
+
+        Map<String, Keyserver.Probe> results = new ConcurrentHashMap<>();
+        List<Thread> threads = new ArrayList<>(keys.size());
+        for (KeyInfo key : keys) {
+            Thread thread = Thread.ofVirtual().start(() -> {
+                Keyserver.Probe probe = Keyserver.probe(Defaults.KEYSERVER, key.fingerprint(), KEYSERVER_TIMEOUT);
+                results.put(key.fingerprint(), probe);
+            });
+            threads.add(thread);
+        }
+        for (Thread thread : threads) {
+            try {
+                thread.join();
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        Map<String, Keyserver.Probe> ordered = new LinkedHashMap<>();
+        for (KeyInfo key : keys) {
+            Keyserver.Probe probe = results.get(key.fingerprint());
+            ordered.put(key.fingerprint(), probe != null
+                    ? probe
+                    : new Keyserver.Probe(Keyserver.Visibility.UNREACHABLE, "probe interrupted"));
+        }
+        return ordered;
     }
 
     private static Verdict verdict(List<KeyInfo> keys) {
