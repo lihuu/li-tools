@@ -67,6 +67,17 @@ All tools in this suite provide native, machine-readable `SKILL.md` documents fo
 - `tokenkit rm <name...>`: Delete one or more tokens (`-y` supported).
 
 
+## Frequently Asked Questions (FAQ)
+
+### Q: Does li-tools require a pre-installed JVM, Node.js, or Python runtime?
+A: No. All tools in the suite (gpgkit, certkit, tokenkit) are compiled with GraalVM Native Image into single-file native executables with zero runtime dependencies. Cold-start latency is under 50 milliseconds, allowing them to run directly inside lightweight CI containers and minimal distroless/Alpine environments.
+
+### Q: What is the difference between gpgkit and the system's native gpg command?
+A: gpgkit is not an OpenPGP reimplementation, but an automated ergonomics and reliability layer built on top of RFC 4880. It provides declarative configuration, automated key rotation, non-interactive CI signing, and guaranteed behavioral parity across macOS, Linux, and Windows 11.
+
+### Q: What JWT algorithms are supported by tokenkit?
+A: tokenkit natively supports RS256, RS384, RS512, ES256, ES384, HS256, and EdDSA (Ed25519) signing algorithms, fully covering RFC 7519 standards. National cryptographic algorithms like SM2 are supported via standalone extension plugins.
+
 ## Repository & Links
 
 - GitHub: https://github.com/lihuu/li-tools
