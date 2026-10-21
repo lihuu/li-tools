@@ -136,12 +136,13 @@ passphrase passed on the command line ends up in the shell history.
 ### `gpgkit status`
 
 ```shell
-gpgkit status
+gpgkit status [--refresh]
 ```
 
 Lists the local keys: fingerprint, algorithm/length, creation date, **expiry date and days
 remaining**, usage flags (SC/E), and whether the private key is present here. It also makes a
-best-effort check of whether the public key is visible on a keyserver — **failing that check does
+best-effort check of whether the public key is visible on a keyserver (using a fast local cache by
+default, or querying the remote keyserver when `--refresh` is passed) — **failing that check does
 not change the exit code**, because an unreachable network should not fail a local query.
 
 The output ends with a one-line verdict, which is the whole point of the command:

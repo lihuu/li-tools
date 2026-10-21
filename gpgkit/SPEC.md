@@ -38,8 +38,11 @@
 `backedUpAt`、`passphraseStorage`（人写的备注：口令**存在哪**，**不是口令本身**）、`restoreCommand`、`destinations`（这份备份的每个副本落在哪）。
 
 ### `gpgkit status`
+```
+gpgkit status [--refresh]
+```
 列出本机密钥：指纹、算法/长度、创建日、**到期日与剩余天数**、用法（SC/E）、是否有私钥、
-公钥在 keyserver 上是否可见（尽力而为，失败不影响退出码 0）。
+公钥在 keyserver 上是否可见（默认读取本地缓存以保证毫秒级响应，`--refresh` 强制请求远端；尽力而为，失败不影响退出码 0）。
 末尾给**一句话结论**：`OK` / `WARN: 90 天内到期` / `WARN: 没有可用签名密钥`。
 
 ### `gpgkit gen`

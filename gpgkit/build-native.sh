@@ -30,7 +30,11 @@ else
     exit 1
 fi
 
-mvn -q -DskipTests package
+if [ -f "../pom.xml" ]; then
+    mvn -q -DskipTests -f ../pom.xml package -pl gpgkit -am
+else
+    mvn -q -DskipTests package
+fi
 
 # -O3 rather than the default -O2: this is a command people wait on, the build is seconds longer,
 # and the image is smaller. The level is a deliberate choice, not a default left in place.
@@ -58,9 +62,8 @@ mvn -q -DskipTests package
     -J-Xmx4g \
     ${NATIVE_IMAGE_THREADS:+-J-XX:ActiveProcessorCount=$NATIVE_IMAGE_THREADS} \
     -O3 \
-    -cp target/classes \
-    -o target/gpgkit \
-    io.github.lihuu.gpgkit.Main
+    -jar target/gpgkit.jar \
+    -o target/gpgkit
 
 # Run the executable, not the jar: the jar is the development path and proves nothing about
 # whether the image carries the classes the tool actually reaches.

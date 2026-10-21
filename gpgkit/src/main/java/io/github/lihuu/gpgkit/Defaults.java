@@ -76,4 +76,22 @@ final class Defaults {
         }
         return Path.of(System.getProperty("user.home"), ".gpgkit", "backup-passphrase.txt");
     }
+
+    /**
+     * An environment variable to override the keyserver cache file location, matching the pattern
+     * of backup directory and passphrase file.
+     */
+    static final String KEYSERVER_CACHE_ENV = "GPGKIT_KEYSERVER_CACHE";
+
+    /**
+     * Where keyserver probe results are cached so `status` does not incur a network round trip on
+     * every invocation.
+     */
+    static Path keyserverCacheFile() {
+        String override = System.getenv(KEYSERVER_CACHE_ENV);
+        if (override != null && !override.isBlank()) {
+            return Path.of(override);
+        }
+        return Path.of(System.getProperty("user.home"), ".gpgkit", "keyserver-cache");
+    }
 }

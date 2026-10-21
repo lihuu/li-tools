@@ -111,11 +111,11 @@ gpgkit restore ~/gpg-backup/<那个文件>.asc.gpg
 ### `gpgkit status`
 
 ```shell
-gpgkit status
+gpgkit status [--refresh]
 ```
 
 列出本机密钥：指纹、算法/长度、创建日、**到期日与剩余天数**、用法（SC/E）、是否有私钥。
-还会尽力查一下公钥在 keyserver 上是否可见——**查不到不影响退出码**，网络不通不该让一条本地查询失败。
+还会尽力查一下公钥在 keyserver 上是否可见（默认读取本地缓存实现毫秒级响应，加 `--refresh` 强制请求远端）——**查不到不影响退出码**，网络不通不该让一条本地查询失败。
 
 输出末尾有一句话结论，就是它的全部价值：
 
