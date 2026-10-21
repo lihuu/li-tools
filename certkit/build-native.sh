@@ -25,7 +25,11 @@ else
     exit 1
 fi
 
-mvn -q -DskipTests package
+if [ -f "../pom.xml" ]; then
+    mvn -q -DskipTests -f ../pom.xml package -pl certkit -am
+else
+    mvn -q -DskipTests package
+fi
 
 "$NATIVE_IMAGE" \
     --no-fallback \
