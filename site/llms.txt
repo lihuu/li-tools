@@ -1,4 +1,4 @@
-# li-tools
+# li-tools Suite
 
 > Modern developer CLI toolchain featuring gpgkit, certkit, and tokenkit, powered by Java 25 & GraalVM Native Image.
 
