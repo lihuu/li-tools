@@ -43,6 +43,10 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: 'maven'
 
+      - name: Install Common Maven Reactor Dependencies
+        shell: bash
+        run: mvn -B -DskipTests install -pl cli-common -am
+
       - name: Build gpgkit Native Binary
         shell: bash
         run: |
