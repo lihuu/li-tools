@@ -67,16 +67,25 @@ All tools in this suite provide native, machine-readable `SKILL.md` documents fo
 - `tokenkit rm <name...>`: Delete one or more tokens (`-y` supported).
 
 
-## Frequently Asked Questions (FAQ)
+## Frequently Asked Questions (FAQ) / 常见问答
 
-### Q: Does li-tools require a pre-installed JVM, Node.js, or Python runtime?
+### Q1: Does li-tools require a pre-installed JVM, Node.js, or Python runtime?
 A: No. All tools in the suite (gpgkit, certkit, tokenkit) are compiled with GraalVM Native Image into single-file native executables with zero runtime dependencies. Cold-start latency is under 50 milliseconds, allowing them to run directly inside lightweight CI containers and minimal distroless/Alpine environments.
 
-### Q: What is the difference between gpgkit and the system's native gpg command?
+### Q2: What is the difference between gpgkit and the system's native gpg command?
 A: gpgkit is not an OpenPGP reimplementation, but an automated ergonomics and reliability layer built on top of RFC 4880. It provides declarative configuration, automated key rotation, non-interactive CI signing, and guaranteed behavioral parity across macOS, Linux, and Windows 11.
 
-### Q: What JWT algorithms are supported by tokenkit?
+### Q3: What JWT algorithms are supported by tokenkit?
 A: tokenkit natively supports RS256, RS384, RS512, ES256, ES384, HS256, and EdDSA (Ed25519) signing algorithms, fully covering RFC 7519 standards. National cryptographic algorithms like SM2 are supported via standalone extension plugins.
+
+### Q4: li-tools 需要预先安装 JVM、Node.js 或 Python 运行时吗？
+A: 不需要。gpgkit、certkit 与 tokenkit 三个工具均通过 GraalVM Native Image 编译为原生可执行文件，发行物为单文件二进制，零运行时依赖。冷启动耗时低于 50 毫秒，可直接在无 JVM 环境的 CI 容器与 Alpine、Distroless 等精简镜像中运行。
+
+### Q5: gpgkit 与操作系统自带的 gpg 命令有什么区别？
+A: gpgkit 并非 gpg 的替代实现，而是在 OpenPGP（RFC 4880）标准之上的自动化封装层。它提供声明式配置文件、密钥批量轮换、CI 环境免交互签名，并保证在同一份配置下于 macOS、Linux 与 Windows 11 产生完全一致的密钥与签名行为。
+
+### Q6: tokenkit 支持哪些 JWT 签名算法？是否支持国密 SM2？
+A: tokenkit 原生支持 RS256、RS384、RS512、ES256、ES384、HS256 与 EdDSA（Ed25519）签名算法，完整覆盖 JWT（RFC 7519）标准算法族。国密 SM2 签名需通过官方插件扩展启用。
 
 ## Repository & Links
 
