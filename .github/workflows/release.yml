@@ -91,11 +91,8 @@ jobs:
           path: release-assets
           merge-multiple: true
 
-      - name: Generate SHA-256 Checksums
-        run: |
-          cd release-assets
-          sha256sum * > SHA256SUMS.txt
-          cat SHA256SUMS.txt
+      - name: Package Release Archives (.tar.gz and .zip)
+        run: python3 scripts/package-release-archives.py --assets-dir release-assets
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

@@ -60,9 +60,9 @@ def update_homebrew_formula(formula_path: Path, tool: str, version: str, darwin_
     content = re.sub(r'version "[^"]+"', f'version "{version}"', content)
 
     # 2. Update macOS arm64 url and sha256
-    darwin_url = f"https://github.com/lihuu/li-tools/releases/download/v{version}/{tool}-darwin-arm64"
+    darwin_url = f"https://github.com/lihuu/li-tools/releases/download/v{version}/{tool}-darwin-arm64.tar.gz"
     content = re.sub(
-        rf'url "https://github.com/lihuu/li-tools/releases/download/v[^/]+/{tool}-darwin-arm64"',
+        rf'url "https://github.com/lihuu/li-tools/releases/download/v[^/]+/{tool}-darwin-arm64(?:\.tar\.gz)?"',
         f'url "{darwin_url}"',
         content,
     )
@@ -74,9 +74,9 @@ def update_homebrew_formula(formula_path: Path, tool: str, version: str, darwin_
     content = macos_pattern.sub(rf"\g<1>{darwin_hash}\g<2>", content)
 
     # 3. Update Linux amd64 url and sha256
-    linux_url = f"https://github.com/lihuu/li-tools/releases/download/v{version}/{tool}-linux-amd64"
+    linux_url = f"https://github.com/lihuu/li-tools/releases/download/v{version}/{tool}-linux-amd64.tar.gz"
     content = re.sub(
-        rf'url "https://github.com/lihuu/li-tools/releases/download/v[^/]+/{tool}-linux-amd64"',
+        rf'url "https://github.com/lihuu/li-tools/releases/download/v[^/]+/{tool}-linux-amd64(?:\.tar\.gz)?"',
         f'url "{linux_url}"',
         content,
     )
@@ -86,7 +86,16 @@ def update_homebrew_formula(formula_path: Path, tool: str, version: str, darwin_
     )
     content = linux_pattern.sub(rf"\g<1>{linux_hash}\g<2>", content)
 
-    # 4. Update test assert_match version if checking --version
+    # 4. Update bin.install:
+    # If formula had: bin.install "tool-darwin-arm64" => "tool"
+    # update to: bin.install "tool"
+    content = re.sub(
+        rf'bin\.install "{tool}-(?:darwin-arm64|linux-amd64)" => "{tool}"',
+        f'bin.install "{tool}"',
+        content,
+    )
+
+    # 5. Update test assert_match version if checking --version
     content = re.sub(
         rf'assert_match "[0-9.]+", shell_output\("#\{{bin\}}/{tool} --version"\)',
         f'assert_match "{version}", shell_output("#{{bin}}/{tool} --version")',
@@ -106,9 +115,14 @@ def update_scoop_manifest(manifest_path: Path, tool: str, version: str, windows_
     data["version"] = version
     if "architecture" in data and "64bit" in data["architecture"]:
         data["architecture"]["64bit"]["url"] = (
-            f"https://github.com/lihuu/li-tools/releases/download/v{version}/{tool}-windows-amd64.exe#/{tool}.exe"
+            f"https://github.com/lihuu/li-tools/releases/download/v{version}/{tool}-windows-amd64.zip"
         )
         data["architecture"]["64bit"]["hash"] = windows_hash
+
+    if "autoupdate" in data and "architecture" in data["autoupdate"] and "64bit" in data["autoupdate"]["architecture"]:
+        data["autoupdate"]["architecture"]["64bit"]["url"] = (
+            f"https://github.com/lihuu/li-tools/releases/download/v$version/{tool}-windows-amd64.zip"
+        )
 
     content = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
     original = manifest_path.read_text(encoding="utf-8")
@@ -201,8 +215,8 @@ def main():
         updated = 0
         for formula_file in formula_dir.glob("*.rb"):
             tool = formula_file.stem
-            darwin_hash = checksums.get(f"{tool}-darwin-arm64")
-            linux_hash = checksums.get(f"{tool}-linux-amd64")
+            darwin_hash = checksums.get(f"{tool}-darwin-arm64.tar.gz") or checksums.get(f"{tool}-darwin-arm64")
+            linux_hash = checksums.get(f"{tool}-linux-amd64.tar.gz") or checksums.get(f"{tool}-linux-amd64")
             if not darwin_hash or not linux_hash:
                 print(f"  - Skipping {tool}.rb (missing checksums: darwin={bool(darwin_hash)}, linux={bool(linux_hash)})")
                 continue
@@ -226,7 +240,7 @@ def main():
         updated = 0
         for manifest_file in bucket_dir.glob("*.json"):
             tool = manifest_file.stem
-            windows_hash = checksums.get(f"{tool}-windows-amd64.exe")
+            windows_hash = checksums.get(f"{tool}-windows-amd64.zip") or checksums.get(f"{tool}-windows-amd64.exe")
             if not windows_hash:
                 print(f"  - Skipping {tool}.json (missing windows checksum)")
                 continue

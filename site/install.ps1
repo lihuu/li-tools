@@ -25,16 +25,35 @@ $Platform = "windows-$Arch"
 
 function Install-Tool([string]$ToolName) {
     $BinaryName = "$ToolName.exe"
-    $AssetName = "$ToolName-$Platform.exe"
+    $ZipAsset = "$ToolName-$Platform.zip"
+    $RawAsset = "$ToolName-$Platform.exe"
     $DestPath = Join-Path $InstallDir $BinaryName
-    $ReleaseUrl = "https://github.com/$Repo/releases/latest/download/$AssetName"
+    $ZipUrl = "https://github.com/$Repo/releases/latest/download/$ZipAsset"
+    $RawUrl = "https://github.com/$Repo/releases/latest/download/$RawAsset"
 
     Write-Host "⬇️  Downloading $ToolName from GitHub Releases..."
+    $installed = $false
+    # Try .zip archive first
+    $TempZip = Join-Path $env:TEMP "$ToolName-$Platform-$PID.zip"
     try {
-        Invoke-WebRequest -Uri $ReleaseUrl -OutFile $DestPath -UseBasicParsing
-        Write-Host "✔ Successfully installed $ToolName to $DestPath" -ForegroundColor Green
+        Invoke-WebRequest -Uri $ZipUrl -OutFile $TempZip -UseBasicParsing
+        Expand-Archive -Path $TempZip -DestinationPath $InstallDir -Force
+        Remove-Item -Path $TempZip -Force -ErrorAction SilentlyContinue
+        $installed = $true
     } catch {
-        Write-Host "ℹ Binary asset '$AssetName' is not yet published in GitHub Releases." -ForegroundColor Yellow
+        # Fallback to raw .exe
+        try {
+            Invoke-WebRequest -Uri $RawUrl -OutFile $DestPath -UseBasicParsing
+            $installed = $true
+        } catch {
+            $installed = $false
+        }
+    }
+
+    if ($installed) {
+        Write-Host "✔ Successfully installed $ToolName to $DestPath" -ForegroundColor Green
+    } else {
+        Write-Host "ℹ Release asset '$ZipAsset' is not yet published in GitHub Releases." -ForegroundColor Yellow
         Write-Host "  To build from source on Java 25:" -ForegroundColor Gray
         Write-Host "    git clone https://github.com/$Repo.git" -ForegroundColor Gray
         Write-Host "    cd li-tools\$ToolName; mvn clean package" -ForegroundColor Gray
