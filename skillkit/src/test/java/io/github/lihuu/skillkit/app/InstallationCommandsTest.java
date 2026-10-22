@@ -193,6 +193,21 @@ class InstallationCommandsTest {
     }
 
     @Test
+    void unrelatedRepositoryLinkDoesNotPreventInstallingRegularSkill() throws IOException, InterruptedException {
+        Path remote = temporary.resolve("repository-with-link");
+        Files.createDirectories(remote.resolve("skills/example"));
+        git(remote, "init", "-b", "main");
+        Files.writeString(remote.resolve("skills/example/SKILL.md"), "regular skill");
+        Files.writeString(remote.resolve("README.md"), "repository documentation");
+        Files.createSymbolicLink(remote.resolve("README-link"), Path.of("README.md"));
+        git(remote, "add", ".");
+        git(remote, "commit", "-m", "skill with unrelated link");
+        Result result = run("install", "example", "--repo", remote.toUri().toString(), "--ref", "main");
+        assertEquals(0, result.code(), result.err());
+        assertEquals("regular skill", Files.readString(home().resolve(".agents/skills/example/SKILL.md")));
+    }
+
+    @Test
     void gitSourceWorksWhenCachePathsExceedWindowsLegacyLimit() throws IOException, InterruptedException {
         Path remote = temporary.resolve("long-path-upstream");
         Files.createDirectories(remote.resolve("skills/example"));
