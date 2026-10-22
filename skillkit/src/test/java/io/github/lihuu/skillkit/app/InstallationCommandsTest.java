@@ -192,6 +192,20 @@ class InstallationCommandsTest {
         assertNotEquals(firstSnapshot, link.toRealPath());
     }
 
+    @Test
+    void gitSourceWorksWhenCachePathsExceedWindowsLegacyLimit() throws IOException, InterruptedException {
+        Path remote = temporary.resolve("long-path-upstream");
+        Files.createDirectories(remote.resolve("skills/example"));
+        git(remote, "init", "-b", "main");
+        Files.writeString(remote.resolve("skills/example/SKILL.md"), "long cache content");
+        git(remote, "add", "skills");
+        git(remote, "commit", "-m", "first");
+        Path cache = temporary.resolve("long-cache");
+        while (cache.toAbsolutePath().toString().length() < 270) cache = cache.resolve("cache-segment-0123456789");
+        SourceResolver.Snapshot snapshot = new SourceResolver(cache).resolve(remote.toUri().toString(), "main");
+        assertEquals("long cache content", Files.readString(snapshot.root().resolve("skills/example/SKILL.md")));
+    }
+
     private void git(Path directory, String... arguments) throws IOException, InterruptedException {
         List<String> command = new ArrayList<>(List.of("git", "-c", "user.name=Skillkit Test", "-c", "user.email=skillkit@example.invalid",
                 "-c", "commit.gpgsign=false", "-c", "core.hooksPath=" + temporary.resolve("no-hooks")));
