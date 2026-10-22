@@ -126,7 +126,7 @@ class InstallationCommandsTest {
     void sourceFailureIsSharedWithinOperationButRetriedByNextOperation() throws IOException, InterruptedException {
         Path remote = temporary.resolve("initially-missing-git");
         Path cache = temporary.resolve("source-cache");
-        SourceResolver firstOperation = new SourceResolver(cache);
+        SourceResolver firstOperation = new SourceResolver(cache, temporary.resolve("git-cache"));
         String source = remote.toUri().toString();
         assertThrows(IOException.class, () -> firstOperation.resolve(source, "main"));
         Files.createDirectories(remote.resolve("skills/example"));
@@ -135,7 +135,7 @@ class InstallationCommandsTest {
         git(remote, "add", "skills");
         git(remote, "commit", "-m", "first");
         assertThrows(IOException.class, () -> firstOperation.resolve(source, "main"));
-        assertTrue(Files.isRegularFile(new SourceResolver(cache).resolve(source, "main").root().resolve("skills/example/SKILL.md")));
+        assertTrue(Files.isRegularFile(new SourceResolver(cache, temporary.resolve("git-cache")).resolve(source, "main").root().resolve("skills/example/SKILL.md")));
     }
 
     @Test
@@ -202,7 +202,7 @@ class InstallationCommandsTest {
         git(remote, "commit", "-m", "first");
         Path cache = temporary.resolve("long-cache");
         while (cache.toAbsolutePath().toString().length() < 270) cache = cache.resolve("cache-segment-0123456789");
-        SourceResolver.Snapshot snapshot = new SourceResolver(cache).resolve(remote.toUri().toString(), "main");
+        SourceResolver.Snapshot snapshot = new SourceResolver(cache, temporary.resolve("git-cache")).resolve(remote.toUri().toString(), "main");
         assertEquals("long cache content", Files.readString(snapshot.root().resolve("skills/example/SKILL.md")));
     }
 

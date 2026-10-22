@@ -11,11 +11,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class SourceResolver {
     private final Path cache;
+    private final Path gitCache;
     private final Map<String, IOException> failures = new ConcurrentHashMap<>();
     private final Map<String, Snapshot> snapshots = new ConcurrentHashMap<>();
     private final Map<String, Object> locks = new ConcurrentHashMap<>();
 
-    public SourceResolver(@NotNull Path cache) { this.cache = cache.toAbsolutePath().normalize(); }
+    public SourceResolver(@NotNull Path cache, @NotNull Path gitCache) {
+        this.cache = cache.toAbsolutePath().normalize();
+        this.gitCache = gitCache.toAbsolutePath().normalize();
+    }
 
     public record Snapshot(@NotNull Path root, @NotNull String revision) {}
 
@@ -42,37 +46,35 @@ public final class SourceResolver {
             Snapshot cached = snapshots.get(identity);
             if (cached != null) return cached;
             Path storage = cache.resolve(SkillFiles.key(url));
-            try (OperationLock ignored = OperationLock.acquire(storage)) {
-                // Windows limits process cwd length and Git independently bounds the GIT_DIR string.
-                // Keep cwd short and pass relative paths; init/fetch avoids clone exporting an absolute GIT_DIR.
-                Path workingDirectory = storage;
-                while (workingDirectory.toString().length() > 240 && workingDirectory.getParent() != null) {
-                    workingDirectory = workingDirectory.getParent();
-                }
-                Path git = storage.resolve("repository.git");
-                String gitDirectory = "--git-dir=" + workingDirectory.relativize(git);
+            // Git bounds GIT_DIR even with longpaths enabled; keep its objects outside nested snapshot keys.
+            Path gitStorage = gitCache.resolve(SkillFiles.key(cache + "\n" + url));
+            try (OperationLock ignored = OperationLock.acquire(gitStorage)) {
+                Files.createDirectories(storage);
+                Path git = gitStorage.resolve("repository.git");
                 if (!Files.exists(git)) {
-                    Path staging = storage.resolve("clone-" + java.util.UUID.randomUUID());
+                    Path staging = gitStorage.resolve("clone-" + java.util.UUID.randomUUID());
                     try {
-                        String stagingDirectory = "--git-dir=" + workingDirectory.relativize(staging);
-                        GitClient.run(workingDirectory, List.of("init", "--bare", "--", workingDirectory.relativize(staging).toString()));
-                        GitClient.run(workingDirectory, List.of(stagingDirectory, "remote", "add", "origin", url));
+                        GitClient.run(gitStorage, List.of("clone", "--bare", "--no-hardlinks", "--", url, staging.getFileName().toString()));
                         Files.move(staging, git);
                     } finally {
                         SkillFiles.delete(staging);
                     }
                 }
-                GitClient.run(workingDirectory, List.of(gitDirectory, "fetch", "--no-tags", "origin", ref));
-                String revision = GitClient.run(workingDirectory, List.of(gitDirectory, "rev-parse", "FETCH_HEAD"));
+                String gitDirectory = "--git-dir=repository.git";
+                GitClient.run(gitStorage, List.of(gitDirectory, "fetch", "--no-tags", "origin", ref));
+                String revision = GitClient.run(gitStorage, List.of(gitDirectory, "rev-parse", "FETCH_HEAD"));
                 if (!revision.matches("[0-9a-f]{40,64}")) throw new IOException("Git returned an invalid revision");
                 Path snapshot = storage.resolve(revision);
                 if (!Files.isDirectory(snapshot)) {
+                    Path checkout = Files.createTempDirectory(gitStorage, "checkout-");
                     Path staging = Files.createTempDirectory(storage, "snapshot-");
                     try {
-                        GitClient.run(workingDirectory, List.of(gitDirectory, "--work-tree=" + workingDirectory.relativize(staging),
+                        GitClient.run(gitStorage, List.of(gitDirectory, "--work-tree=" + checkout.getFileName(),
                                 "checkout", "--force", revision, "--", "."));
+                        SkillFiles.copy(checkout, staging);
                         Files.move(staging, snapshot);
                     } finally {
+                        SkillFiles.delete(checkout);
                         SkillFiles.delete(staging);
                     }
                 }

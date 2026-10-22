@@ -65,7 +65,7 @@ public final class CliCommand implements Callable<Integer> {
             }
             root = workingDirectory.resolve(root).toAbsolutePath().normalize();
             Path cache = home.resolve(".cache/skillkit").resolve(SkillFiles.key(root.toString()));
-            manager = new RepositoryManager(new RepositoryStore(root), new SourceResolver(cache));
+            manager = new RepositoryManager(new RepositoryStore(root), new SourceResolver(cache, home.resolve(".cache/skillkit/git")));
         }
         return manager;
     }
