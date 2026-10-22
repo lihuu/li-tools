@@ -3,7 +3,6 @@ package io.github.lihuu.skillkit.app;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import io.github.lihuu.skillkit.core.SourceResolver;
-import io.github.lihuu.skillkit.core.SkillFiles;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -203,19 +202,7 @@ class InstallationCommandsTest {
         git(remote, "commit", "-m", "first");
         Path cache = temporary.resolve("long-cache");
         while (cache.toAbsolutePath().toString().length() < 270) cache = cache.resolve("cache-segment-0123456789");
-        SourceResolver.Snapshot snapshot;
-        try {
-            snapshot = new SourceResolver(cache).resolve(remote.toUri().toString(), "main");
-        } catch (IOException failure) {
-            // Only synthetic local data: reproduce Git stages directly so CI reports its actual error.
-            Path diagnostic = cache.resolve(SkillFiles.key(remote.toUri().toString())).resolve("diagnostic-clone.git");
-            git(temporary, "-c", "core.longpaths=true", "clone", "--bare", "--no-hardlinks", "--", remote.toUri().toString(), diagnostic.toString());
-            git(temporary, "-c", "core.longpaths=true", "--git-dir=" + diagnostic, "fetch", "--no-tags", "origin", "main");
-            Path checkout = diagnostic.resolveSibling("diagnostic-checkout");
-            Files.createDirectories(checkout);
-            git(temporary, "-c", "core.longpaths=true", "--git-dir=" + diagnostic, "--work-tree=" + checkout, "checkout", "--force", "FETCH_HEAD", "--", ".");
-            throw failure;
-        }
+        SourceResolver.Snapshot snapshot = new SourceResolver(cache).resolve(remote.toUri().toString(), "main");
         assertEquals("long cache content", Files.readString(snapshot.root().resolve("skills/example/SKILL.md")));
     }
 
