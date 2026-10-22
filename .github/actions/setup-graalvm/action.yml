@@ -1,0 +1,23 @@
+name: Set up project GraalVM CE
+description: Use the same pinned GraalVM CE for JVM tests and Native builds
+runs:
+  using: composite
+  steps:
+    - uses: graalvm/setup-graalvm@v1
+      with:
+        version: '25.4.4.1.1'
+        distribution: 'graalvm-community'
+        cache: 'maven'
+        check-for-updates: 'false'
+    - name: Verify GraalVM CE version
+      shell: bash
+      run: |
+        java --version
+        native_image=native-image
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          native_image=native-image.cmd
+        fi
+        native_version="$("$native_image" --version)"
+        printf '%s\n' "$native_version"
+        printf '%s\n' "$native_version" | grep -F 'GraalVM CE 25.4.4.1.1+1.1'
+        mvn --version

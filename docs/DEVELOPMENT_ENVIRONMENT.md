@@ -25,7 +25,11 @@ gh api repos/graalvm/graalvm-ce-builds/releases/latest \
 ```
 
 上表是已验证记录，后续的 `latest` 会变化。升级前确认发行说明中的 JDK 版本仍满足
-项目要求，再重新运行相关 JVM 和 Native 检查；CI 的工具链选择由工作流单独管理。
+项目要求，再重新运行相关 JVM 和 Native 检查。
+普通 CI 与 Native 发布构建统一使用
+[项目 GraalVM 配置](../.github/actions/setup-graalvm/action.yml)，
+目前精确锁定 CE `25.4.4.1.1`，并检查 Runtime 标识为 `GraalVM CE 25.4.4.1.1+1.1`。
+升级时同步修改这个配置和本地环境，不以浮动的 Java 主版本替代 GraalVM 发行版本。
 
 ## macOS Apple Silicon 安装
 
@@ -88,14 +92,15 @@ Linux/Windows 从同一发行页选择对应平台包，按发行页各平台的
 
 ```sh
 mvn clean test
-mvn -DskipTests package -pl certkit -am
-(cd certkit && ./build-native.sh)
+./certkit/build-native.sh
 certkit/target/certkit --help
 certkit/target/certkit --version
 ```
 
-也可用同样方式构建 gpgkit/tokenkit。Windows 的二进制带 `.exe` 后缀。
-此次环境更新保持现有 `-O3`、独立可执行文件构建方式及项目安全配置；
+也可用同样方式构建 gpgkit/tokenkit；构建全部工具使用根目录的 `./build-native.sh`，
+它只执行一次 Maven 打包。Windows 的二进制带 `.exe` 后缀。
+当前构建使用默认 O2，取舍见[原生构建说明](NATIVE_BUILD.md)。环境升级时所做的
+版本对照使用 O3，保留独立可执行文件构建方式及项目安全配置；
 安全配置继续包含所选构建 JDK 的完整 `java.security` 策略。
 
 **升级不会自动启用分层缓存。** `LayerCreate` / `LayerUse` 属于另行配置的实验性构建方式，

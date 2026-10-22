@@ -144,11 +144,11 @@ mvn clean test
 三个工具统一使用 Native Image 默认的 O2 优化等级；取舍与实测见[原生构建说明](docs/NATIVE_BUILD.md)。
 
 ```bash
-# 编译 gpgkit 单文件原生可执行文件 (产物位于 gpgkit/target/gpgkit)
-cd gpgkit && ./build-native.sh
+# 构建三个工具：只跑一次 Maven reactor 打包，再分别生成 Native
+./build-native.sh
 
-# 编译 certkit 单文件原生可执行文件 (产物位于 certkit/target/certkit)
-cd certkit && ./build-native.sh
+# 或只构建一个工具，自动准备其 Maven 依赖
+./certkit/build-native.sh
 ```
 
 编译速度实验、独立复核结论与后续优化边界见 [Native Image 编译速度优化评估](docs/NATIVE_BUILD_EVALUATION.md)。

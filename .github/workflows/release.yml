@@ -35,38 +35,28 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up GraalVM for JDK 25
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: '25'
-          distribution: 'graalvm'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          cache: 'maven'
+      - name: Set up pinned GraalVM CE
+        uses: ./.github/actions/setup-graalvm
 
-      - name: Install Common Maven Reactor Dependencies
+      - name: Build Native Binaries
         shell: bash
-        run: mvn -B -DskipTests install -pl cli-common -am
+        run: ./build-native.sh
 
-      - name: Build gpgkit Native Binary
+      - name: Smoke Test Native Binaries
         shell: bash
         run: |
-          cd gpgkit
-          ./build-native.sh
-          cp "target/gpgkit${{ matrix.binary-ext }}" "../gpgkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            python scripts/smoke-native.py
+          else
+            python3 scripts/smoke-native.py
+          fi
 
-      - name: Build certkit Native Binary
+      - name: Stage Native Binaries
         shell: bash
         run: |
-          cd certkit
-          ./build-native.sh
-          cp "target/certkit${{ matrix.binary-ext }}" "../certkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}"
-
-      - name: Build tokenkit Native Binary
-        shell: bash
-        run: |
-          cd tokenkit
-          ./build-native.sh
-          cp "target/tokenkit${{ matrix.binary-ext }}" "../tokenkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}"
+          for tool in gpgkit certkit tokenkit; do
+            cp "$tool/target/$tool${{ matrix.binary-ext }}" "$tool-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}"
+          done
 
       - name: Upload Binary Artifacts
         uses: actions/upload-artifact@v4
@@ -79,6 +69,7 @@ jobs:
 
   publish-release:
     name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: build-native
     runs-on: ubuntu-latest
     steps:
