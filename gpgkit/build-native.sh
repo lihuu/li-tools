@@ -36,8 +36,8 @@ else
     mvn -q -DskipTests package
 fi
 
-# -O3 rather than the default -O2: this is a command people wait on, the build is seconds longer,
-# and the image is smaller. The level is a deliberate choice, not a default left in place.
+# Use Native Image's default optimization level (O2). Forcing O3 on CE 25.4.4.1.1
+# increased certkit build time and image size; see ../docs/NATIVE_BUILD.md.
 #
 # --no-fallback is the one flag that must not be removed. Without it, native-image happily emits
 # a launcher that needs a JVM at runtime and says so only when it is too late. The entire point
@@ -67,7 +67,6 @@ fi
     -J-Xmx4g \
     "$@" \
     ${NATIVE_IMAGE_THREADS:+-J-XX:ActiveProcessorCount=$NATIVE_IMAGE_THREADS} \
-    -O3 \
     -jar target/gpgkit.jar \
     -o target/gpgkit
 

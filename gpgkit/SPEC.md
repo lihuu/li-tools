@@ -141,7 +141,7 @@ gpgkit publish [--key <id>] [--keyserver hkps://keyserver.ubuntu.com]
 
 - `pom.xml`（JDK 25、零依赖、exec 可直接跑）
 - `src/main/java/...` 上述命令的实现
-- `build-native.sh`（GraalVM native 构建：`--no-fallback`、`-O3`，每个 flag 为什么在那写在注释里）
+- `build-native.sh`（GraalVM native 构建：`--no-fallback`、默认 O2 优化等级；取舍见 [`../docs/NATIVE_BUILD.md`](../docs/NATIVE_BUILD.md)）
 - `README.md`（怎么用，一步一步）+ `docs/` 下的 runbook：
   - `migrate-to-new-machine.md`（换机：备份 → 新机 clone → restore → doctor）
   - `key-expiry.md`（到期前怎么办）

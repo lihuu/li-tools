@@ -139,6 +139,8 @@ mvn clean test
 ### 编译单文件原生二进制 (GraalVM Native Image)
 确保环境变量 `JAVA_HOME` 指向 GraalVM for JDK 25：
 
+三个工具统一使用 Native Image 默认的 O2 优化等级；取舍与实测见[原生构建说明](docs/NATIVE_BUILD.md)。
+
 ```bash
 # 编译 gpgkit 单文件原生可执行文件 (产物位于 gpgkit/target/gpgkit)
 cd gpgkit && ./build-native.sh
