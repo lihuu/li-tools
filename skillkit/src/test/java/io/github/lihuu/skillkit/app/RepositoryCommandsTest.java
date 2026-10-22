@@ -95,6 +95,19 @@ class RepositoryCommandsTest {
         assertFalse(Files.exists(repository().resolve("skillkit.json")));
     }
 
+    @Test
+    void localSubscriptionMovesWithRepositoryAndSiblingSource() throws IOException {
+        skill("upstream/skills/portable", "portable instructions");
+        assertEquals(0, execute("track", "portable", "--source", temporary.resolve("upstream").toString()).code());
+        Path moved = temporary.resolve("moved");
+        Files.createDirectories(moved);
+        Files.move(repository(), moved.resolve("repository"));
+        Files.move(temporary.resolve("upstream"), moved.resolve("upstream"));
+        Result result = executeAt(moved.resolve("repository"), "use", "portable");
+        assertEquals(0, result.code(), result.err());
+        assertEquals("portable instructions", result.out().strip());
+    }
+
     private Path repository() { return temporary.resolve("repository"); }
 
     private Path skill(String relative, String content) throws IOException {
@@ -105,7 +118,11 @@ class RepositoryCommandsTest {
     }
 
     private Result execute(String... arguments) {
-        List<String> args = new ArrayList<>(List.of("--repository", repository().toString()));
+        return executeAt(repository(), arguments);
+    }
+
+    private Result executeAt(Path root, String... arguments) {
+        List<String> args = new ArrayList<>(List.of("--repository", root.toString()));
         args.addAll(List.of(arguments));
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();
