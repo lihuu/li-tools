@@ -31,10 +31,16 @@ else
     mvn -q -DskipTests package
 fi
 
+SECURITY_ARGS=""
+if [ -f "../scripts/pruned-security.properties" ]; then
+    SECURITY_ARGS="-J-Djava.security.properties==$(pwd)/../scripts/pruned-security.properties"
+fi
+
 "$NATIVE_IMAGE" \
     --no-fallback \
     -H:+ReportExceptionStackTraces \
     -J-Xmx4g \
+    ${SECURITY_ARGS} \
     ${NATIVE_IMAGE_THREADS:+-J-XX:ActiveProcessorCount=$NATIVE_IMAGE_THREADS} \
     -O3 \
     -jar target/certkit.jar \
