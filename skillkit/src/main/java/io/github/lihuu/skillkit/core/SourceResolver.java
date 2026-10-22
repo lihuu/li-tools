@@ -15,7 +15,7 @@ public final class SourceResolver {
     private final Map<String, Snapshot> snapshots = new ConcurrentHashMap<>();
     private final Map<String, Object> locks = new ConcurrentHashMap<>();
 
-    public SourceResolver(@NotNull Path cache) { this.cache = cache; }
+    public SourceResolver(@NotNull Path cache) { this.cache = cache.toAbsolutePath().normalize(); }
 
     public record Snapshot(@NotNull Path root, @NotNull String revision) {}
 
