@@ -25,6 +25,7 @@
 | **[`gpgkit`](gpgkit/)** | Full lifecycle management of GPG keys | Zero runtime dependencies, guaranteed loopback test verification, one-command backup/restore/extend/diagnose | `Active` |
 | **[`certkit`](certkit/)** | Modern SSL/TLS certificate Swiss Army knife | Convention over configuration, trusted local Root CA, smart domain/IP SAN auto-sniffing, single-argument format conversion, triple-platform trust | `Active` |
 | **[`tokenkit`](tokenkit/)** | Modern cross-platform encrypted token manager | Embedded encrypted SQLite, AES-256-GCM + PBKDF2, sub-10ms terminal shell injection (`tokenkit env`), cross-machine encrypted migration bundles | `Active` |
+| **[`skillkit`](skillkit/)** | Local agent skill management | Maven/CLI scaffold; [Java migration and parallel install/update plan](skillkit/MIGRATION.md) | `Scaffold` |
 
 ---
 
@@ -70,6 +71,7 @@ li-tools/
 │   ├── build-native.sh         # GraalVM Native Image compilation script
 │   └── src/
 ├── .github/workflows/          # CI/CD and GitHub Pages automation
+├── skillkit/                   # Agent skills manager scaffold; business commands planned
 └── README.md
 ```
 

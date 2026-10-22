@@ -16,6 +16,7 @@
         <module>gpgkit</module>
         <module>certkit</module>
         <module>tokenkit</module>
+        <module>skillkit</module>
     </modules>
 
         <properties>
