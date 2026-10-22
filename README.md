@@ -125,6 +125,8 @@ irm https://tools.lihu.me/install.ps1 | iex
 
 ## 🛠️ Quick Start & Build from Source
 
+See the [Native Image build evaluation (中文)](docs/NATIVE_BUILD_EVALUATION.md) for measured results, safety constraints, and proposed next steps.
+
 ### Requirements
 - **Java 25** (e.g. OpenJDK 25 or GraalVM for JDK 25)
 - **Maven 3.9+**
