@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,9 +21,14 @@ final class GitClient {
     private GitClient() {}
 
     static @NotNull String run(@NotNull Path directory, @NotNull List<String> arguments) throws IOException {
+        return run(directory, arguments, Map.of());
+    }
+
+    static @NotNull String run(@NotNull Path directory, @NotNull List<String> arguments, @NotNull Map<String, String> environment) throws IOException {
         List<String> command = new ArrayList<>(List.of("git", "-c", "core.longpaths=true"));
         command.addAll(arguments);
         ProcessBuilder builder = new ProcessBuilder(command).directory(directory.toFile()).redirectErrorStream(true);
+        builder.environment().putAll(environment);
         builder.environment().put("GIT_TERMINAL_PROMPT", "0");
         Process process = builder.start();
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(90);
@@ -31,7 +37,7 @@ final class GitClient {
             Future<String> output = reader.submit(() -> {
                 byte[] bytes = stream.readNBytes(65537);
                 stream.transferTo(OutputStream.nullOutputStream());
-                return bytes.length > 65536 ? "" : new String(bytes, StandardCharsets.UTF_8).strip();
+                return new String(bytes, 0, Math.min(bytes.length, 65536), StandardCharsets.UTF_8).strip();
             });
             try {
                 if (!process.waitFor(90, TimeUnit.SECONDS)) throw new TimeoutException();

@@ -25,7 +25,7 @@
 | **[`gpgkit`](gpgkit/)** | GPG 密钥全生命周期管理，终结“换机器丢密钥” | 零运行时依赖、强制回环可验证性校验、一键备份/还原/续期/自检 | `Active` |
 | **[`certkit`](certkit/)** | 现代 SSL/TLS 证书瑞士军刀，告别反人类的 OpenSSL 参数 | 约定大于配置、一键受信任本地 Root CA、智能域名/IP SAN 嗅探、单参数互转、三端系统受信 | `Active` |
 | **[`tokenkit`](tokenkit/)** | 现代通用敏感 Token/API Key 加密管理器，终结明文密钥泄露 | 内嵌强加密 SQLite、AES-256-GCM + PBKDF2、<10ms 终端极速环境变量注入 (`tokenkit env`)、跨系统安全加密迁移包 | `Active` |
-| **[`skillkit`](skillkit/)** | 本地 Agent skills 管理 | 本地内容与上游元数据订阅、并行安装/更新、复制/软链、所有受支持 Agent 全局安装 | `Active` |
+| **[`skillkit`](skillkit/)** | 本地 Agent skills 管理 | 本地内容与上游元数据订阅、并行安装/更新、远端发布、所有受支持 Agent 全局安装 | `Active` |
 
 ---
 

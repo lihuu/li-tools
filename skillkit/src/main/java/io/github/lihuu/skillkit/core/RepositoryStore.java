@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.LinkedHashMap;
@@ -27,7 +28,8 @@ public final class RepositoryStore {
     public @NotNull Map<String, Upstream> load() throws IOException {
         Path file = root.resolve("skillkit.json");
         Map<String, Upstream> upstreams = new LinkedHashMap<>();
-        if (!Files.exists(file)) return upstreams;
+        if (!Files.exists(file, LinkOption.NOFOLLOW_LINKS)) return upstreams;
+        if (!Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) throw new IOException("skillkit.json must be a regular file");
         try (JsonParser parser = new JsonFactory().createParser(file.toFile())) {
             if (parser.nextToken() != JsonToken.START_OBJECT) throw new IOException("Invalid skillkit.json");
             boolean version = false;
