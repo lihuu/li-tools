@@ -21,23 +21,23 @@
 | --- | --- |
 | 自动寻找/安装 npm skills，失败后 npx 降级 | 已移除；Java 直接管理，远程只用系统 Git |
 | 默认硬编码 lihuu/lihuu-skills 来源 | 用户指定个人 repository，自动发现本地内容和声明 |
-| 原脚本无独立内容收录模型 | `import` 复制完整目录成为本地内容；`track` 仅保存上游声明 |
-| `install-self` 复制脚本并 clone 默认来源 | 独立 Native/JAR 分发；`init` 管理用户自己的目录，不复制脚本 |
-| `add` 单个 skill 委托 npm | `add/install` 支持多个 skill、目标、copy/symlink、有界并行 |
+| 原脚本无独立内容模型 | 个人 skills/ 直接维护原稿；外部 install 自动保存上游元数据 |
+| `install-self` 复制脚本并 clone 默认来源 | 独立 Native/JAR 分发，直接使用已有个人目录 |
+| `add` 单个 skill 委托 npm | 统一 `install` 支持多个 skill、copy/symlink、有界并行，默认安装到全部内置全局目标 |
 | `update` 先 git pull 默认源，再整体调用 skills update | 按已有安装生成任务，本地取当前内容，订阅取新来源，同源/ref 只解析一次 |
-| `remove` 只先查默认全局软链 | 按指定 agent/scope/目标操作托管安装，保留原稿和订阅 |
-| `list` / `list-available` 委托 npm | Java 读取安装状态、个人 catalog 或来源目录 |
+| `remove` 只先查默认全局软链 | 统一 `uninstall` 从全部内置全局目标卸载，保留原稿与来源记录 |
+| `list` / `list-available` 委托 npm | `list` 读取当前个人仓库的全局安装状态 |
 | 用 Python 改第三方 JSON，无锁 read-modify-write | Jackson streaming 读取本工具版本化 JSON，仓库锁和目标锁保护提交 |
 | 管道末尾 `\|\| true` 吞掉失败退出码 | 每项记录状态，任一失败返回 1，保留成功结果 |
 | 软链替换前 `rm -rf` 目标 | 仅允许受管理目标；暂存、备份、状态提交，失败尝试恢复 |
 | 手工后台并发可能覆盖共享 lockfile | 有界虚拟线程准备内容；目标锁内串行发布和状态写入 |
 
-原脚本还存在静态可见问题：同名目录取第一个；remove 的 scope/agent 分支不完整；list 把 -g 当作带值参数；按 skill 名跨仓库注销声明；源拉取失败只告警。Java 的名字校验、重名拒绝、显式目标、来源身份和逐项错误避免照搬这些行为。
+原脚本还存在静态可见问题：同名目录取第一个；remove 的 scope/agent 分支不完整；list 把 -g 当作带值参数；按 skill 名跨仓库注销声明；源拉取失败只告警。Java 的名字校验、重名拒绝、共享目标去重、来源身份和逐项错误避免照搬这些行为。
 
 ## 当前落地与边界
 
-已实现个人仓库初始化/创建/收录/订阅、目录发现、catalog/find/use、安装/检查/并行更新/卸载，以及 Git 固定版本缓存。JSON 用 Jackson Core streaming，不引入 npm 或反射对象绑定。CLI 细节以 [SPEC.md](SPEC.md) 为准。
+CLI 按用户最后反馈收敛为四个命令：`install`、`update`、`uninstall`、`list`。自己的内容直接放在个人 skills/；别人的 skill 通过 `install <name> --repo <source>` 安装并自动保存来源。没有 import、track、untrack 等额外管理命令，也不提供 Agent 或项目作用域选择。CLI 细节以 [SPEC.md](SPEC.md) 为准。
 
-已有分类内容无需逐项登记即可被发现。原 third-party-skills.json 和 npm lockfile 仍是旧格式，不会被自动重写或认领；迁移第三方项可显式 `track <name> --source <repo>`，现有 agent 安装仍视为未托管，避免无意覆盖。保留自己的改造内容时应先复制到个人 skills/，再安装。
+已有分类内容无需逐项登记即可发现。原 third-party-skills.json 和 npm lockfile 不会被自动重写；外部项用 install 安装。现有 Agent 安装仍视为未托管，避免覆盖。保留个人改造内容时，将目录复制到个人 skills/ 后按自己的 skill 安装。
 
-本轮尚未覆盖 npm skills 的全量生态扩展：在线 marketplace 搜索、归档 URL 下载、npm dependency 同步、启动其他 agent、全部 agent 自动探测和 hooks。也未接入公共发布/包管理器。已完成的是上述仓库与安装管理闭环，不把它表述为所有第三方/实验命令的完整兼容实现。
+本轮覆盖目录/Git 来源、来源元数据、所有内置全局目标、并行安装更新和卸载，不实现在线市场、归档下载、npm 依赖同步或启动其他 Agent。

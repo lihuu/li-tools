@@ -6,8 +6,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -20,70 +18,9 @@ public final class RepositoryManager {
         this.sources = sources;
     }
 
-    public record Entry(@NotNull String name, @NotNull String kind, @NotNull String source) {}
     public record ResolvedSkill(@NotNull String name, @NotNull Path directory, @NotNull String revision, @Nullable RepositoryStore.Upstream subscription) {}
 
     public @NotNull RepositoryStore store() { return store; }
-
-    public void initialize() throws IOException {
-        try (OperationLock ignored = OperationLock.acquire(store.root())) {
-            Files.createDirectories(store.root().resolve("skills"));
-            store.save(store.load());
-            Path ignore = store.root().resolve(".gitignore");
-            String contents = Files.exists(ignore) ? Files.readString(ignore) : "";
-            if (!contents.lines().anyMatch(line -> line.equals(".skillkit.lock"))) {
-                Files.writeString(ignore, contents + (contents.isEmpty() || contents.endsWith("\n") ? "" : "\n") + ".skillkit.lock\n");
-            }
-        }
-    }
-
-    public void create(@NotNull String name) throws IOException {
-        SkillCatalog.validateName(name);
-        try (OperationLock ignored = OperationLock.acquire(store.root())) {
-            store.ensureAvailable(name);
-            Path target = store.root().resolve("skills").resolve(name);
-            if (Files.exists(target)) throw new IllegalArgumentException("Target already exists: " + target);
-            Files.createDirectories(target);
-            Files.writeString(target.resolve("SKILL.md"), "---\nname: " + name + "\ndescription: Describe when to use this skill.\n---\n\n# " + name + "\n\nWrite your instructions here.\n");
-            store.save(store.load());
-        }
-    }
-
-    public void collect(@NotNull String name, @NotNull String source, @NotNull String ref,
-                        boolean track, boolean dryRun) throws IOException {
-        SkillCatalog.validateName(name);
-        store.ensureAvailable(name);
-        if (dryRun) return;
-        ResolvedSkill resolved = resolveFromSource(name, source, ref);
-        SkillCatalog.Skill skill = new SkillCatalog.Skill(name, resolved.directory());
-        try (OperationLock ignored = OperationLock.acquire(store.root())) {
-            store.ensureAvailable(name);
-            Map<String, RepositoryStore.Upstream> upstreams = store.load();
-            if (track) {
-                RepositoryStore.Upstream subscription = resolved.subscription();
-                if (subscription == null) throw new IllegalStateException("Resolved upstream has no declaration");
-                upstreams.put(name, subscription);
-                store.save(upstreams);
-            } else {
-                Path target = store.root().resolve("skills").resolve(name);
-                if (Files.exists(target)) throw new IllegalArgumentException("Target already exists: " + target);
-                Files.createDirectories(target.getParent());
-                Path staging = Files.createTempDirectory(target.getParent(), ".skillkit-import-");
-                try {
-                    SkillFiles.copy(skill.directory(), staging);
-                    Files.move(staging, target);
-                    try {
-                        store.save(upstreams);
-                    } catch (IOException failure) {
-                        SkillFiles.delete(target);
-                        throw failure;
-                    }
-                } finally {
-                    SkillFiles.delete(staging);
-                }
-            }
-        }
-    }
 
     public void recordVersions(@NotNull Map<String, String> revisions) throws IOException {
         Map<String, RepositoryStore.Upstream> upstreams = store.load();
@@ -97,30 +34,6 @@ public final class RepositoryManager {
             }
         }
         if (changed) store.save(upstreams);
-    }
-
-    public void forget(@NotNull String name) throws IOException {
-        SkillCatalog.validateName(name);
-        try (OperationLock ignored = OperationLock.acquire(store.root())) {
-            Map<String, RepositoryStore.Upstream> upstreams = store.load();
-            if (upstreams.remove(name) == null) throw new IllegalArgumentException("No upstream subscription: " + name);
-            store.save(upstreams);
-        }
-    }
-
-    public @NotNull List<Entry> catalog() throws IOException {
-        List<Entry> entries = new ArrayList<>();
-        for (SkillCatalog.Skill skill : SkillCatalog.discover(store.root().resolve("skills"))) {
-            entries.add(new Entry(skill.name(), "local", store.root().relativize(skill.directory()).toString()));
-        }
-        for (RepositoryStore.Upstream upstream : store.load().values()) {
-            if (entries.stream().anyMatch(entry -> entry.name().equals(upstream.name()))) {
-                throw new IllegalArgumentException("Local content conflicts with upstream subscription: " + upstream.name());
-            }
-            entries.add(new Entry(upstream.name(), "upstream", upstream.source()));
-        }
-        entries.sort(Comparator.comparing(Entry::name));
-        return List.copyOf(entries);
     }
 
     public @NotNull ResolvedSkill resolve(@NotNull String name) throws IOException {
@@ -144,7 +57,7 @@ public final class RepositoryManager {
         RepositoryStore.Upstream existing = store.load().get(name);
         if (existing == null) store.ensureAvailable(name);
         else if (!sourceLocation(existing.source()).equals(source) || !existing.ref().equals(ref)) {
-            throw new IllegalArgumentException("Subscription already has a different source: " + name);
+            throw new IllegalArgumentException("Skill already uses a different source: " + name);
         }
         SourceResolver.Snapshot snapshot = sources.resolve(source, ref);
         SkillCatalog.Skill skill = SkillCatalog.select(SkillCatalog.discover(snapshot.root()), name);
@@ -182,12 +95,4 @@ public final class RepositoryManager {
         return relative.isEmpty() ? "." : relative.startsWith("../") ? relative : "./" + relative;
     }
 
-    public @NotNull List<Entry> available(@NotNull String source, @NotNull String ref) throws IOException {
-        SourceResolver.Snapshot snapshot = sources.resolve(source, ref);
-        List<Entry> entries = new ArrayList<>();
-        for (SkillCatalog.Skill skill : SkillCatalog.discover(snapshot.root())) {
-            entries.add(new Entry(skill.name(), "available", snapshot.root().relativize(skill.directory()).toString()));
-        }
-        return entries;
-    }
 }

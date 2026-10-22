@@ -3,6 +3,7 @@
 from pathlib import Path
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 
@@ -13,9 +14,12 @@ binary = workspace / 'skillkit/target' / ('skillkit.exe' if os.name == 'nt' else
 for runtime in ('JAR', 'NATIVE'):
     with tempfile.TemporaryDirectory(prefix='skillkit-accept-') as temporary:
         root = Path(temporary)
-        home, repository, target = root/'home', root/'repository', root/'target'
+        home, repository = root/'home', root/'repository'
+        target = home/'.agents/skills'
         base = ['java', '-Duser.home='+str(home), '-jar', str(jar)] if runtime == 'JAR' else [str(binary), '-Duser.home='+str(home)]
         environment = dict(os.environ, NO_COLOR='')
+        for key in ('CLAUDE_CONFIG_DIR', 'HERMES_HOME', 'XDG_CONFIG_HOME', 'SKILLKIT_REPOSITORY'):
+            environment.pop(key, None)
         def run(*arguments, expected=0, repo=repository):
             result = subprocess.run([*base, '--repository', str(repo), *arguments], cwd=root,
                                     env=environment, capture_output=True, text=True, timeout=30)
@@ -25,41 +29,48 @@ for runtime in ('JAR', 'NATIVE'):
         run('--help')
         run('--version')
         run('--unknown', expected=2)
-        run('init')
-        run('create', 'own')
+        for obsolete in ('init', 'create', 'import', 'track', 'untrack', 'add', 'check', 'catalog'):
+            run(obsolete, expected=2)
+        (repository/'skills/own').mkdir(parents=True)
         (repository/'skills/own/SKILL.md').write_text('own one')
         external=root/'external/skills'
-        for name in ('copied','followed'):
+        for name in ('copied', 'followed'):
             (external/name).mkdir(parents=True)
             (external/name/'SKILL.md').write_text(name+' one')
-        run('import','copied','--source',str(root/'external'))
-        run('track','followed','--source',str(root/'external'))
+        shutil.copytree(external/'copied', repository/'skills/copied')
+        run('install', 'own', 'copied', '--jobs', '2')
+        run('install', 'followed', '--repo', str(root/'external'))
         assert not (repository/'skills/followed').exists()
         assert len(json.loads((repository/'skillkit.json').read_text())['upstreams'])==1
-        run('add','own','copied','followed','--target-dir',str(target),'--jobs','2')
-        for name in ('own','copied','followed'):
-            assert (target/name/'SKILL.md').read_text()==name+' one'
+        roots=[home/path for path in ('.agents/skills', '.claude/skills', '.qwen/skills',
+               '.cursor/skills', '.gemini/skills', '.hermes/skills', '.config/opencode/skills',
+               '.gemini/antigravity/skills')]
+        for directory in roots:
+            for name in ('own', 'copied', 'followed'):
+                assert (directory/name/'SKILL.md').read_text()==name+' one'
         (repository/'skills/own/SKILL.md').write_text('own two')
         (external/'copied/SKILL.md').write_text('copied upstream two')
         (external/'followed/SKILL.md').write_text('followed two')
-        checked=json.loads(run('check','--target-dir',str(target),'--json'))
-        assert {item['name']: item['status'] for item in checked}=={'own':'outdated','copied':'current','followed':'outdated'}
-        run('update','--target-dir',str(target),'--jobs','2')
-        assert (target/'own/SKILL.md').read_text()=='own two'
-        assert (target/'copied/SKILL.md').read_text()=='copied one'
-        assert (target/'followed/SKILL.md').read_text()=='followed two'
+        run('update', '--jobs', '2')
+        for directory in roots:
+            assert (directory/'own/SKILL.md').read_text()=='own two'
+            assert (directory/'copied/SKILL.md').read_text()=='copied one'
+            assert (directory/'followed/SKILL.md').read_text()=='followed two'
         assert not (repository/'skills/followed').exists()
-        links=root/'links'
-        run('add','own','--target-dir',str(links),'--symlink')
-        assert (links/'own').is_symlink()
-        run('remove','own','--target-dir',str(links))
+        installed=json.loads(run('list', '--json'))
+        assert {item['name'] for item in installed}=={'own', 'copied', 'followed'}
+        run('install', 'own', '--symlink')
+        assert all((directory/'own').is_symlink() for directory in roots)
+        run('uninstall', 'own')
+        assert all(not (directory/'own').exists() for directory in roots)
         assert (repository/'skills/own/SKILL.md').read_text()=='own two'
+        run('install', 'own')
         (target/'own/SKILL.md').write_text('local installation edit')
-        run('update','own','--target-dir',str(target),expected=1)
+        run('update', 'own', expected=1)
         assert (target/'own/SKILL.md').read_text()=='local installation edit'
-        run('remove','copied','followed','--target-dir',str(target))
+        run('uninstall', 'copied', 'followed')
         assert (repository/'skills/copied/SKILL.md').exists()
-        assert not (target/'followed').exists()
+        assert all(not (directory/'followed').exists() for directory in roots)
 
         remote=root/'git-source'
         (remote/'skills/git-skill').mkdir(parents=True)
@@ -71,25 +82,25 @@ for runtime in ('JAR', 'NATIVE'):
         git('init','-b','main')
         (remote/'skills/git-skill/SKILL.md').write_text('git one')
         git('add','skills'); git('commit','-m','one')
-        run('add','git-skill','--source',remote.as_uri(),'--ref','main','--target-dir',str(links),'--symlink')
-        previous=(links/'git-skill').resolve()
+        run('install','git-skill','--repo',remote.as_uri(),'--ref','main','--symlink')
+        previous=(target/'git-skill').resolve()
         (remote/'skills/git-skill/SKILL.md').write_text('git two')
         git('add','skills'); git('commit','-m','two')
-        run('update','--target-dir',str(links),'--jobs','2')
-        assert (links/'git-skill/SKILL.md').read_text()=='git two'
+        run('update','git-skill','--jobs','2')
+        assert (target/'git-skill/SKILL.md').read_text()=='git two'
         assert (previous/'SKILL.md').read_text()=='git one'
         assert (home/'.cache/skillkit').exists()
 
         second=root/'second-repository'
-        run('init',repo=second)
-        run('create','other',repo=second)
-        shared=root/'shared-target'
-        first=subprocess.Popen([*base,'--repository',str(repository),'add','copied','--target-dir',str(shared)],cwd=root,env=environment,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
-        second_process=subprocess.Popen([*base,'--repository',str(second),'add','other','--target-dir',str(shared)],cwd=root,env=environment,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        (second/'skills/other').mkdir(parents=True)
+        (second/'skills/other/SKILL.md').write_text('other')
+        shared=target
+        first=subprocess.Popen([*base,'--repository',str(repository),'install','copied'],cwd=root,env=environment,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        second_process=subprocess.Popen([*base,'--repository',str(second),'install','other'],cwd=root,env=environment,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         for process in (first,second_process):
             out,err=process.communicate(timeout=30)
             assert process.returncode==0,(out,err)
         state=json.loads((shared/'.skillkit-state.json').read_text())
-        assert {item['name'] for item in state['installations']}=={'copied','other'}
+        assert {item['name'] for item in state['installations']}>={'copied','other'}
         assert not list(shared.glob('.skillkit-new-*'))
-        print(runtime+': local/import/metadata follow/parallel update/ownership/symlink/Git snapshot/cross-process state PASS',flush=True)
+        print(runtime+': four commands/global install/local content/metadata follow/parallel update/ownership/symlink/Git snapshot/cross-process state PASS',flush=True)
