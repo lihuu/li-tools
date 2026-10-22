@@ -20,11 +20,11 @@ class SimpleInstallCommandsTest {
     @TempDir Path temporary;
 
     @Test
-    void exposesOnlyTheFourDailyCommands() {
+    void exposesTheFiveDailyCommands() {
         Result help = run("--help");
         Set<String> commands = Pattern.compile("(?m)^  ([a-z][a-z-]*)\\s{2,}").matcher(help.out())
                 .results().map(match -> match.group(1)).collect(Collectors.toSet());
-        assertEquals(Set.of("install", "update", "uninstall", "list"), commands);
+        assertEquals(Set.of("install", "update", "uninstall", "list", "push"), commands);
         for (String command : List.of("import", "track", "untrack", "init", "create", "catalog", "find", "use", "check", "list-available", "add")) {
             assertEquals(2, run(command).code(), command);
         }
