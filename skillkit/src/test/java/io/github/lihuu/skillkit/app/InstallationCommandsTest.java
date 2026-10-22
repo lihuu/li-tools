@@ -2,6 +2,7 @@ package io.github.lihuu.skillkit.app;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import io.github.lihuu.skillkit.core.SourceResolver;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -94,6 +95,48 @@ class InstallationCommandsTest {
         assertTrue(result.out().contains("missing"));
         assertTrue(result.out().contains("failed"));
         assertFalse(Files.exists(home().resolve(".agents/skills/missing")));
+    }
+
+    @Test
+    void directSourceBatchContinuesAfterMissingSkill() throws IOException {
+        Path source = temporary.resolve("external/skills/good");
+        Files.createDirectories(source);
+        Files.writeString(source.resolve("SKILL.md"), "good content");
+        Result result = run("add", "missing", "good", "--source", temporary.resolve("external").toString(),
+                "-a", "codex", "--jobs", "2", "--json");
+        assertEquals(1, result.code());
+        assertTrue(result.out().contains("failed"));
+        assertEquals("good content", Files.readString(home().resolve(".agents/skills/good/SKILL.md")));
+        assertTrue(Files.readString(repository().resolve("skillkit.json")).contains("good"));
+        assertFalse(Files.readString(repository().resolve("skillkit.json")).contains("missing"));
+    }
+
+    @Test
+    void singleSkillLocalGitRootIgnoresGitMetadataWhenPreparingContent() throws IOException {
+        Path source = temporary.resolve("one-skill");
+        Files.createDirectories(source.resolve(".git"));
+        Files.writeString(source.resolve("SKILL.md"), "single skill");
+        Files.writeString(source.resolve(".git/synthetic-test-metadata"), "not skill content");
+        Result result = run("add", "one-skill", "--source", source.toString(), "-a", "codex");
+        assertEquals(0, result.code(), result.err());
+        assertEquals("single skill", Files.readString(home().resolve(".agents/skills/one-skill/SKILL.md")));
+        assertFalse(Files.exists(home().resolve(".agents/skills/one-skill/.git")));
+    }
+
+    @Test
+    void sourceFailureIsSharedWithinOperationButRetriedByNextOperation() throws IOException, InterruptedException {
+        Path remote = temporary.resolve("initially-missing-git");
+        Path cache = temporary.resolve("source-cache");
+        SourceResolver firstOperation = new SourceResolver(cache);
+        String source = remote.toUri().toString();
+        assertThrows(IOException.class, () -> firstOperation.resolve(source, "main"));
+        Files.createDirectories(remote.resolve("skills/example"));
+        git(remote, "init", "-b", "main");
+        Files.writeString(remote.resolve("skills/example/SKILL.md"), "newly available");
+        git(remote, "add", "skills");
+        git(remote, "commit", "-m", "first");
+        assertThrows(IOException.class, () -> firstOperation.resolve(source, "main"));
+        assertTrue(Files.isRegularFile(new SourceResolver(cache).resolve(source, "main").root().resolve("skills/example/SKILL.md")));
     }
 
     @Test
