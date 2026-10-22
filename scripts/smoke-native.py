@@ -92,9 +92,9 @@ def main():
         tokenkit = binaries["tokenkit"]
         run([tokenkit, "set", "NATIVE_SMOKE", "synthetic-native-value"], directory, environment)
         assert run([tokenkit, "get", "NATIVE_SMOKE"], directory, environment) == "synthetic-native-value"
+        assert b"synthetic-native-value" not in (directory / "tokens.db").read_bytes()
         run([tokenkit, "rm", "NATIVE_SMOKE"], directory, environment)
         run([tokenkit, "get", "NATIVE_SMOKE"], directory, environment, expected=1)
-        assert b"synthetic-native-value" not in (directory / "tokens.db").read_bytes()
         print("tokenkit: encrypted SQLite round trip PASS", flush=True)
 
 
