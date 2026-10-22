@@ -178,7 +178,7 @@ public final class SkillManager {
         return names;
     }
 
-    public @NotNull List<Item> inspect(@NotNull List<Path> roots, boolean check) throws IOException {
+    public @NotNull List<Item> inspect(@NotNull List<Path> roots) throws IOException {
         List<Item> items = new ArrayList<>();
         String identity = Files.exists(repository.store().root()) ? owner() : repository.store().root().toString();
         for (Path root : roots) for (Installation entry : new InstallationStore(root).load().values()) {
@@ -187,10 +187,6 @@ public final class SkillManager {
             try {
                 verify(target, entry);
                 String status = Files.isRegularFile(target.resolve("SKILL.md")) ? "installed" : "missing";
-                if (check && !status.equals("missing")) {
-                    String upstream = SkillFiles.digest(repository.resolve(entry.name()).directory());
-                    status = upstream.equals(entry.digest()) ? "current" : "outdated";
-                }
                 items.add(new Item(entry.name(), target.toString(), status, entry.mode()));
             } catch (IOException | IllegalArgumentException failure) {
                 items.add(new Item(entry.name(), target.toString(), "failed", failure.getMessage()));

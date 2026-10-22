@@ -1,63 +1,53 @@
 # skillkit CLI 契约
 
-## 个人仓库
+## 四个命令
 
-`--repository <path>` 为继承选项；否则读取 `SKILLKIT_REPOSITORY`，再从当前目录向上查找 `skillkit.json`，最后默认 `~/.skillkit/repository`。
-
-| 命令 | 行为 |
-| --- | --- |
-| `init` | 初始化个人目录和版本 1 JSON 声明；不初始化 Git 或覆盖已有声明 |
-| `create <name>` | 创建可编辑的 `skills/<name>/SKILL.md` |
-| `import <names...> --source <source> [--ref HEAD]` | 复制完整目录到个人 skills/，不保留活动上游关系 |
-| `track <names...> --source <source> [--ref HEAD]` | 仅登记上游 metadata，不向个人 skills/ 写入内容 |
-| `untrack <name>` | 取消订阅，不自动卸载已安装副本 |
-| `catalog` | 枚举本地内容和订阅 |
-| `list-available [--source <source>] [--ref HEAD]` | 枚举个人 catalog 或指定来源 |
-| `find [query]` | 按名称查找个人 catalog |
-| `use <name>` | 输出 SKILL.md 内容，不安装，不启动 agent |
-
-`--repo` 是 `--source` 别名。GitHub owner/repo、普通 Git URL 和本地目录受支持；Git ref 可选择分支/tag/commit。本地普通目录是活动文件来源，非默认 ref 会报 usage 错误。Git 来源通过系统 Git 获取到用户缓存中的固定版本快照。
-
-所有名字必须匹配 `[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}`。来源的重复目录名必须消歧后再使用；本地内容与订阅重名时拒绝解析。源文件须为普通文件/目录，源内软链暂不支持，避免复制到源范围之外。
-
-`import/track --dry-run` 只报告请求与已知冲突，不写目录、声明或缓存，不下载远程内容；未获取来源的可用性不会假装已经验证。
-
-仓库 `skillkit.json` 的结构为 `{"version":1,"upstreams":[{"name":"example","source":"owner/repo","path":"skills/example","ref":"main","revision":"<resolved revision>"}]}`。本地内容自动从 skills/ 发现，无需在 JSON 再登记。订阅指向本地目录时 revision 为内容摘要，Git 来源为实际提交。成功安装/更新后记录已解析版本，不把失败项写成成功。
-
-## 安装与卸载
-
-| 命令 | 行为 |
-| --- | --- |
-| `add/install <names...>` | 安装个人 catalog 项 |
-| `add <names...> --source <source>` | 订阅该来源后安装；来源登记和安装是两个步骤 |
-| `update [names...]` | 更新当前仓库在选定目标中的已有安装，保留安装模式 |
-| `remove/rm/uninstall <names...>` | 删除当前仓库托管的安装，不删个人内容或订阅 |
-| `list/ls` | 枚举当前仓库在选定目标中的安装 |
-| `check` | 检查已安装项是否缺失、被修改或落后于来源；不修改声明和安装，可刷新来源缓存 |
-
-共同目标参数：`-a/--agent`（重复或逗号分隔）、`--project` 或 `-g/--global`（互斥，默认全局）、`--project-dir`、`--target-dir`。`--target-dir` 与显式 agent 互斥。无 agent 参数时只使用探测到的受支持 agent；没有目标时报 usage 错误。
-
-| Agent | 项目 skills 根 | 全局 skills 根 |
+| 命令 | 行为 | 专属参数 |
 | --- | --- | --- |
-| Codex / Pi / ZCode / universal | `.agents/skills` | `~/.agents/skills` |
-| Claude Code | `.claude/skills` | `${CLAUDE_CONFIG_DIR:-~/.claude}/skills` |
-| Qwen Code（qwen-code/qwen） | `.qwen/skills` | `~/.qwen/skills` |
-| Cursor | `.agents/skills` | `~/.cursor/skills` |
-| Gemini CLI | `.agents/skills` | `~/.gemini/skills` |
-| Hermes Agent | `.hermes/skills` | `${HERMES_HOME:-~/.hermes}/skills` |
-| OpenCode | `.agents/skills` | `${XDG_CONFIG_HOME:-~/.config}/opencode/skills` |
-| Antigravity | `.agents/skills` | `~/.gemini/antigravity/skills` |
+| `install <names...>` | 从个人仓库或指定外部来源，全局安装到所有内置 Agent 目标 | `--repo <source>`、`--ref <ref>`（默认 HEAD）、`--symlink`、`--jobs <n>`（默认 4）、`--dry-run` |
+| `update [names...]` | 更新已安装项；省略名称时更新当前个人仓库的全部已安装项 | `--jobs <n>`（默认 4）、`--dry-run` |
+| `uninstall <names...>` | 从所有内置全局目标卸载，保留个人原稿与来源记录 | `--dry-run` |
+| `list` | 列出当前个人仓库管理的全局安装状态 | 无 |
 
-`add --symlink/--link` 链接到本地原稿或固定 Git 版本缓存；默认复制。更新保留每个目标原有 copy/symlink 模式。Windows 无创建软链能力时返回执行失败，不静默改成复制。
+只有一个安装入口 `install`；不提供导入、订阅管理、初始化或 Agent/项目选择子命令。`--jobs` 必须为正整数。所有命令继承 `--repository <path>` 及 cli-common 的 `--json`、`--quiet`、`--no-color`、`--debug`。
 
-`add/update --jobs <N>` 默认为 4，必须为正整数；有界虚拟线程并行准备不同 skill，同源/ref 复用一次解析。目标发布、恢复和对应状态提交在跨进程目标锁内进行。同一个实际目标根去重；同名未托管内容或其他仓库所有的目标不会被覆盖。
+仓库选择：显式 `--repository` → `SKILLKIT_REPOSITORY` → 当前目录向上发现 `skillkit.json` 或 `skills/` → `~/.skillkit/repository`。相对路径以当前工作目录为基准。
 
-`add/update/remove --dry-run` 不改变声明、缓存、目录或安装。更新仅选择现有安装；不把新 catalog 项顺带安装。部分失败保留成功结果并返回 1，JSON 中包含各项状态。本地复制安装被手工修改时更新/卸载拒绝覆盖；删除软链不跟随删除源。
+## 内容与来源
 
-## 输出与执行
+本地内容从个人仓库 `skills/` 自动发现。外部来源优先搜索其 `skills/`，没有时搜索来源根目录。支持分类子目录，名称取包含 `SKILL.md` 的目录名。同名候选拒绝歧义；名称仅允许字母、数字、点、下划线、横线，首字符须为字母或数字，长度不超过 128。
 
-裸调用和 `-h/--help` 输出帮助，`-V/--version` 输出 `skillkit <根 POM 版本>`。成功返回 0，参数错误返回 2，执行或逐项失败返回 1。结果在 stdout，普通错误在 stderr；JSON 批量操作的失败信息随逐项结构输出。
+`install <names...> --repo <source>` 支持 GitHub `owner/repo`、Git URL 和本地目录。Git 内容固定到实际提交的缓存快照。来源和 ref 在一次操作内共用解析结果，包括失败结果；不同 skill 的解析/准备按 jobs 有界并行，目标发布与状态写入由锁协调。
 
-公共选项来自 `GlobalOptionsMixin`：`--json`、`--quiet`、`--no-color`、`--debug`。帮助和版本始终保持相应格式；没有 ANSI 的重定向输出、presence-based NO_COLOR、usage 错误遵循统一约定。
+外部安装成功后自动在 `skillkit.json` 保存元数据：
 
-仓库锁保护个人声明，目标锁保护文件替换与 `.skillkit-state.json`。目录替换包含多步操作，不宣称崩溃原子事务；正常文件或状态写入失败会尝试恢复旧目标。若操作系统阻止恢复，报告执行失败并保留备份供恢复。进程被强制杀死的自动恢复不在当前契约内。
+```json
+{"version":1,"upstreams":[{"name":"example","source":"owner/repo","path":"skills/example","ref":"main","revision":"<resolved revision>"}]}
+```
+
+本地内容无需 JSON 登记；第三方内容若已复制进个人 `skills/` 则按本地内容维护。相同名字不能同时指向本地内容与外部来源，也不能静默更换为另一来源。本地目录来源尽可能使用相对个人仓库的路径，Git 记录实际提交，本地内容记录摘要。失败项不记作成功版本。
+
+## 全局目标
+
+安装会创建全部内置全局目标，共享路径去重，不依赖 Agent 是否已经安装。
+
+| Agent | skills 根目录 |
+| --- | --- |
+| Codex、Pi、ZCode、共享 Agent | `~/.agents/skills` |
+| Claude Code | `${CLAUDE_CONFIG_DIR:-~/.claude}/skills` |
+| Qwen Code | `~/.qwen/skills` |
+| Cursor | `~/.cursor/skills` |
+| Gemini CLI | `~/.gemini/skills` |
+| Hermes | `${HERMES_HOME:-~/.hermes}/skills` |
+| OpenCode | `${XDG_CONFIG_HOME:-~/.config}/opencode/skills` |
+| Antigravity | `~/.gemini/antigravity/skills` |
+
+默认复制；`--symlink` 链接本地原稿或固定版本的缓存快照。更新保留已有安装模式。每个目标的 `.skillkit-state.json` 记录仓库身份、模式、摘要、链接与版本，不认领未托管目录；不同个人仓库共享目标时保留彼此状态。被修改的复制安装拒绝覆盖和卸载，删除软链不跟随删除源。
+
+## 输出与一致性
+
+裸调用、`-h/--help` 显示帮助，根命令 `-V/--version` 显示 Maven 过滤后的版本。成功返回 0，参数错误返回 2，执行或逐项失败返回 1。结果写 stdout，普通失败写 stderr，JSON 批处理失败在逐项结果中返回。重定向、usage 错误和 presence-based `NO_COLOR` 不输出 ANSI。
+
+`--dry-run` 不写声明、安装或缓存，也不拉取远程来源；只报告已知请求及冲突，不声称已验证未获取的远程内容。`list` 不获取来源或创建目录。
+
+仓库锁保护个人声明，目标锁保护替换和状态写入。单项失败保留其余成功结果。正常发布失败会尝试恢复旧目标；多步目录替换不宣称崩溃原子性，强制终止后的自动恢复不在本轮范围内。

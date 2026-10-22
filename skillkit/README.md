@@ -1,94 +1,68 @@
 # skillkit
 
-用 Java 管理个人 skills 仓库和本地 agent 安装，不依赖 `skills`、npm、npx 或 Python。远程 Git 来源使用系统 Git 及其已有认证。
-
-个人仓库支持两种方式：
-
-- **本地内容**：放在 `skills/`，可以自己编写，也可以复制第三方目录后维护。工具不会自动拉取或合并它原来的上游。
-- **上游订阅**：`skillkit.json` 只保存来源、路径、ref 和版本。安装/更新时获取上游，内容放入本机缓存和 agent 安装目录，不收入个人仓库的 `skills/`。
+用 Java 管理自己的 skills 仓库，并全局安装到所有受支持 Agent。运行时不依赖外部 `skills`、npm 或 npx；远程仓库通过系统 Git 获取。
 
 ## 使用
 
-```sh
-# 可以选择普通目录，也可以选择已有 Git 仓库
-skillkit --repository /path/to/my-skills init
-export SKILLKIT_REPOSITORY=/path/to/my-skills
+只有四个命令：
 
-# 自己编写：随后直接编辑 skills/my-skill/SKILL.md
-skillkit create my-skill
+```bash
+# 安装自己的 skill：从个人仓库的 skills/ 自动发现，包括分类目录
+skillkit install my-skill
 
-# 复制收录：成为本地内容，之后与自己写的 skill 一样维护
-skillkit import example --source /path/to/other-skills
-skillkit import example --source owner/repo --ref main
+# 安装别人的 skill：自动记录上游，之后 update 就跟随该来源
+skillkit install example --repo owner/repo
 
-# 完全跟随上游：仅保存 metadata
-skillkit track example --source owner/repo --ref main
-skillkit catalog
-skillkit list-available --source owner/repo
-skillkit find example
-skillkit use example
+# 批量并行安装；默认并行数为 4
+skillkit install first second third --jobs 8
 
-# 安装多个 skill，最多同时准备 4 个任务
-skillkit add my-skill example -a codex,claude-code --jobs 4
-# 也可直接订阅并安装
-skillkit add another --source owner/repo -a codex
-# 链接到本地原稿，或链接到上游固定版本的缓存
-skillkit add my-skill -a codex --symlink
+# 更新全部已安装的 skill，或指定名称
+skillkit update
+skillkit update example --jobs 8
 
-# 项目级安装
-skillkit add example --project --project-dir /path/to/project -a codex
-skillkit add example -a codex --dry-run
-
-skillkit list -a codex
-skillkit check -a codex
-skillkit update -a codex --jobs 4
-skillkit update example -a codex
-skillkit remove example --project --project-dir /path/to/project -a codex
-# 取消订阅保留已安装副本；卸载不删除个人原稿或订阅
-skillkit untrack example
+skillkit uninstall example
+skillkit list
 ```
 
-同名的本地内容和上游订阅不能同时存在。分类目录中的现有 skill 自动发现，不要求先迁移或逐项注册。`init` 不执行 `git init`、commit 或 push，Git 版本操作由用户自行处理。
+安装默认复制内容，`install --symlink` 可改为软链。安装、更新支持 `--jobs` 和 `--dry-run`；卸载支持 `--dry-run`。所有命令支持公共输出选项，详见 [CLI 契约](SPEC.md)。
 
-来源支持本地目录、GitHub `owner/repo`、HTTPS/SSH Git URL，以及用于本地 Git 仓库的 `file://` URL。指定分支/tag/commit 使用 `--ref`；本地普通目录只接受默认 `HEAD`（实际读取当前文件），需要 Git ref 时使用 Git URL。
+## 自己的仓库
 
-## 安装目标与状态
+个人仓库可以是普通目录或 Git 仓库。自己的 skill，以及复制进来自己维护的第三方 skill，都直接放在 `skills/` 下。无需初始化、注册或导入命令；创建与编辑直接操作文件，Git 提交、拉取与推送继续用 Git。
 
-`--repository` 优先于 `SKILLKIT_REPOSITORY`；未指定时，从当前目录向上找 `skillkit.json`，否则使用 `~/.skillkit/repository`。它不硬编码到作者的 GitHub 仓库。
+仓库选择优先级：`--repository /path/to/my-skills` → `SKILLKIT_REPOSITORY` → 当前目录向上找到的 `skills/` 或 `skillkit.json` → `~/.skillkit/repository`。
 
-默认只选择已探测到的受支持 agent，也可显式 `-a`。内置 Codex、Claude Code、Cursor、Gemini CLI、Qwen Code、Hermes、ZCode、Pi、OpenCode、Antigravity，以及显式 `universal`；其他工具可用 `--target-dir /absolute/skills/path`。`CODEX_HOME` 用于探测；`CLAUDE_CONFIG_DIR`、`HERMES_HOME`、`XDG_CONFIG_HOME` 用于相应目标。未探测到 agent 时要求显式选择，不自动铺到所有目录。
+```bash
+cd /path/to/my-skills
+skillkit install my-skill
+# 或从任意位置指定个人仓库
+skillkit --repository /path/to/my-skills install my-skill
+```
 
-同一个共享目录只安装一次。全局/项目作用域与 agent 目录映射见 [SPEC.md](SPEC.md)。`--project-dir` 选择项目路径，仍需 `--project` 选择项目作用域。
+外部安装 `install example --repo owner/repo` 或 `--repo /path/to/other-skills` 自动在个人仓库 `skillkit.json` 保存来源、路径、ref 和版本。上游内容放在本机缓存和 Agent 目录，更新时完全跟随来源。可用 `--ref main` 指定 Git 分支、标签或提交；本地目录仅支持 HEAD。
 
-- 仓库声明：`<repository>/skillkit.json`，可提交到 Git；本地目录来源优先记录相对于个人仓库的路径；Windows 跨盘无法表示相对路径时保留绝对路径，跨机器需重新配置。
-- 下载和暂存：`~/.cache/skillkit/`，不写入个人内容仓库。Git 来源固定到已解析的版本目录，避免更新一个 skill 时静默改变其他软链。
-- 安装状态：每个实际 skills 根目录的 `.skillkit-state.json`，记录来源仓库、安装模式、摘要和版本。不同个人仓库共同使用同一目标时保留各自记录。
-- 操作锁：仓库和目标根目录中的 `.skillkit.lock`，`init` 会加入仓库 `.gitignore`。进程内有界并行，跨进程按实际目标锁保护发布与状态写入。
+想保留第三方 skill 的自定义版本，就把完整目录复制到自己的 `skills/`，按自己的 skill 安装和维护。工具不执行自动三方合并，也不覆盖同名原稿。
 
-更新只处理选定目标中已经由当前仓库安装的项，不自动安装 catalog 里的其他 skill。复制安装若在目标内被手工修改，更新/卸载会拒绝覆盖；软链只验证链接身份，源内容可正常编辑。未托管的同名目录不会被认领或删除。
+## 全局安装
 
-## 验证与兼容范围
+每次安装都写入所有内置目标，无需选择 Agent 或作用域。共享路径只写一次；未存在的目标目录会创建。目标对应 Codex、Pi、ZCode、Claude Code、Qwen Code、Cursor、Gemini CLI、Hermes、OpenCode、Antigravity，具体路径见 [SPEC.md](SPEC.md)。
 
-核心命令已实现。`--jobs` 控制 skill 准备与来源获取的最大并发；同一来源/ref 在一次操作中复用固定 Git 快照，发布和状态提交在目标锁内串行。失败逐项汇总，成功项保留，存在失败退出 1；`--jobs 1` 可串行执行。
+更新只处理当前个人仓库已安装的 skill，不自动分发尚未安装的其他项。卸载保留个人原稿及来源记录。未托管的同名目录和被手工修改的安装副本会受到保护，不会直接覆盖。
 
-`--json` 输出结构化结果，`--quiet` 抑制操作说明，`--no-color`/`NO_COLOR` 遵循公共 CLI 约定。`use` 打印指令，不启动另一个 agent；`find` 搜索个人 catalog，不调用在线 marketplace。
+个人声明为 `<repository>/skillkit.json`，可提交 Git；下载缓存为 `~/.cache/skillkit/`。每个目标目录的 `.skillkit-state.json` 保存本机安装状态；仓库及目标的 `.skillkit.lock` 用于并发协调。机器缓存、安装状态和锁不作为个人内容提交。
 
-尚未提供：npm 包同步、HTTP 归档安装、所有第三方 agent 的自动探测、旧 npm lockfile 自动认领、原 third-party-skills.json 的自动迁移、hook 注册，以及 Git commit/push 包装命令。已有本地内容可直接使用，旧安装目录保持未托管，不会被自动覆盖。本工具目前未宣称与 npm skills 的全部实验命令兼容。
+## 构建与验证
 
-## 开发
-
-```sh
+```bash
 mvn test -pl skillkit -am
 mvn package -pl skillkit -am
 java -jar skillkit/target/skillkit.jar --help
 ./skillkit/build-native.sh
 ./skillkit/target/skillkit --help
-# 开发验收：需要可创建软链，所有数据均为临时合成数据
 python3 scripts/smoke-skillkit.py
 ```
 
-Java 25、Picocli、JetBrains 注解、JUnit 5、`cli-common`、JPMS、Shade JAR 与其他工具保持一致。JSON 解析使用 Jackson Core streaming，不使用对象反射绑定。版本来自根 POM。当前通过模块自己的脚本构建 Native，尚未接入根批量发布、包管理器或站点。
+最后一条使用临时仓库、临时 Git 来源和隔离的用户目录验证 JAR 与 Native，不修改实际 Agent 安装。
 
-- [当前 CLI 契约](SPEC.md)
-- [原脚本迁移对照](MIGRATION.md)
-- [最终需求与原仓库分析](../docs/superpowers/specs/2026-10-22-skillkit-repository-design.md)
+- [脚本迁移分析](MIGRATION.md)
+- [需求与原仓库结构分析](../docs/superpowers/specs/2026-10-22-skillkit-repository-design.md)
