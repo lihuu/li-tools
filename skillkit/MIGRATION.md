@@ -5,7 +5,7 @@
 用户最后确认的模型以两种存储方式为准，取代早期自动三方合并建议：
 
 1. 自己写的或复制第三方目录得到的内容，放在个人 `skills/` 下，作为普通本地文件维护。
-2. 完全跟随上游的 skill，仅在个人仓库 `skillkit.json` 登记 metadata；安装、更新时从来源取内容。
+2. 完全跟随上游的 skill，仅在个人仓库 `skillkit.json` 登记 metadata；安装、更新时从来源取内容；push 将内容和声明发布到个人远端。
 
 因此 Java 实现不包含自动 merge 引擎；“把目录合并进我的仓库”就是复制收录。详见[需求与现有结构分析](../docs/superpowers/specs/2026-10-22-skillkit-repository-design.md)。
 
@@ -36,7 +36,7 @@
 
 ## 当前落地与边界
 
-CLI 按用户最后反馈收敛为四个命令：`install`、`update`、`uninstall`、`list`。自己的内容直接放在个人 skills/；别人的 skill 通过 `install <name> --repo <source>` 安装并自动保存来源。没有 import、track、untrack 等额外管理命令，也不提供 Agent 或项目作用域选择。CLI 细节以 [SPEC.md](SPEC.md) 为准。
+CLI 按用户最后反馈收敛为五个命令：`install`、`update`、`uninstall`、`list`、`push`。自己的内容直接放在个人 skills/；别人的 skill 通过 `install <name> --repo <source>` 安装并自动保存来源。没有 import、track、untrack 等额外管理命令，也不提供 Agent 或项目作用域选择。CLI 细节以 [SPEC.md](SPEC.md) 为准。
 
 已有分类内容无需逐项登记即可发现。原 third-party-skills.json 和 npm lockfile 不会被自动重写；外部项用 install 安装。现有 Agent 安装仍视为未托管，避免覆盖。保留个人改造内容时，将目录复制到个人 skills/ 后按自己的 skill 安装。
 

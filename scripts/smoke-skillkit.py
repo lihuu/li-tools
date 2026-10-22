@@ -16,12 +16,18 @@ for runtime in ('JAR', 'NATIVE'):
         root = Path(temporary)
         home, repository = root/'home', root/'repository'
         target = home/'.agents/skills'
-        base = ['java', '-Duser.home='+str(home), '-jar', str(jar)] if runtime == 'JAR' else [str(binary), '-Duser.home='+str(home)]
+        def command_for(user_home):
+            return ['java', '-Duser.home='+str(user_home), '-jar', str(jar)] if runtime == 'JAR' else [str(binary), '-Duser.home='+str(user_home)]
+        base = command_for(home)
         environment = dict(os.environ, NO_COLOR='')
         for key in ('CLAUDE_CONFIG_DIR', 'HERMES_HOME', 'XDG_CONFIG_HOME', 'SKILLKIT_REPOSITORY'):
             environment.pop(key, None)
-        def run(*arguments, expected=0, repo=repository):
-            result = subprocess.run([*base, '--repository', str(repo), *arguments], cwd=root,
+        environment.update({'GIT_AUTHOR_NAME': 'Skillkit Acceptance', 'GIT_AUTHOR_EMAIL': 'skillkit@example.invalid',
+                            'GIT_COMMITTER_NAME': 'Skillkit Acceptance', 'GIT_COMMITTER_EMAIL': 'skillkit@example.invalid',
+                            'GIT_CONFIG_GLOBAL': str(root/'no-global-config'), 'GIT_CONFIG_NOSYSTEM': '1',
+                            'GIT_CONFIG_COUNT': '1', 'GIT_CONFIG_KEY_0': 'commit.gpgSign', 'GIT_CONFIG_VALUE_0': 'false'})
+        def run(*arguments, expected=0, repo=repository, user_home=home):
+            result = subprocess.run([*command_for(user_home), '--repository', str(repo), *arguments], cwd=root,
                                     env=environment, capture_output=True, text=True, timeout=30)
             assert result.returncode == expected, (runtime, arguments, result.returncode, result.stdout, result.stderr)
             assert '\x1b' not in result.stdout+result.stderr
@@ -93,6 +99,24 @@ for runtime in ('JAR', 'NATIVE'):
         assert (previous/'SKILL.md').read_text()=='git one'
         assert (home/'.cache/skillkit').exists()
 
+        distribution=root/'distribution.git'
+        git('init', '--bare', '-b', 'main', str(distribution))
+        published=json.loads(run('push', '--repo', distribution.as_uri(), '-m', 'publish synthetic collection', '--json'))
+        assert published['status']=='pushed' and published['committed']
+        unchanged=json.loads(run('push', '--json'))
+        assert not unchanged['committed'] and unchanged['revision']==published['revision']
+        consumer=root/'consumer'
+        consumer_home=root/'consumer-home'
+        run('install', 'own', 'git-skill', '--repo', distribution.as_uri(), '--ref', 'main', '--jobs', '2', repo=consumer, user_home=consumer_home)
+        assert (consumer_home/'.agents/skills/own/SKILL.md').read_text()=='own two'
+        assert (consumer_home/'.agents/skills/git-skill/SKILL.md').read_text()=='git two'
+        assert not (consumer/'skills/git-skill').exists()
+        (remote/'skills/git-skill/SKILL.md').write_text('git three')
+        git('add', 'skills'); git('commit', '-m', 'three')
+        run('update', '--jobs', '2', repo=consumer, user_home=consumer_home)
+        assert (consumer_home/'.agents/skills/git-skill/SKILL.md').read_text()=='git three'
+        assert (target/'git-skill/SKILL.md').read_text()=='git two'
+
         second=root/'second-repository'
         (second/'skills/other').mkdir(parents=True)
         (second/'skills/other/SKILL.md').write_text('other')
@@ -105,4 +129,4 @@ for runtime in ('JAR', 'NATIVE'):
         state=json.loads((shared/'.skillkit-state.json').read_text())
         assert {item['name'] for item in state['installations']}>={'copied','other'}
         assert not list(shared.glob('.skillkit-new-*'))
-        print(runtime+': four commands/global install/local content/metadata follow/parallel update/ownership/symlink/Git snapshot/cross-process state PASS',flush=True)
+        print(runtime+': five commands/commit+push/distribution metadata/global install/local content/metadata follow/parallel update/ownership/symlink/Git snapshot/cross-process state PASS',flush=True)
