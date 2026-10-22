@@ -39,17 +39,28 @@ echo "Detected platform: ${PLATFORM}-${ARCH_SUFFIX}"
 install_tool() {
   local tool="$1"
   local binary_name="${tool}"
-  local asset_name="${tool}-${PLATFORM}-${ARCH_SUFFIX}"
   local dest="${INSTALL_DIR}/${binary_name}"
+  local archive_asset="${tool}-${PLATFORM}-${ARCH_SUFFIX}.tar.gz"
+  local raw_asset="${tool}-${PLATFORM}-${ARCH_SUFFIX}"
 
   echo "⬇️  Downloading ${tool} from GitHub Releases..."
-  local release_url="https://github.com/${REPO}/releases/latest/download/${asset_name}"
+  local archive_url="https://github.com/${REPO}/releases/latest/download/${archive_asset}"
+  local raw_url="https://github.com/${REPO}/releases/latest/download/${raw_asset}"
 
-  if curl -fsSL -o "${dest}" "${release_url}" 2>/dev/null; then
+  local installed=false
+  # Try compressed archive first (.tar.gz)
+  if curl -fsSL "${archive_url}" 2>/dev/null | tar -xz -C "${INSTALL_DIR}" "${binary_name}" 2>/dev/null; then
     chmod +x "${dest}"
+    installed=true
+  elif curl -fsSL -o "${dest}" "${raw_url}" 2>/dev/null; then
+    chmod +x "${dest}"
+    installed=true
+  fi
+
+  if [ "${installed}" = true ]; then
     echo "✔ Successfully installed ${tool} to ${dest}"
   else
-    echo "ℹ Binary asset '${asset_name}' is not yet published in GitHub Releases."
+    echo "ℹ Release asset '${archive_asset}' is not yet published in GitHub Releases."
     echo "  To build from source on Java 25:"
     echo "    git clone https://github.com/${REPO}.git && cd li-tools/${tool} && ./build-native.sh"
   fi
