@@ -20,6 +20,7 @@ public final class RepositoryManager {
     }
 
     public record Entry(@NotNull String name, @NotNull String kind, @NotNull String source) {}
+    public record ResolvedSkill(@NotNull String name, @NotNull Path directory, @NotNull String revision) {}
 
     public @NotNull RepositoryStore store() { return store; }
 
@@ -83,6 +84,20 @@ public final class RepositoryManager {
         }
     }
 
+    public void recordVersions(@NotNull Map<String, String> revisions) throws IOException {
+        Map<String, RepositoryStore.Upstream> upstreams = store.load();
+        boolean changed = false;
+        for (Map.Entry<String, String> revision : revisions.entrySet()) {
+            RepositoryStore.Upstream previous = upstreams.get(revision.getKey());
+            if (previous != null && !previous.revision().equals(revision.getValue())) {
+                upstreams.put(previous.name(), new RepositoryStore.Upstream(previous.name(), previous.source(),
+                        previous.path(), previous.ref(), revision.getValue()));
+                changed = true;
+            }
+        }
+        if (changed) store.save(upstreams);
+    }
+
     public void forget(@NotNull String name) throws IOException {
         SkillCatalog.validateName(name);
         try (OperationLock ignored = OperationLock.acquire(store.root())) {
@@ -107,17 +122,20 @@ public final class RepositoryManager {
         return List.copyOf(entries);
     }
 
-    public @NotNull SkillCatalog.Skill resolve(@NotNull String name) throws IOException {
+    public @NotNull ResolvedSkill resolve(@NotNull String name) throws IOException {
         SkillCatalog.validateName(name);
         List<SkillCatalog.Skill> locals = SkillCatalog.discover(store.root().resolve("skills"));
         RepositoryStore.Upstream upstream = store.load().get(name);
         boolean hasLocal = locals.stream().anyMatch(skill -> skill.name().equals(name));
         if (hasLocal && upstream != null) throw new IllegalArgumentException("Local/upstream name conflict: " + name);
-        if (upstream == null) return SkillCatalog.select(locals, name);
+        if (upstream == null) {
+            SkillCatalog.Skill skill = SkillCatalog.select(locals, name);
+            return new ResolvedSkill(name, skill.directory(), SkillFiles.digest(skill.directory()));
+        }
         SourceResolver.Snapshot snapshot = sources.resolve(upstream.source(), upstream.ref());
         Path path = SkillFiles.inside(snapshot.root(), upstream.path());
         if (!Files.isRegularFile(path.resolve("SKILL.md"))) throw new IOException("Upstream skill is missing: " + name);
-        return new SkillCatalog.Skill(name, path);
+        return new ResolvedSkill(name, path, snapshot.revision().equals("directory") ? SkillFiles.digest(path) : snapshot.revision());
     }
 
     public @NotNull List<Entry> available(@NotNull String source, @NotNull String ref) throws IOException {

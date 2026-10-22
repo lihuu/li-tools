@@ -21,9 +21,11 @@ public final class SourceResolver {
     public @NotNull Snapshot resolve(@NotNull String source, @NotNull String ref) throws IOException {
         if (source.isBlank() || ref.isBlank() || ref.startsWith("-")) throw new IllegalArgumentException("Invalid source or ref");
         if (!source.contains(":") && Files.isDirectory(Path.of(source))) {
+            if (!ref.equals("HEAD")) throw new IllegalArgumentException("--ref requires a Git URL; use a file:// URL for a local Git repository");
             return new Snapshot(Path.of(source).toRealPath(), "directory");
         }
         if (source.matches("^[A-Za-z]:[\\\\/].*") && Files.isDirectory(Path.of(source))) {
+            if (!ref.equals("HEAD")) throw new IllegalArgumentException("--ref requires a Git URL; use a file:// URL for a local Git repository");
             return new Snapshot(Path.of(source).toRealPath(), "directory");
         }
         String url = source;
