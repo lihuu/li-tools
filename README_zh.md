@@ -125,8 +125,6 @@ irm https://tools.lihu.me/install.ps1 | iex
 
 ## 🛠️ 源码构建与本地调试
 
-编译速度实验、独立复核结论与后续优化边界见 [Native Image 编译速度优化评估](docs/NATIVE_BUILD_EVALUATION.md)。
-
 ### 运行环境要求
 - **Java 25**（如 OpenJDK 25 或 GraalVM for JDK 25）
 - **Maven 3.9+**
@@ -148,6 +146,8 @@ cd gpgkit && ./build-native.sh
 # 编译 certkit 单文件原生可执行文件 (产物位于 certkit/target/certkit)
 cd certkit && ./build-native.sh
 ```
+
+编译速度实验、独立复核结论与后续优化边界见 [Native Image 编译速度优化评估](docs/NATIVE_BUILD_EVALUATION.md)。
 
 ---
 

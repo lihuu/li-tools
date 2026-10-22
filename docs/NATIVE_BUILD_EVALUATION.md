@@ -131,19 +131,6 @@ certkit 的证书生成/转换使用外部 OpenSSL，并不意味着所有安全
 
 未完成的验收包括：本轮 Linux/Windows Native 与并行、实际 GitHub Actions、新发布链路、所有 CLI 选项、真实服务/凭据/系统信任变更及有效弱证书 TLS 对照。历史 CI [run 39619546269](https://github.com/lihuu/li-tools/actions/runs/39619546269) 对应更早提交 `13a8b48`，只作背景，不能证明当前优化效果。
 
-## 证据索引
+## 归档与留存边界
 
-本文保存了用于决策的命令口径、关键计时、测试范围与限制。原始材料为本机临时实验记录，**未随此文档归档到 GitHub**，可能被清理；后续实施应在正式候选脚本上重新生成可留存的验证记录，不能假设读者可访问这些本机路径。
-
-| 本机材料 | 内容 |
-|---|---|
-| `/tmp/certkit-native-size.ruqMN3/REPORT.md` | 固定 4 线程的 O3/Os 实验与弱证书对照限制 |
-| `/tmp/certkit-native-speed.YKjDoj/REPORT.md`、`results.json` | 14 线程 O3/Os/Ob 各 3 次构建 |
-| `/tmp/li-tools-build-pipeline.PJHTMu/REPORT.md` | 原始流程实验报告 |
-| 同目录 `maven-results.json`、`native-results.json` | 命令、计时、退出码、产物内容比较 |
-| 同目录 `verification-summary.json`、`smoke-results.json`、`jvm-tests.log` | 测试计数、冒烟断言与日志 |
-| 同目录 `PI-VALIDATION.md` | Pi 独立复核报告；本文按原始脚本澄清了补测计时范围，并收紧其资源与安全推断 |
-| `/tmp/pi-rerun-rev/rerun.log` | 反序重跑计时与 RSS 采样摘要 |
-| `/tmp/pi-opts/measure_options.py`、`opts.log` | 三种实际脚本调用方式、补测口径与总时间 |
-
-后续代码变更应另提 PR。本文归档评估结论，不代表已启用统一打包或并行构建。
+本文完整保存了用于决策的命令口径、关键计时、测试范围与限制；实验过程中的本地临时工作目录与原始日志未随此文档归档到 GitHub。后续代码实施应另提 PR，并在正式候选脚本上重新生成可留存的验证记录。本文仅归档评估结论，不代表已启用统一打包或并行构建。
