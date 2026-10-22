@@ -130,6 +130,8 @@ irm https://tools.lihu.me/install.ps1 | iex
 - **Maven 3.9+**
 - 底层系统工具依赖：`gpg`（供 gpgkit 使用）、`openssl`（供 certkit 使用）
 
+Native 构建使用兼容 Java 25 的最新官方 GraalVM CE；当前验证版本为 CE 25.4.4.1.1。安装、升级与工具链检查见[开发环境准备](docs/DEVELOPMENT_ENVIRONMENT.md)。
+
 ### 运行全量单元与集成测试
 在仓库根目录执行，一键跑通所有模块的全部测试：
 ```bash

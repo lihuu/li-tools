@@ -130,6 +130,8 @@ irm https://tools.lihu.me/install.ps1 | iex
 - **Maven 3.9+**
 - Underlying engines: `gpg` (for gpgkit), `openssl` (for certkit)
 
+For Native builds, use the latest official GraalVM CE compatible with Java 25. See the [environment setup guide (中文)](docs/DEVELOPMENT_ENVIRONMENT.md) for installation and toolchain checks; the currently verified release is CE 25.4.4.1.1.
+
 ### Run Tests Across All Modules
 Execute from the repository root:
 ```bash
