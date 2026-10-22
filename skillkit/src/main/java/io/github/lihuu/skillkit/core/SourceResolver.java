@@ -43,24 +43,33 @@ public final class SourceResolver {
             if (cached != null) return cached;
             Path storage = cache.resolve(SkillFiles.key(url));
             try (OperationLock ignored = OperationLock.acquire(storage)) {
+                // Windows limits process cwd length and Git independently bounds the GIT_DIR string.
+                // Keep cwd short and pass relative paths; init/fetch avoids clone exporting an absolute GIT_DIR.
+                Path workingDirectory = storage;
+                while (workingDirectory.toString().length() > 240 && workingDirectory.getParent() != null) {
+                    workingDirectory = workingDirectory.getParent();
+                }
                 Path git = storage.resolve("repository.git");
+                String gitDirectory = "--git-dir=" + workingDirectory.relativize(git);
                 if (!Files.exists(git)) {
                     Path staging = storage.resolve("clone-" + java.util.UUID.randomUUID());
                     try {
-                        GitClient.run(storage, List.of("clone", "--bare", "--no-hardlinks", "--", url, staging.toString()));
+                        String stagingDirectory = "--git-dir=" + workingDirectory.relativize(staging);
+                        GitClient.run(workingDirectory, List.of("init", "--bare", "--", workingDirectory.relativize(staging).toString()));
+                        GitClient.run(workingDirectory, List.of(stagingDirectory, "remote", "add", "origin", url));
                         Files.move(staging, git);
                     } finally {
                         SkillFiles.delete(staging);
                     }
                 }
-                GitClient.run(storage, List.of("--git-dir=" + git, "fetch", "--no-tags", "origin", ref));
-                String revision = GitClient.run(storage, List.of("--git-dir=" + git, "rev-parse", "FETCH_HEAD"));
+                GitClient.run(workingDirectory, List.of(gitDirectory, "fetch", "--no-tags", "origin", ref));
+                String revision = GitClient.run(workingDirectory, List.of(gitDirectory, "rev-parse", "FETCH_HEAD"));
                 if (!revision.matches("[0-9a-f]{40,64}")) throw new IOException("Git returned an invalid revision");
                 Path snapshot = storage.resolve(revision);
                 if (!Files.isDirectory(snapshot)) {
                     Path staging = Files.createTempDirectory(storage, "snapshot-");
                     try {
-                        GitClient.run(storage, List.of("--git-dir=" + git, "--work-tree=" + staging,
+                        GitClient.run(workingDirectory, List.of(gitDirectory, "--work-tree=" + workingDirectory.relativize(staging),
                                 "checkout", "--force", revision, "--", "."));
                         Files.move(staging, snapshot);
                     } finally {

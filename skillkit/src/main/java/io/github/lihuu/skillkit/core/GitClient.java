@@ -20,14 +20,9 @@ final class GitClient {
     private GitClient() {}
 
     static @NotNull String run(@NotNull Path directory, @NotNull List<String> arguments) throws IOException {
-        // Git arguments use absolute paths. Windows cannot start processes with a long cache as cwd.
-        Path workingDirectory = directory.toAbsolutePath();
-        while (workingDirectory.toString().length() > 200 && workingDirectory.getParent() != null) {
-            workingDirectory = workingDirectory.getParent();
-        }
         List<String> command = new ArrayList<>(List.of("git", "-c", "core.longpaths=true"));
         command.addAll(arguments);
-        ProcessBuilder builder = new ProcessBuilder(command).directory(workingDirectory.toFile()).redirectErrorStream(true);
+        ProcessBuilder builder = new ProcessBuilder(command).directory(directory.toFile()).redirectErrorStream(true);
         builder.environment().put("GIT_TERMINAL_PROMPT", "0");
         Process process = builder.start();
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(90);
