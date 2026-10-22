@@ -144,11 +144,11 @@ Requires GraalVM for JDK 25 in your `JAVA_HOME`:
 All three tools use Native Image's default optimization level (O2). See the [build settings and measurements](docs/NATIVE_BUILD.md) for the rationale.
 
 ```bash
-# Compile standalone native binary for gpgkit (output: gpgkit/target/gpgkit)
-cd gpgkit && ./build-native.sh
+# Build all three tools: one Maven reactor package, then three native builds
+./build-native.sh
 
-# Compile standalone native binary for certkit (output: certkit/target/certkit)
-cd certkit && ./build-native.sh
+# Or build just one tool, including its Maven dependencies
+./certkit/build-native.sh
 ```
 
 See the [Native Image build evaluation (中文)](docs/NATIVE_BUILD_EVALUATION.md) for measured results, safety constraints, and proposed next steps.

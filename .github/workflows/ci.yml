@@ -32,5 +32,9 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Test Native Build Orchestration
+        shell: bash
+        run: python -m unittest discover -s scripts/tests -v
+
       - name: Run Maven Tests Across All Modules
         run: mvn clean test --batch-mode

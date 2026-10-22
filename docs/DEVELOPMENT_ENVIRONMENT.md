@@ -88,14 +88,15 @@ Linux/Windows 从同一发行页选择对应平台包，按发行页各平台的
 
 ```sh
 mvn clean test
-mvn -DskipTests package -pl certkit -am
-(cd certkit && ./build-native.sh)
+./certkit/build-native.sh
 certkit/target/certkit --help
 certkit/target/certkit --version
 ```
 
-也可用同样方式构建 gpgkit/tokenkit。Windows 的二进制带 `.exe` 后缀。
-此次环境更新保持现有 `-O3`、独立可执行文件构建方式及项目安全配置；
+也可用同样方式构建 gpgkit/tokenkit；构建全部工具使用根目录的 `./build-native.sh`，
+它只执行一次 Maven 打包。Windows 的二进制带 `.exe` 后缀。
+当前构建使用默认 O2，取舍见[原生构建说明](NATIVE_BUILD.md)。环境升级时所做的
+版本对照使用 O3，保留独立可执行文件构建方式及项目安全配置；
 安全配置继续包含所选构建 JDK 的完整 `java.security` 策略。
 
 **升级不会自动启用分层缓存。** `LayerCreate` / `LayerUse` 属于另行配置的实验性构建方式，

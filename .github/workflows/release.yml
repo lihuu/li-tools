@@ -43,30 +43,16 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: 'maven'
 
-      - name: Install Common Maven Reactor Dependencies
+      - name: Build Native Binaries
         shell: bash
-        run: mvn -B -DskipTests install -pl cli-common -am
+        run: ./build-native.sh
 
-      - name: Build gpgkit Native Binary
+      - name: Stage Native Binaries
         shell: bash
         run: |
-          cd gpgkit
-          ./build-native.sh
-          cp "target/gpgkit${{ matrix.binary-ext }}" "../gpgkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}"
-
-      - name: Build certkit Native Binary
-        shell: bash
-        run: |
-          cd certkit
-          ./build-native.sh
-          cp "target/certkit${{ matrix.binary-ext }}" "../certkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}"
-
-      - name: Build tokenkit Native Binary
-        shell: bash
-        run: |
-          cd tokenkit
-          ./build-native.sh
-          cp "target/tokenkit${{ matrix.binary-ext }}" "../tokenkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}"
+          for tool in gpgkit certkit tokenkit; do
+            cp "$tool/target/$tool${{ matrix.binary-ext }}" "$tool-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}"
+          done
 
       - name: Upload Binary Artifacts
         uses: actions/upload-artifact@v4

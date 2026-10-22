@@ -7,6 +7,11 @@
 set -e
 cd "$(dirname "$0")"
 
+if [ "$#" -gt 1 ] || { [ "$#" -eq 1 ] && [ "$1" != "--skip-package" ]; }; then
+    echo "usage: build-native.sh [--skip-package]" >&2
+    exit 2
+fi
+
 JDK_HOME="${JAVA_HOME:-}"
 if [ -n "$JDK_HOME" ]; then
     JDK_HOME="$(echo "$JDK_HOME" | tr '\\' '/')"
@@ -30,7 +35,12 @@ else
     exit 1
 fi
 
-if [ -f "../pom.xml" ]; then
+if [ "${1:-}" = "--skip-package" ]; then
+    if [ ! -f "target/gpgkit.jar" ]; then
+        echo "build-native.sh: --skip-package requires target/gpgkit.jar; run Maven package first" >&2
+        exit 1
+    fi
+elif [ -f "../pom.xml" ]; then
     mvn -q -DskipTests -f ../pom.xml package -pl gpgkit -am
 else
     mvn -q -DskipTests package
