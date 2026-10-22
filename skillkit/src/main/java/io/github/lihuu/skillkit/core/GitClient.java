@@ -16,7 +16,8 @@ final class GitClient {
         Path output = Files.createTempFile(directory, ".git-output-", ".log");
         Process process = null;
         try {
-            List<String> command = new ArrayList<>(List.of("git"));
+            // Source hashes and immutable snapshots can exceed Git for Windows' legacy path limit.
+            List<String> command = new ArrayList<>(List.of("git", "-c", "core.longpaths=true"));
             command.addAll(arguments);
             ProcessBuilder builder = new ProcessBuilder(command).directory(directory.toFile())
                     .redirectErrorStream(true).redirectOutput(output.toFile());
