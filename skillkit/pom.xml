@@ -17,10 +17,16 @@
     <description>Manage local agent skills with parallel installation and updates.</description>
 
     <properties>
+        <jackson.version>2.20.1</jackson.version>
         <main.class>io.github.lihuu.skillkit.app.CliApplication</main.class>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
         <dependency>
             <groupId>io.github.lihuu</groupId>
             <artifactId>cli-common</artifactId>
