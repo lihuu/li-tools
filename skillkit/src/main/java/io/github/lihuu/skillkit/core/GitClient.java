@@ -3,39 +3,59 @@ package io.github.lihuu.skillkit.core;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.nio.file.Files;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 final class GitClient {
     private GitClient() {}
 
     static @NotNull String run(@NotNull Path directory, @NotNull List<String> arguments) throws IOException {
-        Path output = Files.createTempFile(directory, ".git-output-", ".log");
-        Process process = null;
-        try {
-            // Source hashes and immutable snapshots can exceed Git for Windows' legacy path limit.
-            List<String> command = new ArrayList<>(List.of("git", "-c", "core.longpaths=true"));
-            command.addAll(arguments);
-            ProcessBuilder builder = new ProcessBuilder(command).directory(directory.toFile())
-                    .redirectErrorStream(true).redirectOutput(output.toFile());
-            builder.environment().put("GIT_TERMINAL_PROMPT", "0");
-            process = builder.start();
-            if (!process.waitFor(90, TimeUnit.SECONDS)) {
+        // Git arguments use absolute paths. Windows cannot start processes with a long cache as cwd.
+        Path workingDirectory = directory.toAbsolutePath();
+        while (workingDirectory.toString().length() > 200 && workingDirectory.getParent() != null) {
+            workingDirectory = workingDirectory.getParent();
+        }
+        List<String> command = new ArrayList<>(List.of("git", "-c", "core.longpaths=true"));
+        command.addAll(arguments);
+        ProcessBuilder builder = new ProcessBuilder(command).directory(workingDirectory.toFile()).redirectErrorStream(true);
+        builder.environment().put("GIT_TERMINAL_PROMPT", "0");
+        Process process = builder.start();
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(90);
+        // Drain a pipe rather than deleting a redirected log that Git helpers may still hold on Windows.
+        try (ExecutorService reader = Executors.newVirtualThreadPerTaskExecutor(); InputStream stream = process.getInputStream()) {
+            Future<String> output = reader.submit(() -> {
+                byte[] bytes = stream.readNBytes(65537);
+                stream.transferTo(OutputStream.nullOutputStream());
+                return bytes.length > 65536 ? "" : new String(bytes, StandardCharsets.UTF_8).strip();
+            });
+            try {
+                if (!process.waitFor(90, TimeUnit.SECONDS)) throw new TimeoutException();
+                String result = output.get(Math.max(1, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
+                if (process.exitValue() != 0) throw new IOException("Git operation failed (exit " + process.exitValue() + ")");
+                return result;
+            } catch (InterruptedException failure) {
                 stop(process);
-                throw new IOException("Git operation timed out");
+                Thread.currentThread().interrupt();
+                throw new IOException("Git operation interrupted", failure);
+            } catch (TimeoutException failure) {
+                stop(process);
+                throw new IOException("Git operation timed out", failure);
+            } catch (ExecutionException failure) {
+                if (failure.getCause() instanceof IOException cause) throw cause;
+                throw new IllegalStateException("Could not read Git output", failure.getCause());
+            } finally {
+                if (process.isAlive()) stop(process);
             }
-            if (process.exitValue() != 0) throw new IOException("Git operation failed (exit " + process.exitValue() + ")");
-            if (Files.size(output) > 65536) return "";
-            return Files.readString(output).strip();
-        } catch (InterruptedException failure) {
-            if (process != null) stop(process);
-            Thread.currentThread().interrupt();
-            throw new IOException("Git operation interrupted", failure);
-        } finally {
-            Files.deleteIfExists(output);
         }
     }
 
