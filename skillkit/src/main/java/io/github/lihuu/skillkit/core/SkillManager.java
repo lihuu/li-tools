@@ -1,6 +1,7 @@
 package io.github.lihuu.skillkit.core;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,10 +26,10 @@ public final class SkillManager {
     }
 
     public record Item(@NotNull String name, @NotNull String target, @NotNull String status, @NotNull String message) {}
-    private record Prepared(String name, Path directory, Path source, String digest, String revision) {}
+    private record Prepared(String name, Path directory, Path source, String digest, String revision, RepositoryStore.Upstream subscription) {}
 
     public @NotNull List<Item> install(@NotNull List<String> requested, @NotNull List<Path> roots,
-            boolean symlink, int jobs, boolean dryRun, boolean update) throws IOException {
+            boolean symlink, int jobs, boolean dryRun, boolean update, @Nullable String source, @NotNull String ref) throws IOException {
         if (jobs < 1) throw new IllegalArgumentException("--jobs must be positive");
         List<String> names = new ArrayList<>(new LinkedHashSet<>(requested));
         for (String name : names) SkillCatalog.validateName(name);
@@ -48,8 +49,13 @@ public final class SkillManager {
             Path operation = Files.createTempDirectory(stagingRoot, "operation-");
             try {
                 List<ParallelTasks.Task<Prepared>> tasks = new ArrayList<>();
-                for (String name : names) tasks.add(() -> prepare(name, operation));
+                for (String name : names) tasks.add(() -> prepare(name, operation, source, ref));
                 List<ParallelTasks.Outcome<Prepared>> prepared = ParallelTasks.run(tasks, jobs);
+                List<RepositoryStore.Upstream> subscriptions = new ArrayList<>();
+                for (ParallelTasks.Outcome<Prepared> outcome : prepared) {
+                    if (outcome.value() != null && outcome.value().subscription() != null) subscriptions.add(outcome.value().subscription());
+                }
+                repository.registerSubscriptions(subscriptions);
                 List<Item> items = new ArrayList<>();
                 LinkedHashSet<Path> canonicalRoots = new LinkedHashSet<>();
                 for (Path root : roots) {
@@ -95,14 +101,15 @@ public final class SkillManager {
         }
     }
 
-    private Prepared prepare(String name, Path operation) throws IOException {
-        RepositoryManager.ResolvedSkill source = repository.resolve(name);
+    private Prepared prepare(String name, Path operation, String requestedSource, String ref) throws IOException {
+        RepositoryManager.ResolvedSkill source = requestedSource == null ? repository.resolve(name)
+                : repository.resolveFromSource(name, requestedSource, ref);
         Path staging = Files.createTempDirectory(operation, "skill-");
         try {
             SkillFiles.copy(source.directory(), staging);
             String digest = SkillFiles.digest(staging);
             if (!digest.equals(SkillFiles.digest(source.directory()))) throw new IOException("Source changed while preparing " + name);
-            return new Prepared(name, staging, source.directory().toRealPath(), digest, source.revision());
+            return new Prepared(name, staging, source.directory().toRealPath(), digest, source.revision(), source.subscription());
         } catch (IOException | RuntimeException failure) {
             SkillFiles.delete(staging);
             throw failure;
