@@ -139,6 +139,8 @@ mvn clean test
 ### Compile Native Executable (GraalVM Native Image)
 Requires GraalVM for JDK 25 in your `JAVA_HOME`:
 
+All three tools use Native Image's default optimization level (O2). See the [build settings and measurements](docs/NATIVE_BUILD.md) for the rationale.
+
 ```bash
 # Compile standalone native binary for gpgkit (output: gpgkit/target/gpgkit)
 cd gpgkit && ./build-native.sh
