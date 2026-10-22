@@ -25,7 +25,11 @@ gh api repos/graalvm/graalvm-ce-builds/releases/latest \
 ```
 
 上表是已验证记录，后续的 `latest` 会变化。升级前确认发行说明中的 JDK 版本仍满足
-项目要求，再重新运行相关 JVM 和 Native 检查；CI 的工具链选择由工作流单独管理。
+项目要求，再重新运行相关 JVM 和 Native 检查。
+普通 CI 与 Native 发布构建统一使用
+[项目 GraalVM 配置](../.github/actions/setup-graalvm/action.yml)，
+目前精确锁定 CE `25.4.4.1.1`，并检查 Runtime 标识为 `GraalVM CE 25.4.4.1.1+1.1`。
+升级时同步修改这个配置和本地环境，不以浮动的 Java 主版本替代 GraalVM 发行版本。
 
 ## macOS Apple Silicon 安装
 
