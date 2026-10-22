@@ -8,6 +8,7 @@ import io.github.lihuu.skillkit.app.ApplicationInfo;
 import io.github.lihuu.skillkit.core.RepositoryManager;
 import io.github.lihuu.skillkit.core.RepositoryStore;
 import io.github.lihuu.skillkit.core.SkillFiles;
+import io.github.lihuu.skillkit.core.SkillManager;
 import io.github.lihuu.skillkit.core.SourceResolver;
 import org.jetbrains.annotations.NotNull;
 import picocli.CommandLine;
@@ -31,7 +32,9 @@ import java.util.concurrent.Callable;
         mixinStandardHelpOptions = true, versionProvider = CliCommand.VersionProvider.class,
         subcommands = {CliCommand.Init.class, CliCommand.Create.class, CliCommand.Import.class,
                 CliCommand.Track.class, CliCommand.Untrack.class, CliCommand.Catalog.class,
-                CliCommand.Available.class, CliCommand.Find.class, CliCommand.Use.class})
+                CliCommand.Available.class, CliCommand.Find.class, CliCommand.Use.class,
+                InstallationCommands.Install.class, InstallationCommands.Update.class, InstallationCommands.Remove.class,
+                InstallationCommands.ListInstalled.class, InstallationCommands.Check.class})
 public final class CliCommand implements Callable<Integer> {
     @Mixin GlobalOptionsMixin globalOptions;
     @Spec CommandSpec spec;
@@ -39,9 +42,9 @@ public final class CliCommand implements Callable<Integer> {
             description = "Personal skills repository (env SKILLKIT_REPOSITORY)")
     Path repository;
 
-    private final Path home;
-    private final Path workingDirectory;
-    private final Map<String, String> environment;
+    final Path home;
+    final Path workingDirectory;
+    final Map<String, String> environment;
     private RepositoryManager manager;
 
     public CliCommand(@NotNull Path home, @NotNull Path workingDirectory, @NotNull Map<String, String> environment) {
@@ -70,6 +73,10 @@ public final class CliCommand implements Callable<Integer> {
             manager = new RepositoryManager(new RepositoryStore(root), new SourceResolver(cache));
         }
         return manager;
+    }
+
+    SkillManager installer() {
+        return new SkillManager(manager(), home.resolve(".cache/skillkit/staging"));
     }
 
     String source(String value) {

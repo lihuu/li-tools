@@ -87,6 +87,14 @@ class RepositoryCommandsTest {
         assertFalse(Files.exists(repository()));
     }
 
+    @Test
+    void localDirectoryCannotSilentlyIgnoreRequestedGitRef() throws IOException {
+        skill("external/skills/example", "example");
+        Result result = execute("track", "example", "--source", temporary.resolve("external").toString(), "--ref", "some-branch");
+        assertEquals(2, result.code());
+        assertFalse(Files.exists(repository().resolve("skillkit.json")));
+    }
+
     private Path repository() { return temporary.resolve("repository"); }
 
     private Path skill(String relative, String content) throws IOException {
