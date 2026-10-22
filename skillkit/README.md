@@ -2,6 +2,8 @@
 
 管理本地 agent skills 的 Java CLI。目标是将 `lihuu/lihuu-skills` 的安装、更新、卸载和清单管理迁移到 Java，并支持受控的并行安装和更新。
 
+产品目标同时包括管理用户自己的 skills 仓库（Git 仓库或本地目录）、维护其上游来源，并从个人仓库分发给 agent，见[需求草案](../docs/superpowers/specs/2026-10-22-skillkit-repository-design.md)。这些能力尚未实现。
+
 **当前状态：模块骨架。** 已接入 Maven reactor、`cli-common`、JPMS、可执行 JAR 和独立 Native 构建；当前仅提供帮助、版本和公共选项。安装、更新、卸载、agent 探测和并行调度尚未实现。
 
 ## 开发

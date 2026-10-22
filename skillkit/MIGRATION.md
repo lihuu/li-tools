@@ -4,6 +4,8 @@
 
 本次交付是 Maven 子模块骨架与脚本分析，**没有实现下述安装、更新或并行执行功能**。本文的 Java 设计是建议默认值，后续可以调整。
 
+后续需求已补充为“完整 skills 管理能力 + 个人 skills 仓库”，见[个人仓库需求草案](../docs/superpowers/specs/2026-10-22-skillkit-repository-design.md)。本文件的阶段划分仅描述早期迁移切片，不代表最终产品范围；个人仓库与上游维护方式仍在澄清。
+
 2026-10-22 通过现有 `gh` 认证只读获取私有仓库，分析固定在提交 [`ecc6f86c1b7bd59d284decdf49dc0fdcc3de5d5c`](https://github.com/lihuu/lihuu-skills/tree/ecc6f86c1b7bd59d284decdf49dc0fdcc3de5d5c)：
 
 - [scripts/lihuu-skills.sh](https://github.com/lihuu/lihuu-skills/blob/ecc6f86c1b7bd59d284decdf49dc0fdcc3de5d5c/scripts/lihuu-skills.sh)：637 行，本文主要分析对象。
