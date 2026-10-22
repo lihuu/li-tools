@@ -81,7 +81,9 @@ for runtime in ('JAR', 'NATIVE'):
             assert result.returncode==0, result.stderr
         git('init','-b','main')
         (remote/'skills/git-skill/SKILL.md').write_text('git one')
-        git('add','skills'); git('commit','-m','one')
+        (remote/'README.md').write_text('unrelated repository documentation')
+        (remote/'README-link').symlink_to('README.md')
+        git('add','skills','README.md','README-link'); git('commit','-m','one')
         run('install','git-skill','--repo',remote.as_uri(),'--ref','main','--symlink')
         previous=(target/'git-skill').resolve()
         (remote/'skills/git-skill/SKILL.md').write_text('git two')

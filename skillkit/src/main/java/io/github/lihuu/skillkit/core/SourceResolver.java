@@ -67,15 +67,12 @@ public final class SourceResolver {
                 Path snapshot = storage.resolve(revision);
                 if (!Files.isDirectory(snapshot)) {
                     Path checkout = Files.createTempDirectory(gitStorage, "checkout-");
-                    Path staging = Files.createTempDirectory(storage, "snapshot-");
                     try {
                         GitClient.run(gitStorage, List.of(gitDirectory, "--work-tree=" + checkout.getFileName(),
                                 "checkout", "--force", revision, "--", "."));
-                        SkillFiles.copy(checkout, staging);
-                        Files.move(staging, snapshot);
+                        Files.move(checkout, snapshot);
                     } finally {
                         SkillFiles.delete(checkout);
-                        SkillFiles.delete(staging);
                     }
                 }
                 Snapshot result = new Snapshot(snapshot, revision);
