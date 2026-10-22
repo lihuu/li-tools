@@ -75,7 +75,10 @@ public final class SkillFiles {
     public static @NotNull String digest(@NotNull Path root) throws IOException {
         MessageDigest digest = sha256();
         try (Stream<Path> paths = Files.walk(root)) {
-            List<Path> files = paths.filter(path -> !path.equals(root)).sorted().toList();
+            List<Path> files = paths.filter(path -> !path.equals(root)).filter(path -> {
+                for (Path part : root.relativize(path)) if (part.toString().equals(".git")) return false;
+                return true;
+            }).sorted().toList();
             for (Path file : files) {
                 if (Files.isSymbolicLink(file)) throw new IOException("Symbolic source file: " + file);
                 digest.update(root.relativize(file).toString().replace('\\', '/').getBytes(StandardCharsets.UTF_8));

@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class SourceResolver {
     private final Path cache;
+    private final Map<String, IOException> failures = new ConcurrentHashMap<>();
     private final Map<String, Snapshot> snapshots = new ConcurrentHashMap<>();
     private final Map<String, Object> locks = new ConcurrentHashMap<>();
 
@@ -36,6 +37,8 @@ public final class SourceResolver {
         }
         String identity = url + "\n" + ref;
         synchronized (locks.computeIfAbsent(url, ignored -> new Object())) {
+            IOException previousFailure = failures.get(identity);
+            if (previousFailure != null) throw new IOException(previousFailure.getMessage(), previousFailure);
             Snapshot cached = snapshots.get(identity);
             if (cached != null) return cached;
             Path storage = cache.resolve(SkillFiles.key(url));
@@ -67,6 +70,9 @@ public final class SourceResolver {
                 Snapshot result = new Snapshot(snapshot, revision);
                 snapshots.put(identity, result);
                 return result;
+            } catch (IOException failure) {
+                failures.put(identity, failure);
+                throw failure;
             }
         }
     }

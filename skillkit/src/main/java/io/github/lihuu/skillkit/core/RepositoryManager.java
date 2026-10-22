@@ -1,6 +1,7 @@
 package io.github.lihuu.skillkit.core;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,7 +21,7 @@ public final class RepositoryManager {
     }
 
     public record Entry(@NotNull String name, @NotNull String kind, @NotNull String source) {}
-    public record ResolvedSkill(@NotNull String name, @NotNull Path directory, @NotNull String revision) {}
+    public record ResolvedSkill(@NotNull String name, @NotNull Path directory, @NotNull String revision, @Nullable RepositoryStore.Upstream subscription) {}
 
     public @NotNull RepositoryStore store() { return store; }
 
@@ -53,15 +54,15 @@ public final class RepositoryManager {
         SkillCatalog.validateName(name);
         store.ensureAvailable(name);
         if (dryRun) return;
-        SourceResolver.Snapshot snapshot = sources.resolve(source, ref);
-        SkillCatalog.Skill skill = SkillCatalog.select(SkillCatalog.discover(snapshot.root()), name);
+        ResolvedSkill resolved = resolveFromSource(name, source, ref);
+        SkillCatalog.Skill skill = new SkillCatalog.Skill(name, resolved.directory());
         try (OperationLock ignored = OperationLock.acquire(store.root())) {
             store.ensureAvailable(name);
             Map<String, RepositoryStore.Upstream> upstreams = store.load();
             if (track) {
-                String relative = snapshot.root().relativize(skill.directory()).toString().replace('\\', '/');
-                String revision = snapshot.revision().equals("directory") ? SkillFiles.digest(skill.directory()) : snapshot.revision();
-                upstreams.put(name, new RepositoryStore.Upstream(name, source, relative.isEmpty() ? "." : relative, ref, revision));
+                RepositoryStore.Upstream subscription = resolved.subscription();
+                if (subscription == null) throw new IllegalStateException("Resolved upstream has no declaration");
+                upstreams.put(name, subscription);
                 store.save(upstreams);
             } else {
                 Path target = store.root().resolve("skills").resolve(name);
@@ -130,12 +131,55 @@ public final class RepositoryManager {
         if (hasLocal && upstream != null) throw new IllegalArgumentException("Local/upstream name conflict: " + name);
         if (upstream == null) {
             SkillCatalog.Skill skill = SkillCatalog.select(locals, name);
-            return new ResolvedSkill(name, skill.directory(), SkillFiles.digest(skill.directory()));
+            return new ResolvedSkill(name, skill.directory(), SkillFiles.digest(skill.directory()), null);
         }
-        SourceResolver.Snapshot snapshot = sources.resolve(upstream.source(), upstream.ref());
+        SourceResolver.Snapshot snapshot = sources.resolve(sourceLocation(upstream.source()), upstream.ref());
         Path path = SkillFiles.inside(snapshot.root(), upstream.path());
         if (!Files.isRegularFile(path.resolve("SKILL.md"))) throw new IOException("Upstream skill is missing: " + name);
-        return new ResolvedSkill(name, path, snapshot.revision().equals("directory") ? SkillFiles.digest(path) : snapshot.revision());
+        return new ResolvedSkill(name, path, snapshot.revision().equals("directory") ? SkillFiles.digest(path) : snapshot.revision(), upstream);
+    }
+
+    public @NotNull ResolvedSkill resolveFromSource(@NotNull String name, @NotNull String source, @NotNull String ref) throws IOException {
+        SkillCatalog.validateName(name);
+        RepositoryStore.Upstream existing = store.load().get(name);
+        if (existing == null) store.ensureAvailable(name);
+        else if (!sourceLocation(existing.source()).equals(source) || !existing.ref().equals(ref)) {
+            throw new IllegalArgumentException("Subscription already has a different source: " + name);
+        }
+        SourceResolver.Snapshot snapshot = sources.resolve(source, ref);
+        SkillCatalog.Skill skill = SkillCatalog.select(SkillCatalog.discover(snapshot.root()), name);
+        String relative = snapshot.root().relativize(skill.directory()).toString().replace('\\', '/');
+        String revision = snapshot.revision().equals("directory") ? SkillFiles.digest(skill.directory()) : snapshot.revision();
+        RepositoryStore.Upstream upstream = new RepositoryStore.Upstream(name, declarationSource(source),
+                relative.isEmpty() ? "." : relative, ref, revision);
+        return new ResolvedSkill(name, skill.directory(), revision, upstream);
+    }
+
+    public void registerSubscriptions(@NotNull List<RepositoryStore.Upstream> subscriptions) throws IOException {
+        Map<String, RepositoryStore.Upstream> entries = store.load();
+        boolean changed = false;
+        for (RepositoryStore.Upstream upstream : subscriptions) {
+            if (!entries.containsKey(upstream.name())) {
+                store.ensureAvailable(upstream.name());
+                entries.put(upstream.name(), upstream);
+                changed = true;
+            }
+        }
+        if (changed) store.save(entries);
+    }
+
+    private String sourceLocation(String source) {
+        return source.startsWith("./") || source.startsWith("../") || source.equals(".")
+                ? store.root().resolve(source).normalize().toString() : source;
+    }
+
+    private String declarationSource(String source) {
+        if (source.contains("://") || source.startsWith("git@")) return source;
+        Path path = Path.of(source);
+        if (!path.isAbsolute() || !Files.isDirectory(path)) return source;
+        if (!path.getRoot().equals(store.root().getRoot())) return source;
+        String relative = store.root().relativize(path.normalize()).toString().replace('\\', '/');
+        return relative.isEmpty() ? "." : relative.startsWith("../") ? relative : "./" + relative;
     }
 
     public @NotNull List<Entry> available(@NotNull String source, @NotNull String ref) throws IOException {

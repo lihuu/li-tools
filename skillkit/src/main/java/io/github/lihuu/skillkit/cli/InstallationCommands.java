@@ -2,7 +2,6 @@ package io.github.lihuu.skillkit.cli;
 
 import io.github.lihuu.clicommon.json.JsonWriter;
 import io.github.lihuu.skillkit.core.AgentPaths;
-import io.github.lihuu.skillkit.core.RepositoryStore;
 import io.github.lihuu.skillkit.core.SkillManager;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
@@ -74,17 +73,8 @@ final class InstallationCommands {
         @Override int execute() throws IOException {
             execution.validate();
             List<Path> roots = targets.roots(root);
-            if (source != null && !execution.dryRun) {
-                String resolved = root.source(source);
-                for (String name : names) {
-                    RepositoryStore.Upstream existing = root.manager().store().load().get(name);
-                    if (existing == null) root.manager().collect(name, resolved, ref, true, false);
-                    else if (!existing.source().equals(resolved) || !existing.ref().equals(ref)) {
-                        throw new IllegalArgumentException("Subscription already has a different source: " + name);
-                    }
-                }
-            }
-            return report(root, root.installer().install(names, roots, symlink, execution.jobs, execution.dryRun, false));
+            return report(root, root.installer().install(names, roots, symlink, execution.jobs, execution.dryRun, false,
+                    source == null ? null : root.source(source), ref));
         }
     }
 
@@ -95,7 +85,7 @@ final class InstallationCommands {
         @Mixin Execution execution;
         @Override int execute() throws IOException {
             execution.validate();
-            return report(root, root.installer().install(names, targets.roots(root), false, execution.jobs, execution.dryRun, true));
+            return report(root, root.installer().install(names, targets.roots(root), false, execution.jobs, execution.dryRun, true, null, "HEAD"));
         }
     }
 
