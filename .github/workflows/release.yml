@@ -44,7 +44,12 @@ jobs:
 
       - name: Smoke Test Native Binaries
         shell: bash
-        run: python scripts/smoke-native.py
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            python scripts/smoke-native.py
+          else
+            python3 scripts/smoke-native.py
+          fi
 
       - name: Stage Native Binaries
         shell: bash
