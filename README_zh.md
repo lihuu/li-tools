@@ -151,6 +151,8 @@ cd gpgkit && ./build-native.sh
 cd certkit && ./build-native.sh
 ```
 
+编译速度实验、独立复核结论与后续优化边界见 [Native Image 编译速度优化评估](docs/NATIVE_BUILD_EVALUATION.md)。
+
 ---
 
 ## 🤖 AI Agent 深度集成 (agentskills.io 标准)

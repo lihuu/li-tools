@@ -151,6 +151,8 @@ cd gpgkit && ./build-native.sh
 cd certkit && ./build-native.sh
 ```
 
+See the [Native Image build evaluation (中文)](docs/NATIVE_BUILD_EVALUATION.md) for measured results, safety constraints, and proposed next steps.
+
 ---
 
 ## 🤖 AI Agent Integration (agentskills.io Standard)
