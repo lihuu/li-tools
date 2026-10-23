@@ -40,27 +40,42 @@ jobs:
         uses: actions/deploy-pages@v4
 
       - name: Ping Search Engines (IndexNow)
+        # gitleaks:allow
         run: |
           echo "Pinging IndexNow for Bing and AI Search Engines..."
-          curl -s -o /dev/null -w "IndexNow Status: %{http_code}\n" -X POST "https://api.indexnow.org/indexnow" \
-            -H "Content-Type: application/json; charset=utf-8" \
-            -d '{
+          python3 -c '
+          import json, urllib.request
+
+          key = "c6bb5a53b6386d2fdfd867988ff31490"
+          payload = {
               "host": "tools.lihu.me",
-              "key": "c6bb5a53b6386d2fdfd867988ff31490", # gitleaks:allow
-              "keyLocation": "https://tools.lihu.me/c6bb5a53b6386d2fdfd867988ff31490.txt",
+              "key": key,
+              "keyLocation": f"https://tools.lihu.me/{key}.txt",
               "urlList": [
-                "https://tools.lihu.me/",
-                "https://tools.lihu.me/index_zh.html",
-                "https://tools.lihu.me/skillkit/",
-                "https://tools.lihu.me/skillkit/index_zh.html",
-                "https://tools.lihu.me/skillkit/SKILL.md",
-                "https://tools.lihu.me/tokenkit/",
-                "https://tools.lihu.me/tokenkit/index_zh.html",
-                "https://tools.lihu.me/gpgkit/",
-                "https://tools.lihu.me/gpgkit/index_zh.html",
-                "https://tools.lihu.me/certkit/",
-                "https://tools.lihu.me/certkit/index_zh.html",
-                "https://tools.lihu.me/llms.txt",
-                "https://tools.lihu.me/llms-full.txt"
+                  "https://tools.lihu.me/",
+                  "https://tools.lihu.me/index_zh.html",
+                  "https://tools.lihu.me/skillkit/",
+                  "https://tools.lihu.me/skillkit/index_zh.html",
+                  "https://tools.lihu.me/skillkit/SKILL.md",
+                  "https://tools.lihu.me/tokenkit/",
+                  "https://tools.lihu.me/tokenkit/index_zh.html",
+                  "https://tools.lihu.me/gpgkit/",
+                  "https://tools.lihu.me/gpgkit/index_zh.html",
+                  "https://tools.lihu.me/certkit/",
+                  "https://tools.lihu.me/certkit/index_zh.html",
+                  "https://tools.lihu.me/llms.txt",
+                  "https://tools.lihu.me/llms-full.txt"
               ]
-            }' || true
+          }
+          data = json.dumps(payload).encode("utf-8")
+          req = urllib.request.Request(
+              "https://api.indexnow.org/indexnow",
+              data=data,
+              headers={"Content-Type": "application/json; charset=utf-8"}
+          )
+          try:
+              with urllib.request.urlopen(req, timeout=10) as resp:
+                  print(f"IndexNow Status: {resp.status}")
+          except Exception as e:
+              print(f"IndexNow Warning: {e}")
+          ' || true
