@@ -23,7 +23,7 @@
 | 默认硬编码 lihuu/lihuu-skills 来源 | 用户指定个人 repository，自动发现本地内容和声明 |
 | 原脚本无独立内容模型 | 个人 skills/ 直接维护原稿；外部 install 自动保存上游元数据 |
 | `install-self` 复制脚本并 clone 默认来源 | 独立 Native/JAR 分发，直接使用已有个人目录 |
-| `add` 单个 skill 委托 npm | 统一 `install` 支持多个 skill、copy/symlink、有界并行，默认安装到全部内置全局目标 |
+| `add` 单个 skill 委托 npm | 统一 `install` 支持多个 skill、copy/symlink、有界并行，默认安装到公共目录，可选多个 Agent |
 | `update` 先 git pull 默认源，再整体调用 skills update | 按已有安装生成任务，本地取当前内容，订阅取新来源，同源/ref 只解析一次 |
 | `remove` 只先查默认全局软链 | 统一 `uninstall` 从全部内置全局目标卸载，保留原稿与来源记录 |
 | `list` / `list-available` 委托 npm | `list` 读取当前个人仓库的全局安装状态 |
@@ -36,7 +36,7 @@
 
 ## 当前落地与边界
 
-CLI 按用户最后反馈收敛为五个命令：`install`、`update`、`uninstall`、`list`、`push`。自己的内容直接放在个人 skills/；别人的 skill 通过 `install <name> --repo <source>` 安装并自动保存来源。没有 import、track、untrack 等额外管理命令，也不提供 Agent 或项目作用域选择。CLI 细节以 [SPEC.md](SPEC.md) 为准。
+CLI 按用户最后反馈收敛为六个命令：`install`、`update`、`uninstall`、`list`、`push`、`pull`。自己的内容直接放在个人 skills/；别人的 skill 通过 `install <name> --repo <source>` 安装并自动保存来源。`pull` 首次克隆个人仓库并负责后续快进拉取。默认安装到公共 ~/.agents/skills，`--agent` 可选多个目标。没有 import、track、untrack 等额外管理命令，也不提供项目作用域选择。CLI 细节以 [SPEC.md](SPEC.md) 为准。
 
 已有分类内容无需逐项登记即可发现。原 third-party-skills.json 和 npm lockfile 不会被自动重写；外部项用 install 安装。现有 Agent 安装仍视为未托管，避免覆盖。保留个人改造内容时，将目录复制到个人 skills/ 后按自己的 skill 安装。
 

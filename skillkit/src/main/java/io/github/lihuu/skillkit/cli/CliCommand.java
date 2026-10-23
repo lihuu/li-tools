@@ -25,10 +25,10 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-@Command(name = "skillkit", description = "Install your own or external skills globally for all supported agents.",
+@Command(name = "skillkit", description = "Manage your personal skills repository and install into shared or selected agent directories.",
         mixinStandardHelpOptions = true, versionProvider = CliCommand.VersionProvider.class,
         subcommands = {InstallationCommands.Install.class, InstallationCommands.Update.class,
-                InstallationCommands.Uninstall.class, InstallationCommands.ListInstalled.class, PushCommand.class})
+                InstallationCommands.Uninstall.class, InstallationCommands.ListInstalled.class, PushCommand.class, PullCommand.class})
 public final class CliCommand implements Callable<Integer> {
     @Mixin GlobalOptionsMixin globalOptions;
     @Spec CommandSpec spec;
@@ -64,14 +64,14 @@ public final class CliCommand implements Callable<Integer> {
                 root = candidate == null ? home.resolve(".skillkit/repository") : candidate;
             }
             root = workingDirectory.resolve(root).toAbsolutePath().normalize();
-            Path cache = home.resolve(".cache/skillkit").resolve(SkillFiles.key(root.toString()));
-            manager = new RepositoryManager(new RepositoryStore(root), new SourceResolver(cache, home.resolve(".cache/skillkit/git")));
+            Path cache = home.resolve(".skillkit/cache").resolve(SkillFiles.key(root.toString()));
+            manager = new RepositoryManager(new RepositoryStore(root), new SourceResolver(cache, home.resolve(".skillkit/cache/git")));
         }
         return manager;
     }
 
     SkillManager installer() {
-        return new SkillManager(manager(), home.resolve(".cache/skillkit/staging"));
+        return new SkillManager(manager(), home.resolve(".skillkit/cache/staging"));
     }
 
     String source(String value) {

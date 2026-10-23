@@ -20,24 +20,24 @@ class SimpleInstallCommandsTest {
     @TempDir Path temporary;
 
     @Test
-    void exposesTheFiveDailyCommands() {
+    void exposesTheSixDailyCommands() {
         Result help = run("--help");
         Set<String> commands = Pattern.compile("(?m)^  ([a-z][a-z-]*)\\s{2,}").matcher(help.out())
                 .results().map(match -> match.group(1)).collect(Collectors.toSet());
-        assertEquals(Set.of("install", "update", "uninstall", "list", "push"), commands);
+        assertEquals(Set.of("install", "update", "uninstall", "list", "push", "pull"), commands);
         for (String command : List.of("import", "track", "untrack", "init", "create", "catalog", "find", "use", "check", "list-available", "add")) {
             assertEquals(2, run(command).code(), command);
         }
     }
 
     @Test
-    void installsOwnSkillGloballyForAllSupportedAgentsWithoutSetup() throws IOException {
+    void installsOwnSkillIntoSharedDirectoryWithoutSetup() throws IOException {
         local("mine", "my instructions");
         Result result = run("install", "mine");
         assertEquals(0, result.code(), result.err());
-        for (String root : List.of(".agents/skills", ".claude/skills", ".qwen/skills", ".cursor/skills",
-                ".gemini/skills", ".hermes/skills", ".config/opencode/skills", ".gemini/antigravity/skills")) {
-            assertEquals("my instructions", Files.readString(home().resolve(root).resolve("mine/SKILL.md")), root);
+        assertEquals("my instructions", Files.readString(home().resolve(".agents/skills/mine/SKILL.md")));
+        for (String root : List.of(".claude", ".qwen", ".cursor", ".gemini", ".hermes", ".config/opencode")) {
+            assertFalse(Files.exists(home().resolve(root)), root);
         }
         assertEquals("my instructions", Files.readString(repository().resolve("skills/mine/SKILL.md")));
     }
@@ -47,7 +47,8 @@ class SimpleInstallCommandsTest {
         Path upstream = temporary.resolve("upstream/skills/external");
         Files.createDirectories(upstream);
         Files.writeString(upstream.resolve("SKILL.md"), "first");
-        Result result = run("--repository", repository().toString(), "install", "external", "--repo", temporary.resolve("upstream").toString());
+        Result result = run("--repository", repository().toString(), "install", "external", "--repo", temporary.resolve("upstream").toString(),
+                "--agent", "shared,claude-code");
         assertEquals(0, result.code(), result.err());
         assertTrue(Files.readString(repository().resolve("skillkit.json")).contains("external"));
         assertFalse(Files.exists(repository().resolve("skills/external")));
@@ -80,7 +81,8 @@ class SimpleInstallCommandsTest {
     void installHelpDoesNotRequireStorageOrScopeChoices() {
         Result result = run("install", "--help");
         assertEquals(0, result.code());
-        for (String removed : List.of("--agent", "--project", "--target-dir", "--global")) {
+        assertTrue(result.out().contains("--agent"));
+        for (String removed : List.of("--project", "--target-dir", "--global")) {
             assertFalse(result.out().contains(removed), removed);
         }
     }
