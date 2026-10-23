@@ -70,6 +70,24 @@ class PullCommandsTest {
     }
 
     @Test
+    void refusesToOverwriteIgnoredLocalFilesDuringFastForward() throws IOException, InterruptedException {
+        Path source = source();
+        Files.writeString(source.resolve(".gitignore"), "local.txt\n");
+        git(source, "add", ".gitignore");
+        git(source, "commit", "-m", "ignore local drafts");
+        assertEquals(0, run("pull", "--repo", source.toUri().toString()).code());
+        String revision = git(repository(), "rev-parse", "HEAD");
+        Files.writeString(repository().resolve("local.txt"), "local draft");
+        Files.writeString(source.resolve("local.txt"), "remote content");
+        git(source, "add", "-f", "local.txt");
+        git(source, "commit", "-m", "track conflicting path");
+        Result pulled = run("pull");
+        assertEquals(1, pulled.code(), pulled.err());
+        assertEquals("local draft", Files.readString(repository().resolve("local.txt")));
+        assertEquals(revision, git(repository(), "rev-parse", "HEAD"));
+    }
+
+    @Test
     void refusesDivergedHistoryWithoutCreatingMergeOrDiscardingCommits() throws IOException, InterruptedException {
         Path source = source();
         assertEquals(0, run("pull", "--repo", source.toUri().toString()).code());
