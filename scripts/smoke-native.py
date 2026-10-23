@@ -37,7 +37,7 @@ def main():
     suffix = ".exe" if os.name == "nt" else ""
     binaries = {
         tool: REPOSITORY / tool / "target" / (tool + suffix)
-        for tool in ("gpgkit", "certkit", "tokenkit")
+        for tool in ("gpgkit", "certkit", "tokenkit", "skillkit")
     }
     for binary in binaries.values():
         if not binary.is_file():
@@ -96,6 +96,12 @@ def main():
         run([tokenkit, "rm", "NATIVE_SMOKE"], directory, environment)
         run([tokenkit, "get", "NATIVE_SMOKE"], directory, environment, expected=1)
         print("tokenkit: encrypted SQLite round trip PASS", flush=True)
+
+        skillkit = binaries["skillkit"]
+        skills_repo = directory / "skills-repo"
+        skills_repo.mkdir()
+        run([skillkit, "--repository", str(skills_repo), "list"], directory, environment)
+        print("skillkit: skills repository list PASS", flush=True)
 
 
 if __name__ == "__main__":

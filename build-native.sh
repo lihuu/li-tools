@@ -8,8 +8,8 @@ if [ "$#" -ne 0 ]; then
 fi
 
 # Prepare every JAR in one reactor before entering any Native Image build.
-mvn -q -DskipTests package -pl gpgkit,certkit,tokenkit -am
+mvn -q -DskipTests package -pl gpgkit,certkit,tokenkit,skillkit -am
 
-for tool in gpgkit certkit tokenkit; do
+for tool in gpgkit certkit tokenkit skillkit; do
     "./$tool/build-native.sh" --skip-package
 done

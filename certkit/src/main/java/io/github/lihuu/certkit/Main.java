@@ -16,7 +16,7 @@ import java.util.concurrent.Callable;
 @Command(
     name = "certkit",
     mixinStandardHelpOptions = true,
-    version = "certkit 0.3.0",
+    version = "certkit 0.4.0",
     description = "One command for SSL/TLS certificates without OpenSSL agony.",
     subcommands = {
         Main.GenCommand.class,

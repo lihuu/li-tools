@@ -54,7 +54,7 @@ jobs:
       - name: Stage Native Binaries
         shell: bash
         run: |
-          for tool in gpgkit certkit tokenkit; do
+          for tool in gpgkit certkit tokenkit skillkit; do
             cp "$tool/target/$tool${{ matrix.binary-ext }}" "$tool-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}"
           done
 
@@ -66,6 +66,7 @@ jobs:
             gpgkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}
             certkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}
             tokenkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}
+            skillkit-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.binary-ext }}
 
   publish-release:
     name: Publish GitHub Release

@@ -6,7 +6,7 @@
 
     <groupId>io.github.lihuu</groupId>
     <artifactId>li-tools</artifactId>
-    <version>0.3.0</version>
+    <version>0.4.0</version>
     <packaging>pom</packaging>
     <name>li-tools</name>
     <description>Modern, zero-runtime-dependency CLI security and developer tools matrix.</description>

@@ -16,7 +16,7 @@ import tarfile
 import zipfile
 from pathlib import Path
 
-TOOLS = ("gpgkit", "certkit", "tokenkit")
+TOOLS = ("gpgkit", "certkit", "tokenkit", "skillkit")
 PLATFORMS = ("darwin-arm64", "linux-amd64", "windows-amd64")
 
 
