@@ -30,6 +30,23 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Validate SEO TDK Constraints
+        run: |
+          node -e '
+          const fs = require("fs");
+          const en = fs.readFileSync("site/index.html", "utf8");
+          const zh = fs.readFileSync("site/index_zh.html", "utf8");
+          const enTitle = en.match(/<title>(.*?)<\/title>/)[1].length;
+          const enDesc = en.match(/name="description" content="(.*?)"/)[1].length;
+          const zhTitle = zh.match(/<title>(.*?)<\/title>/)[1].length;
+          const zhDesc = zh.match(/name="description" content="(.*?)"/)[1].length;
+          if (enTitle < 40 || enTitle > 60) throw new Error(`EN Title length ${enTitle} outside 40-60`);
+          if (enDesc < 120 || enDesc > 155) throw new Error(`EN Desc length ${enDesc} outside 120-155`);
+          if (zhTitle < 40 || zhTitle > 60) throw new Error(`ZH Title length ${zhTitle} outside 40-60`);
+          if (zhDesc < 120 || zhDesc > 155) throw new Error(`ZH Desc length ${zhDesc} outside 120-155`);
+          console.log("✅ All TDK constraints successfully validated!");
+          '
+
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:

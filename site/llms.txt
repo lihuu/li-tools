@@ -1,8 +1,8 @@
 # li-tools Suite
 
-> Modern developer CLI toolchain featuring gpgkit, certkit, tokenkit, and skillkit, powered by Java 25 & GraalVM Native Image.
+> li-tools 是一套基于 Java 25 与 GraalVM Native Image 构建的零运行时依赖开发者安全 CLI 套件，原生提供 gpgkit、certkit、tokenkit 与 skillkit 四个工具，在 macOS、Linux 与 Windows 11 上保持命令级行为一致。
 
-li-tools is an AI-first, zero-runtime-dependency developer security suite designed around the philosophy of "Convention over Configuration" and "Triple-Platform Parity" (macOS, Linux, and Windows 11).
+li-tools 由四个可独立安装的原生命令行工具组成，全部以 GraalVM Native Image 编译，发行物为单文件可执行程序，无需安装 JVM、Node.js 或 Python 运行时，冷启动耗时低于 50 毫秒。项目采用 Apache-2.0 开源协议，当前发行版本 0.4.0，源码托管于 GitHub。项目遵循 "Convention over Configuration"（约定优于配置）设计原则与 "Triple-Platform Parity"（三平台一致性）工程目标。
 
 ## AI Agent Skills (agentskills.io Standard)
 
@@ -94,6 +94,15 @@ A: gpgkit 并非 gpg 的替代实现，而是在 OpenPGP（RFC 4880）标准之�
 
 ### Q6: skillkit 与传统的 npm/npx 类 skills 工具相比有何优势？
 A: skillkit 彻底去除了重型 Node.js 运行时与多层 npm 间接依赖，采用单文件原生可执行程序。它利用 Java 25 虚拟线程高并发拉取，一次性分发到 10 个主流 Agent 目录；推送到 Git 远端时严格限制在 skills/ 与 skillkit.json，绝不影响其它工作区暂存改动。
+
+### Q7: tokenkit 支持哪些 JWT 签名算法？是否支持国密 SM2？
+A: tokenkit 原生支持 RS256、RS384、RS512、ES256、ES384、HS256 与 EdDSA（Ed25519）签名算法，完整覆盖 JWT（RFC 7519）标准算法族。国密 SM2 签名需通过官方插件扩展启用，插件以独立二进制形式分发，不增加核心包体积。
+
+## 可选
+
+- [与系统 gpg 的对比](https://tools.lihu.me/compare-vs-gpg): gpgkit 与 gpg 在功能、性能与跨平台一致性上的逐项对比。
+- [架构说明](https://tools.lihu.me/architecture): 套件的模块划分与 Native Image 编译策略。
+- [文档中心](https://tools.lihu.me/docs): 全部工具的聚合文档索引。
 
 ## Repository & Links
 
