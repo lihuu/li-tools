@@ -70,7 +70,21 @@ skillkit update
 
 更新只处理当前个人仓库已安装的 skill，不自动分发尚未安装的其他项。卸载保留个人原稿及来源记录。未托管的同名目录和被手工修改的安装副本会受到保护，不会直接覆盖。
 
-个人声明为 `<repository>/skillkit.json`，可提交 Git；下载缓存为 `~/.cache/skillkit/`。每个目标目录的 `.skillkit-state.json` 保存本机安装状态；仓库及目标的 `.skillkit.lock` 用于并发协调。机器缓存、安装状态和锁不作为个人内容提交。
+默认本地布局：
+
+```text
+~/.skillkit/
+  repository/           # 长期保存的个人仓库
+    skills/             # 自己编写或复制收录的内容
+    skillkit.json       # install 自动维护的上游来源、路径、ref 和版本
+  cache/                # 可重新获取的下载内容与安装临时目录
+    git/                # Git 仓库缓存
+    staging/            # 安装准备目录，操作结束清理临时内容
+```
+
+`install --repo` 将远程仓库克隆到缓存，并在个人仓库统一保存来源记录，不会把远程仓库克隆到 `repository/` 或覆盖个人内容。后续省略 `--repo` 即可按记录安装。自己的 `skills/` 通过目录扫描发现，无需重复登记。没有本地内容或来源记录时，仅凭 skill 名称不能下载；裸 `install` 仍需提供名称。完整克隆或拉取自己的个人仓库目前使用常规 Git 命令，`push` 负责提交并发布。
+
+个人声明为 `<repository>/skillkit.json`，可提交 Git；下载缓存为 `~/.skillkit/cache/`。旧版 `~/.cache/skillkit/` 不会自动移动或删除，以保留已安装软链的目标；后续安装和更新使用新缓存。每个目标目录的 `.skillkit-state.json` 保存本机安装状态；仓库及目标的 `.skillkit.lock` 用于并发协调。机器缓存、安装状态和锁不作为个人内容提交。
 
 ## 构建与验证
 

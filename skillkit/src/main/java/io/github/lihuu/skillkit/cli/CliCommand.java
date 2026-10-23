@@ -64,14 +64,14 @@ public final class CliCommand implements Callable<Integer> {
                 root = candidate == null ? home.resolve(".skillkit/repository") : candidate;
             }
             root = workingDirectory.resolve(root).toAbsolutePath().normalize();
-            Path cache = home.resolve(".cache/skillkit").resolve(SkillFiles.key(root.toString()));
-            manager = new RepositoryManager(new RepositoryStore(root), new SourceResolver(cache, home.resolve(".cache/skillkit/git")));
+            Path cache = home.resolve(".skillkit/cache").resolve(SkillFiles.key(root.toString()));
+            manager = new RepositoryManager(new RepositoryStore(root), new SourceResolver(cache, home.resolve(".skillkit/cache/git")));
         }
         return manager;
     }
 
     SkillManager installer() {
-        return new SkillManager(manager(), home.resolve(".cache/skillkit/staging"));
+        return new SkillManager(manager(), home.resolve(".skillkit/cache/staging"));
     }
 
     String source(String value) {

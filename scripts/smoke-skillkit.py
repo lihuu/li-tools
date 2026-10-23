@@ -97,7 +97,9 @@ for runtime in ('JAR', 'NATIVE'):
         run('update','git-skill','--jobs','2')
         assert (target/'git-skill/SKILL.md').read_text()=='git two'
         assert (previous/'SKILL.md').read_text()=='git one'
-        assert (home/'.cache/skillkit').exists()
+        assert previous.is_relative_to((home/'.skillkit/cache').resolve())
+        assert (home/'.skillkit/cache/git').is_dir()
+        assert not (home/'.cache/skillkit').exists()
 
         distribution=root/'distribution.git'
         git('init', '--bare', '-b', 'main', str(distribution))
