@@ -5,7 +5,7 @@ import java.util.Properties;
 
 public final class ApplicationInfo {
     private static final String DEFAULT_NAME = "tokenkit";
-    private static final String DEFAULT_VERSION = "0.3.0";
+    private static final String DEFAULT_VERSION = "0.4.0";
 
     private final String name;
     private final String version;
