@@ -18,6 +18,128 @@ import tempfile
 from pathlib import Path
 
 
+DEFAULT_TOOL_METADATA = {
+    "gpgkit": {
+        "desc": "One command for the whole life of a GPG key: generate, back up, restore, extend, sign, publish, check.",
+        "homepage": "https://tools.lihu.me/gpgkit",
+        "license": "Apache-2.0",
+    },
+    "certkit": {
+        "desc": "One command for the life of SSL/TLS certificates: generate dev certs with SAN, inspect, verify, and convert.",
+        "homepage": "https://tools.lihu.me/certkit",
+        "license": "Apache-2.0",
+    },
+    "tokenkit": {
+        "desc": "Modern, cross-platform, encrypted universal token manager with embedded SQLite and zero-friction shell injection.",
+        "homepage": "https://tools.lihu.me/tokenkit",
+        "license": "Apache-2.0",
+    },
+    "skillkit": {
+        "desc": "Personal skills repository manager and parallel distribution CLI for AI agents.",
+        "homepage": "https://tools.lihu.me/skillkit",
+        "license": "Apache-2.0",
+    },
+}
+
+
+def to_formula_class_name(tool: str) -> str:
+    return "".join(part.capitalize() for part in tool.replace("_", "-").split("-"))
+
+
+def get_tool_metadata(tool: str) -> dict:
+    meta = DEFAULT_TOOL_METADATA.get(tool, {}).copy()
+    if not meta.get("desc"):
+        pom_path = Path(__file__).resolve().parent.parent / tool / "pom.xml"
+        if pom_path.is_file():
+            content = pom_path.read_text(encoding="utf-8")
+            m = re.search(r"<description>(.*?)</description>", content, re.DOTALL)
+            if m:
+                meta["desc"] = m.group(1).strip()
+    if not meta.get("desc"):
+        meta["desc"] = f"Modern CLI developer tool: {tool}"
+    if not meta.get("homepage"):
+        meta["homepage"] = f"https://tools.lihu.me/{tool}"
+    if not meta.get("license"):
+        meta["license"] = "Apache-2.0"
+    return meta
+
+
+def extract_tools_from_checksums(checksums: dict) -> set[str]:
+    tools = set()
+    for filename in checksums:
+        m = re.match(r"^([a-z0-9_-]+)-(?:darwin-arm64|linux-amd64|windows-amd64)(?:\.(?:tar\.gz|zip)|\b)", filename)
+        if m:
+            tools.add(m.group(1))
+    return tools
+
+
+def generate_homebrew_formula(
+    tool: str, version: str, darwin_hash: str, linux_hash: str, desc: str, homepage: str, license_name: str
+) -> str:
+    class_name = to_formula_class_name(tool)
+    return f'''class {class_name} < Formula
+  desc "{desc}"
+  homepage "{homepage}"
+  version "{version}"
+  license "{license_name}"
+
+  on_macos do
+    if Hardware::CPU.arm?
+      url "https://github.com/lihuu/li-tools/releases/download/v{version}/{tool}-darwin-arm64.tar.gz"
+      sha256 "{darwin_hash}"
+
+      def install
+        bin.install "{tool}"
+      end
+    end
+  end
+
+  on_linux do
+    if Hardware::CPU.intel?
+      url "https://github.com/lihuu/li-tools/releases/download/v{version}/{tool}-linux-amd64.tar.gz"
+      sha256 "{linux_hash}"
+
+      def install
+        bin.install "{tool}"
+      end
+    end
+  end
+
+  test do
+    assert_match "{version}", shell_output("#{{bin}}/{tool} --version")
+  end
+end
+'''
+
+
+def generate_scoop_manifest(
+    tool: str, version: str, windows_hash: str, desc: str, homepage: str, license_name: str
+) -> dict:
+    return {
+        "version": version,
+        "description": desc,
+        "homepage": homepage,
+        "license": license_name,
+        "architecture": {
+            "64bit": {
+                "url": f"https://github.com/lihuu/li-tools/releases/download/v{version}/{tool}-windows-amd64.zip",
+                "hash": windows_hash,
+            }
+        },
+        "bin": f"{tool}.exe",
+        "checkver": {
+            "github": "https://github.com/lihuu/li-tools"
+        },
+        "autoupdate": {
+            "architecture": {
+                "64bit": {
+                    "url": f"https://github.com/lihuu/li-tools/releases/download/v$version/{tool}-windows-amd64.zip"
+                }
+            }
+        },
+    }
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Sync package managers on release")
     parser.add_argument("--sums", default="release-assets/SHA256SUMS.txt", help="Path to SHA256SUMS.txt")
@@ -87,8 +209,6 @@ def update_homebrew_formula(formula_path: Path, tool: str, version: str, darwin_
     content = linux_pattern.sub(rf"\g<1>{linux_hash}\g<2>", content)
 
     # 4. Update bin.install:
-    # If formula had: bin.install "tool-darwin-arm64" => "tool"
-    # update to: bin.install "tool"
     content = re.sub(
         rf'bin\.install "{tool}-(?:darwin-arm64|linux-amd64)" => "{tool}"',
         f'bin.install "{tool}"',
@@ -132,10 +252,80 @@ def update_scoop_manifest(manifest_path: Path, tool: str, version: str, windows_
     return False
 
 
+def update_homebrew_repo(repo_path: Path, version: str, checksums: dict) -> int:
+    formula_dir = repo_path / "Formula"
+    if not formula_dir.is_dir():
+        print(f"⚠️ Formula directory not found in {repo_path}")
+        return 0
+
+    updated = 0
+    all_tools = set(formula_file.stem for formula_file in formula_dir.glob("*.rb"))
+    all_tools.update(extract_tools_from_checksums(checksums))
+
+    for tool in sorted(all_tools):
+        darwin_hash = checksums.get(f"{tool}-darwin-arm64.tar.gz") or checksums.get(f"{tool}-darwin-arm64")
+        linux_hash = checksums.get(f"{tool}-linux-amd64.tar.gz") or checksums.get(f"{tool}-linux-amd64")
+        if not darwin_hash or not linux_hash:
+            print(f"  - Skipping {tool} (missing checksums: darwin={bool(darwin_hash)}, linux={bool(linux_hash)})")
+            continue
+
+        formula_file = formula_dir / f"{tool}.rb"
+        if formula_file.is_file():
+            if update_homebrew_formula(formula_file, tool, version, darwin_hash, linux_hash):
+                print(f"  + Updated Formula/{tool}.rb")
+                updated += 1
+            else:
+                print(f"  = Formula/{tool}.rb already up to date")
+        else:
+            meta = get_tool_metadata(tool)
+            content = generate_homebrew_formula(
+                tool, version, darwin_hash, linux_hash, meta["desc"], meta["homepage"], meta["license"]
+            )
+            formula_file.write_text(content, encoding="utf-8")
+            print(f"  + Created Formula/{tool}.rb")
+            updated += 1
+    return updated
+
+
+def update_scoop_repo(repo_path: Path, version: str, checksums: dict) -> int:
+    bucket_dir = repo_path / "bucket"
+    if not bucket_dir.is_dir():
+        print(f"⚠️ bucket directory not found in {repo_path}")
+        return 0
+
+    updated = 0
+    all_tools = set(manifest_file.stem for manifest_file in bucket_dir.glob("*.json"))
+    all_tools.update(extract_tools_from_checksums(checksums))
+
+    for tool in sorted(all_tools):
+        windows_hash = checksums.get(f"{tool}-windows-amd64.zip") or checksums.get(f"{tool}-windows-amd64.exe")
+        if not windows_hash:
+            if (bucket_dir / f"{tool}.json").is_file():
+                print(f"  - Skipping {tool}.json (missing windows checksum)")
+            continue
+
+        manifest_file = bucket_dir / f"{tool}.json"
+        if manifest_file.is_file():
+            if update_scoop_manifest(manifest_file, tool, version, windows_hash):
+                print(f"  + Updated bucket/{tool}.json")
+                updated += 1
+            else:
+                print(f"  = bucket/{tool}.json already up to date")
+        else:
+            meta = get_tool_metadata(tool)
+            manifest_data = generate_scoop_manifest(
+                tool, version, windows_hash, meta["desc"], meta["homepage"], meta["license"]
+            )
+            manifest_file.write_text(json.dumps(manifest_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            print(f"  + Created bucket/{tool}.json")
+            updated += 1
+    return updated
+
+
 def sync_repository(
     repo_name: str,
     branch: str,
-    token: str,
+    token: str | None,
     version: str,
     update_fn,
     dry_run: bool,
@@ -143,7 +333,11 @@ def sync_repository(
     print(f"\n==> Syncing {repo_name} (branch: {branch}) for v{version}...")
     temp_dir = tempfile.mkdtemp(prefix=f"sync-{repo_name.replace('/', '-')}-")
     try:
-        clone_url = f"https://x-access-token:{token}@github.com/{repo_name}.git"
+        clone_url = (
+            f"https://x-access-token:{token}@github.com/{repo_name}.git"
+            if token
+            else f"https://github.com/{repo_name}.git"
+        )
         subprocess.run(
             ["git", "clone", "--depth", "1", "--branch", branch, clone_url, temp_dir],
             check=True,
@@ -167,15 +361,15 @@ def sync_repository(
             check=True,
         )
 
+        subprocess.run(["git", "add", "-A"], cwd=temp_dir, check=True)
         status = subprocess.run(["git", "status", "--short"], cwd=temp_dir, capture_output=True, text=True).stdout
         print(f"Git status:\n{status.strip()}")
 
         if dry_run:
-            diff = subprocess.run(["git", "diff"], cwd=temp_dir, capture_output=True, text=True).stdout
+            diff = subprocess.run(["git", "diff", "--cached"], cwd=temp_dir, capture_output=True, text=True).stdout
             print(f"[DRY RUN] Diff for {repo_name}:\n{diff}")
             return
 
-        subprocess.run(["git", "add", "-A"], cwd=temp_dir, check=True)
         subprocess.run(
             ["git", "commit", "-m", f"chore(release): sync package manifests for v{version}"],
             cwd=temp_dir,
@@ -206,53 +400,24 @@ def main():
     print(f"Loaded {len(checksums)} checksums from {args.sums}")
 
     # 1. Update Homebrew Tap
-    def update_homebrew(repo_path: Path) -> int:
-        formula_dir = repo_path / "Formula"
-        if not formula_dir.is_dir():
-            print(f"⚠️ Formula directory not found in {repo_path}")
-            return 0
-
-        updated = 0
-        for formula_file in formula_dir.glob("*.rb"):
-            tool = formula_file.stem
-            darwin_hash = checksums.get(f"{tool}-darwin-arm64.tar.gz") or checksums.get(f"{tool}-darwin-arm64")
-            linux_hash = checksums.get(f"{tool}-linux-amd64.tar.gz") or checksums.get(f"{tool}-linux-amd64")
-            if not darwin_hash or not linux_hash:
-                print(f"  - Skipping {tool}.rb (missing checksums: darwin={bool(darwin_hash)}, linux={bool(linux_hash)})")
-                continue
-
-            if update_homebrew_formula(formula_file, tool, version, darwin_hash, linux_hash):
-                print(f"  + Updated Formula/{tool}.rb")
-                updated += 1
-            else:
-                print(f"  = Formula/{tool}.rb already up to date")
-        return updated
-
-    sync_repository("lihuu/homebrew-tap", "main", token or "dummy", version, update_homebrew, args.dry_run)
+    sync_repository(
+        "lihuu/homebrew-tap",
+        "main",
+        token,
+        version,
+        lambda repo_path: update_homebrew_repo(repo_path, version, checksums),
+        args.dry_run,
+    )
 
     # 2. Update Scoop Bucket
-    def update_scoop(repo_path: Path) -> int:
-        bucket_dir = repo_path / "bucket"
-        if not bucket_dir.is_dir():
-            print(f"⚠️ bucket directory not found in {repo_path}")
-            return 0
-
-        updated = 0
-        for manifest_file in bucket_dir.glob("*.json"):
-            tool = manifest_file.stem
-            windows_hash = checksums.get(f"{tool}-windows-amd64.zip") or checksums.get(f"{tool}-windows-amd64.exe")
-            if not windows_hash:
-                print(f"  - Skipping {tool}.json (missing windows checksum)")
-                continue
-
-            if update_scoop_manifest(manifest_file, tool, version, windows_hash):
-                print(f"  + Updated bucket/{tool}.json")
-                updated += 1
-            else:
-                print(f"  = bucket/{tool}.json already up to date")
-        return updated
-
-    sync_repository("lihuu/my-scoop-bucket", "master", token or "dummy", version, update_scoop, args.dry_run)
+    sync_repository(
+        "lihuu/my-scoop-bucket",
+        "master",
+        token,
+        version,
+        lambda repo_path: update_scoop_repo(repo_path, version, checksums),
+        args.dry_run,
+    )
 
     print("\n🎉 Package manager sync completed successfully!")
 
