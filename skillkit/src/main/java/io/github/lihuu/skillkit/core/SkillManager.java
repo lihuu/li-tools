@@ -40,7 +40,12 @@ public final class SkillManager {
         }
         if (dryRun) {
             List<Item> planned = new ArrayList<>();
-            for (String name : names) for (Path root : roots) planned.add(new Item(name, root.resolve(name).toString(), "planned", update ? "update" : "install"));
+            for (Path root : roots) {
+                LinkedHashSet<String> installed = update ? installedNames(List.of(root)) : new LinkedHashSet<>();
+                for (String name : names) if (!update || installed.contains(name)) {
+                    planned.add(new Item(name, root.resolve(name).toString(), "planned", update ? "update" : "install"));
+                }
+            }
             return planned;
         }
         if (names.isEmpty()) return List.of();
@@ -59,6 +64,7 @@ public final class SkillManager {
                 List<Item> items = new ArrayList<>();
                 LinkedHashSet<Path> canonicalRoots = new LinkedHashSet<>();
                 for (Path root : roots) {
+                    if (update && installedNames(List.of(root)).isEmpty()) continue;
                     Files.createDirectories(root);
                     canonicalRoots.add(root.toRealPath());
                 }

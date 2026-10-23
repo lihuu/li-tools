@@ -19,10 +19,10 @@ class InstallationCommandsTest {
     @TempDir Path temporary;
 
     @Test
-    void installsGloballyAndUpdatesOnlyAlreadyInstalledSkills() throws IOException {
+    void installsIntoSelectedTargetsAndUpdatesOnlyAlreadyInstalledSkills() throws IOException {
         Path alpha = local("alpha", "one");
         local("unused", "do not install");
-        Result installed = run("install", "alpha", "--jobs", "2");
+        Result installed = run("install", "alpha", "--jobs", "2", "--agent", "shared,claude-code");
         assertEquals(0, installed.code(), installed.err());
         assertEquals("one", Files.readString(home().resolve(".agents/skills/alpha/SKILL.md")));
         assertEquals("one", Files.readString(home().resolve(".claude/skills/alpha/SKILL.md")));

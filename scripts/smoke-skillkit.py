@@ -44,13 +44,15 @@ for runtime in ('JAR', 'NATIVE'):
             (external/name).mkdir(parents=True)
             (external/name/'SKILL.md').write_text(name+' one')
         shutil.copytree(external/'copied', repository/'skills/copied')
-        run('install', 'own', 'copied', '--jobs', '2')
-        run('install', 'followed', '--repo', str(root/'external'))
+        run('install', 'own')
+        assert (target/'own/SKILL.md').read_text()=='own one'
+        assert not (home/'.claude').exists() and not (home/'.cursor').exists()
+        selected='shared,claude-code,cursor'
+        run('install', 'own', 'copied', '--jobs', '2', '--agent', selected)
+        run('install', 'followed', '--repo', str(root/'external'), '--agent', 'shared,claude-code', '--agent', 'cursor')
         assert not (repository/'skills/followed').exists()
         assert len(json.loads((repository/'skillkit.json').read_text())['upstreams'])==1
-        roots=[home/path for path in ('.agents/skills', '.claude/skills', '.qwen/skills',
-               '.cursor/skills', '.gemini/skills', '.hermes/skills', '.config/opencode/skills',
-               '.gemini/antigravity/skills')]
+        roots=[home/path for path in ('.agents/skills', '.claude/skills', '.cursor/skills')]
         for directory in roots:
             for name in ('own', 'copied', 'followed'):
                 assert (directory/name/'SKILL.md').read_text()==name+' one'
@@ -65,7 +67,7 @@ for runtime in ('JAR', 'NATIVE'):
         assert not (repository/'skills/followed').exists()
         installed=json.loads(run('list', '--json'))
         assert {item['name'] for item in installed}=={'own', 'copied', 'followed'}
-        run('install', 'own', '--symlink')
+        run('install', 'own', '--symlink', '--agent', selected)
         assert all((directory/'own').is_symlink() for directory in roots)
         run('uninstall', 'own')
         assert all(not (directory/'own').exists() for directory in roots)
@@ -113,6 +115,30 @@ for runtime in ('JAR', 'NATIVE'):
         assert (consumer_home/'.agents/skills/own/SKILL.md').read_text()=='own two'
         assert (consumer_home/'.agents/skills/git-skill/SKILL.md').read_text()=='git two'
         assert not (consumer/'skills/git-skill').exists()
+        restored=root/'restored'
+        restored_home=root/'restored-home'
+        cloned=json.loads(run('pull', '--repo', distribution.as_uri(), '--json', repo=restored, user_home=restored_home))
+        assert cloned['status']=='cloned' and (restored/'.git').is_dir()
+        assert not (restored_home/'.agents').exists()
+        run('install', 'own', repo=restored, user_home=restored_home)
+        assert (restored_home/'.agents/skills/own/SKILL.md').read_text()=='own two'
+        (repository/'skills/own/SKILL.md').write_text('own published three')
+        run('push')
+        pulled=json.loads(run('pull', '--json', repo=restored, user_home=restored_home))
+        assert pulled['status']=='pulled' and (restored/'skills/own/SKILL.md').read_text()=='own published three'
+        assert (restored_home/'.agents/skills/own/SKILL.md').read_text()=='own two'
+        run('update', repo=restored, user_home=restored_home)
+        assert (restored_home/'.agents/skills/own/SKILL.md').read_text()=='own published three'
+        (remote/'.gitignore').write_text('draft.txt\n')
+        git('add', '.gitignore'); git('commit', '-m', 'ignore local draft')
+        protected=root/'protected'
+        protected_home=root/'protected-home'
+        run('pull', '--repo', remote.as_uri(), repo=protected, user_home=protected_home)
+        (protected/'draft.txt').write_text('keep local draft')
+        (remote/'draft.txt').write_text('conflicting remote file')
+        git('add', '-f', 'draft.txt'); git('commit', '-m', 'track conflicting path')
+        run('pull', expected=1, repo=protected, user_home=protected_home)
+        assert (protected/'draft.txt').read_text()=='keep local draft'
         (remote/'skills/git-skill/SKILL.md').write_text('git three')
         git('add', 'skills'); git('commit', '-m', 'three')
         run('update', '--jobs', '2', repo=consumer, user_home=consumer_home)
@@ -131,4 +157,4 @@ for runtime in ('JAR', 'NATIVE'):
         state=json.loads((shared/'.skillkit-state.json').read_text())
         assert {item['name'] for item in state['installations']}>={'copied','other'}
         assert not list(shared.glob('.skillkit-new-*'))
-        print(runtime+': five commands/commit+push/distribution metadata/global install/local content/metadata follow/parallel update/ownership/symlink/Git snapshot/cross-process state PASS',flush=True)
+        print(runtime+': six commands/clone+pull/commit+push/shared default/selected agents/distribution metadata/local content/metadata follow/parallel update/ownership/symlink/Git snapshot/cross-process state PASS',flush=True)

@@ -21,6 +21,17 @@ final class InstallationCommands {
         void validate() { if (jobs < 1) throw new IllegalArgumentException("--jobs must be positive"); }
     }
 
+    static class Targets {
+        @Option(names = {"--agent", "-a"}, split = ",", paramLabel = "<agent>",
+                description = "Agent target; repeat or comma-separate (install defaults to shared)")
+        List<String> agents = List.of();
+
+        List<Path> resolve(CliCommand root, boolean installing) {
+            return agents.isEmpty() && !installing ? AgentPaths.targets(root.home, root.environment)
+                    : AgentPaths.targets(root.home, root.environment, agents);
+        }
+    }
+
     static int report(CliCommand root, List<SkillManager.Item> items) {
         boolean failed = false;
         JsonWriter json = new JsonWriter().beginArray();
@@ -39,16 +50,17 @@ final class InstallationCommands {
         return failed ? 1 : 0;
     }
 
-    @Command(name = "install", mixinStandardHelpOptions = true, description = "Install own or external skills globally for all supported agents")
+    @Command(name = "install", mixinStandardHelpOptions = true, description = "Install skills into shared or selected agent directories")
     public static final class Install extends CliCommand.Action {
         @Parameters(arity = "1..*") List<String> names;
         @Mixin Execution execution;
+        @Mixin Targets targets;
         @Option(names = "--repo", description = "External repository or directory; omit to install your own skills") String source;
         @Option(names = "--ref", defaultValue = "HEAD") String ref;
         @Option(names = "--symlink", description = "Link to original local content or versioned upstream cache") boolean symlink;
         @Override int execute() throws IOException {
             execution.validate();
-            List<Path> roots = AgentPaths.targets(root.home, root.environment);
+            List<Path> roots = targets.resolve(root, true);
             return report(root, root.installer().install(names, roots, symlink, execution.jobs, execution.dryRun, false,
                     source == null ? null : root.source(source), ref));
         }
@@ -58,9 +70,10 @@ final class InstallationCommands {
     public static final class Update extends CliCommand.Action {
         @Parameters(arity = "0..*") List<String> names = List.of();
         @Mixin Execution execution;
+        @Mixin Targets targets;
         @Override int execute() throws IOException {
             execution.validate();
-            return report(root, root.installer().install(names, AgentPaths.targets(root.home, root.environment), false, execution.jobs, execution.dryRun, true, null, "HEAD"));
+            return report(root, root.installer().install(names, targets.resolve(root, false), false, execution.jobs, execution.dryRun, true, null, "HEAD"));
         }
     }
 
@@ -68,14 +81,16 @@ final class InstallationCommands {
     public static final class Uninstall extends CliCommand.Action {
         @Parameters(arity = "1..*") List<String> names;
         @Option(names = "--dry-run") boolean dryRun;
+        @Mixin Targets targets;
         @Override int execute() throws IOException {
-            return report(root, root.installer().remove(names, AgentPaths.targets(root.home, root.environment), dryRun));
+            return report(root, root.installer().remove(names, targets.resolve(root, false), dryRun));
         }
     }
 
     @Command(name = "list", mixinStandardHelpOptions = true, description = "List globally installed skills managed by this repository")
     public static final class ListInstalled extends CliCommand.Action {
-        @Override int execute() throws IOException { return report(root, root.installer().inspect(AgentPaths.targets(root.home, root.environment))); }
+        @Mixin Targets targets;
+        @Override int execute() throws IOException { return report(root, root.installer().inspect(targets.resolve(root, false))); }
     }
 
 }

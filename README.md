@@ -25,7 +25,7 @@
 | **[`gpgkit`](gpgkit/)** | Full lifecycle management of GPG keys | Zero runtime dependencies, guaranteed loopback test verification, one-command backup/restore/extend/diagnose | `Active` |
 | **[`certkit`](certkit/)** | Modern SSL/TLS certificate Swiss Army knife | Convention over configuration, trusted local Root CA, smart domain/IP SAN auto-sniffing, single-argument format conversion, triple-platform trust | `Active` |
 | **[`tokenkit`](tokenkit/)** | Modern cross-platform encrypted token manager | Embedded encrypted SQLite, AES-256-GCM + PBKDF2, sub-10ms terminal shell injection (`tokenkit env`), cross-machine encrypted migration bundles | `Active` |
-| **[`skillkit`](skillkit/)** | Local agent skill management | Local content + metadata-only upstreams, parallel install/update, remote publishing and global installation for all supported agents | `Active` |
+| **[`skillkit`](skillkit/)** | Local agent skill management | Local content + metadata-only upstreams, parallel install/update, personal repository pull/push, shared or selected agent targets | `Active` |
 
 ---
 

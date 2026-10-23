@@ -25,10 +25,10 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-@Command(name = "skillkit", description = "Install your own or external skills globally for all supported agents.",
+@Command(name = "skillkit", description = "Manage your personal skills repository and install into shared or selected agent directories.",
         mixinStandardHelpOptions = true, versionProvider = CliCommand.VersionProvider.class,
         subcommands = {InstallationCommands.Install.class, InstallationCommands.Update.class,
-                InstallationCommands.Uninstall.class, InstallationCommands.ListInstalled.class, PushCommand.class})
+                InstallationCommands.Uninstall.class, InstallationCommands.ListInstalled.class, PushCommand.class, PullCommand.class})
 public final class CliCommand implements Callable<Integer> {
     @Mixin GlobalOptionsMixin globalOptions;
     @Spec CommandSpec spec;

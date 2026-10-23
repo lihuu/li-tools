@@ -1,18 +1,21 @@
 # skillkit CLI 契约
 
-## 五个命令
+## 六个命令
 
 | 命令 | 行为 | 专属参数 |
 | --- | --- | --- |
-| `install <names...>` | 从个人仓库或指定外部来源，全局安装到所有内置 Agent 目标 | `--repo <source>`、`--ref <ref>`（默认 HEAD）、`--symlink`、`--jobs <n>`（默认 4）、`--dry-run` |
-| `update [names...]` | 更新已安装项；省略名称时更新当前个人仓库的全部已安装项 | `--jobs <n>`（默认 4）、`--dry-run` |
-| `uninstall <names...>` | 从所有内置全局目标卸载，保留个人原稿与来源记录 | `--dry-run` |
-| `list` | 列出当前个人仓库管理的全局安装状态 | 无 |
+| `install <names...>` | 从个人仓库或指定外部来源，安装到公共目录或指定 Agent | `--repo <source>`、`--ref <ref>`（默认 HEAD）、`--symlink`、`--jobs <n>`（默认 4）、`--dry-run`、`--agent/-a <name>` |
+| `update [names...]` | 更新已安装项；省略名称时更新当前个人仓库的全部已安装项 | `--jobs <n>`（默认 4）、`--dry-run`、`--agent/-a <name>` |
+| `uninstall <names...>` | 卸载已安装副本，保留个人原稿与来源记录 | `--dry-run`、`--agent/-a <name>` |
+| `list` | 列出当前个人仓库管理的全局安装状态 | `--agent/-a <name>` |
 | `push` | 自动提交个人内容和来源记录，并发布当前分支 | `--repo <source>`、`-m/--message <text>`、`--dry-run` |
+| `pull` | 首次克隆个人仓库，之后从 origin 快进拉取 | `--repo <source>`（首次必填）、`--dry-run` |
 
-只有一个安装入口 `install`；不提供导入、订阅管理、初始化或 Agent/项目选择子命令。`--jobs` 必须为正整数。所有命令继承 `--repository <path>` 及 cli-common 的 `--json`、`--quiet`、`--no-color`、`--debug`。
+只有一个安装入口 `install`；不提供导入、订阅管理、初始化或项目作用域子命令。Agent 选择通过参数完成，支持重复及逗号分隔。`--jobs` 必须为正整数。所有命令继承 `--repository <path>` 及 cli-common 的 `--json`、`--quiet`、`--no-color`、`--debug`。
 
 仓库选择：显式 `--repository` → `SKILLKIT_REPOSITORY` → 当前目录向上发现 `skillkit.json` 或 `skills/` → `~/.skillkit/repository`。相对路径以当前工作目录为基准。
+
+远程来源的 Git 缓存、版本快照与安装准备目录位于 `~/.skillkit/cache/`，不随个人仓库发布。旧缓存不自动移动或删除，保留既有软链目标。
 
 ## 内容与来源
 
@@ -30,6 +33,10 @@
 
 ## 私有源发布
 
+`pull --repo <source>` 首次将完整个人仓库克隆到本地仓库，只接受空目录（允许工具自己的 `.skillkit.lock`），保存 origin 和跟踪分支。先克隆到临时目录，成功后在仓库锁内发布；克隆失败不留下部分个人内容。来源可为 owner/repo、Git URL 或本地 Git 仓库。远端包含保留文件 `.skillkit.lock` 时拒绝发布。
+
+已有仓库的 `pull` 要求位于 Git 工作区根目录，当前分支跟踪 origin，工作区及暂存区无本地修改（忽略工具自身根目录锁）。执行 fetch 后只允许快进，不自动提交、暂存、重置或合并分歧，也不允许远端新增路径覆盖本地 ignored 文件。显式 `--repo` 不能静默替换现有 origin。`pull` 不分发到 Agent；拉取后按需 install/update。`--dry-run` 不写入或联网。
+
 `push` 提交的路径限定为 `skills/` 与 `skillkit.json`，包含新增、修改和删除。使用按路径提交保留其他路径的暂存内容；没有受管理内容变化时不产生空提交。
 
 首次对普通目录使用 `push --repo <source>` 会初始化 main 分支，配置 origin 并推送；已有 Git 工作区使用当前分支及 origin。显式 `--repo` 保存为 origin 的获取和发布目标，替换先前的多个 pushurl。来源支持 owner/repo、Git URL、本地 bare 仓库；远端必须已经存在。身份、认证、签名和 hooks 由现有 Git 配置提供，工具不管理凭据。
@@ -40,18 +47,20 @@
 
 ## 全局目标
 
-安装会创建全部内置全局目标，共享路径去重，不依赖 Agent 是否已经安装。
+安装默认只写公共 `~/.agents/skills`，不创建其他 Agent 的配置目录。`--agent` 显式选择后只写所选目录，支持多个值；共享路径去重。指定的目标目录按需创建，不依赖 Agent 是否已经安装。未知 Agent 返回参数错误。
 
-| Agent | skills 根目录 |
+`update`、`list`、`uninstall` 省略 `--agent` 时处理所有受支持路径中的既有安装；指定时仅处理所选路径。更新不向未安装的目录新增分发，兼容旧版已经安装到专用目录的副本。公共目录供支持它的 Agent 读取，不保证覆盖所有 Agent；共享目录的选择不提供消费者隔离。
+
+| Agent 参数 | skills 根目录 |
 | --- | --- |
-| Codex、Pi、ZCode、共享 Agent | `~/.agents/skills` |
-| Claude Code | `${CLAUDE_CONFIG_DIR:-~/.claude}/skills` |
-| Qwen Code | `~/.qwen/skills` |
-| Cursor | `~/.cursor/skills` |
-| Gemini CLI | `~/.gemini/skills` |
-| Hermes | `${HERMES_HOME:-~/.hermes}/skills` |
-| OpenCode | `${XDG_CONFIG_HOME:-~/.config}/opencode/skills` |
-| Antigravity | `~/.gemini/antigravity/skills` |
+| `shared`、`codex`、`pi`、`zcode` | `~/.agents/skills` |
+| `claude-code` | `${CLAUDE_CONFIG_DIR:-~/.claude}/skills` |
+| `qwen-code` | `~/.qwen/skills` |
+| `cursor` | `~/.cursor/skills` |
+| `gemini-cli` | `~/.gemini/skills` |
+| `hermes`、`hermes-agent` | `${HERMES_HOME:-~/.hermes}/skills` |
+| `opencode` | `${XDG_CONFIG_HOME:-~/.config}/opencode/skills` |
+| `antigravity` | `~/.gemini/antigravity/skills` |
 
 默认复制；`--symlink` 链接本地原稿或固定版本的缓存快照。更新保留已有安装模式。每个目标的 `.skillkit-state.json` 记录仓库身份、模式、摘要、链接与版本，不认领未托管目录；不同个人仓库共享目标时保留彼此状态。被修改的复制安装拒绝覆盖和卸载，删除软链不跟随删除源。
 
