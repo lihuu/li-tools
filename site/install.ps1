@@ -64,10 +64,12 @@ switch ($Target.ToLower()) {
     "gpgkit" { Install-Tool "gpgkit" }
     "certkit" { Install-Tool "certkit" }
     "tokenkit" { Install-Tool "tokenkit" }
+    "skillkit" { Install-Tool "skillkit" }
     default  {
         Install-Tool "gpgkit"
         Install-Tool "certkit"
         Install-Tool "tokenkit"
+        Install-Tool "skillkit"
     }
 }
 

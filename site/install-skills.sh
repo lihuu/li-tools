@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # li-tools AI Agent Skill Installer (macOS & Linux)
-# Installs gpgkit, certkit & tokenkit skills into AI agent skill directories.
+# Installs gpgkit, certkit, tokenkit & skillkit skills into AI agent skill directories.
 set -euo pipefail
 
 BASE_URL="https://tools.lihu.me"
 
-echo "🤖 Installing li-tools Agent Skills (gpgkit, certkit & tokenkit)..."
+echo "🤖 Installing li-tools Agent Skills (gpgkit, certkit, tokenkit & skillkit)..."
 
 # Determine target directories
 TARGET_DIRS=()
@@ -33,7 +33,7 @@ UNIQUE_DIRS=($(printf "%s\n" "${TARGET_DIRS[@]}" | sort -u))
 
 for dir in "${UNIQUE_DIRS[@]}"; do
     echo "  → Target: ${dir}"
-    mkdir -p "${dir}/gpgkit" "${dir}/certkit" "${dir}/tokenkit"
+    mkdir -p "${dir}/gpgkit" "${dir}/certkit" "${dir}/tokenkit" "${dir}/skillkit"
     
     # Download gpgkit SKILL.md
     if curl -fsSL "${BASE_URL}/gpgkit/SKILL.md" -o "${dir}/gpgkit/SKILL.md"; then
@@ -55,8 +55,15 @@ for dir in "${UNIQUE_DIRS[@]}"; do
     else
         echo "    ⚠ Failed to download tokenkit skill" >&2
     fi
+
+    # Download skillkit SKILL.md
+    if curl -fsSL "${BASE_URL}/skillkit/SKILL.md" -o "${dir}/skillkit/SKILL.md"; then
+        echo "    ✔ Installed skillkit skill -> ${dir}/skillkit/SKILL.md"
+    else
+        echo "    ⚠ Failed to download skillkit skill" >&2
+    fi
 done
 
 echo ""
 echo "✅ All skills installed successfully!"
-echo "AI coding agents (Claude, Gemini CLI, Cursor, OpenCode, Codex) will now automatically discover and use gpgkit, certkit & tokenkit."
+echo "AI coding agents (Claude, Gemini CLI, Cursor, OpenCode, Codex) will now automatically discover and use gpgkit, certkit, tokenkit & skillkit."

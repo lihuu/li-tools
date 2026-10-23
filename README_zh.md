@@ -57,7 +57,9 @@ li-tools/
 ├── site/                       # 现代暗黑极客风格落地页 (自动部署至 GitHub Pages)
 │   ├── index.html              # 矩阵统一门户总览页
 │   ├── gpgkit/index.html       # gpgkit 专属落地页
-│   └── certkit/index.html      # certkit 专属落地页
+│   ├── certkit/index.html      # certkit 专属落地页
+│   ├── tokenkit/index.html     # tokenkit 专属落地页
+│   └── skillkit/index.html     # skillkit 专属落地页
 ├── gpgkit/                     # GPG 密钥生命周期管理工具 (纯 JDK 原生标准库，零第三方运行时依赖)
 │   ├── SPEC.md                 # 接口与行为规格契约
 │   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
@@ -70,8 +72,11 @@ li-tools/
 │   ├── SPEC.md                 # 接口与行为规格契约
 │   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
 │   └── src/
-├── .github/workflows/          # CI/CD 与 GitHub Pages 自动部署工作流
 ├── skillkit/                   # 个人 skills 仓库与 agent 并行安装管理
+│   ├── SPEC.md                 # 接口与行为规格契约
+│   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
+│   └── src/
+├── .github/workflows/          # CI/CD 与 GitHub Pages 自动部署工作流
 └── README.md
 ```
 
@@ -98,11 +103,13 @@ li-tools/
 brew tap lihuu/tap
 
 # 安装全部工具
-brew install gpgkit certkit
+brew install gpgkit certkit tokenkit skillkit
 
 # 或者不预先 Tap，直接按需单行安装：
 brew install lihuu/tap/gpgkit
 brew install lihuu/tap/certkit
+brew install lihuu/tap/tokenkit
+brew install lihuu/tap/skillkit
 ```
 
 ### 2. Scoop 官方桶 (Windows 11)
@@ -111,7 +118,7 @@ brew install lihuu/tap/certkit
 scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket
 
 # 安装全部工具
-scoop install gpgkit certkit
+scoop install gpgkit certkit tokenkit skillkit
 ```
 
 ### 3. 一行 Shell / PowerShell 脚本安装 (macOS, Linux & Windows 11)

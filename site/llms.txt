@@ -1,6 +1,6 @@
 # li-tools Suite
 
-> Modern developer CLI toolchain featuring gpgkit, certkit, and tokenkit, powered by Java 25 & GraalVM Native Image.
+> Modern developer CLI toolchain featuring gpgkit, certkit, tokenkit, and skillkit, powered by Java 25 & GraalVM Native Image.
 
 li-tools is an AI-first, zero-runtime-dependency developer security suite designed around the philosophy of "Convention over Configuration" and "Triple-Platform Parity" (macOS, Linux, and Windows 11).
 
@@ -12,6 +12,7 @@ All tools in this suite provide native, machine-readable `SKILL.md` documents fo
 - [gpgkit Skill](https://tools.lihu.me/gpgkit/SKILL.md): Comprehensive agent reference for GPG key generation, commit signing, and encrypted backup.
 - [certkit Skill](https://tools.lihu.me/certkit/SKILL.md): Comprehensive agent reference for TLS certs, local root CA, multi-SAN deduction, and P12/DER conversion.
 - [tokenkit Skill](https://tools.lihu.me/tokenkit/SKILL.md): Comprehensive agent reference for encrypted API keys, sub-10ms terminal shell injection, and process isolation.
+- [skillkit Skill](https://tools.lihu.me/skillkit/SKILL.md): Comprehensive agent reference for personal skills repository management, 10+ AI agent parallel distribution, and scoped remote Git publishing.
 
 ### Fast Skill Installation for AI Agents
 - macOS / Linux: `curl -fsSL https://tools.lihu.me/install-skills.sh | bash`
@@ -24,6 +25,7 @@ All tools in this suite provide native, machine-readable `SKILL.md` documents fo
 - [gpgkit](https://tools.lihu.me/gpgkit/): One command for the whole life of a GPG key. Eliminates key loss during machine migration through automated round-trip loopback verification.
 - [certkit](https://tools.lihu.me/certkit/): Zero-config SSL/TLS certificate Swiss Army knife. Auto-sniffs DNS/IP for SAN extensions, manages local development Root CA, performs single-parameter format conversion, and provides non-elevated Windows 11 trust injection.
 - [tokenkit](https://tools.lihu.me/tokenkit/): Modern encrypted universal token manager with embedded SQLite. Sub-10ms terminal shell injection (`tokenkit env`), AES-256-GCM + PBKDF2 encryption, child process injection (`tokenkit run`), profile isolation, and password-protected cross-machine migration bundles (`.tkbundle`).
+- [skillkit](https://tools.lihu.me/skillkit/): Personal skills repository and parallel multi-agent distribution CLI. Dual content architecture (`skills/` drafts + `skillkit.json` upstream metadata), Java 25 virtual-thread parallel fanout to 10+ AI coding agents, scoped Git push protection, and local customization safeguards with zero npm/npx overhead.
 
 ## Design Philosophy
 
@@ -66,26 +68,32 @@ All tools in this suite provide native, machine-readable `SKILL.md` documents fo
 - `tokenkit import <bundle> [--overwrite]`: Cross-platform import with default conflict skipping and colored report.
 - `tokenkit rm <name...>`: Delete one or more tokens (`-y` supported).
 
+### skillkit
+- `skillkit install <names...>`: Install own skills or upstream repos globally across 10+ AI agents (`--repo <source>`, `--ref <ref>`, `--symlink`, `--jobs <n>`).
+- `skillkit update [names...]`: Parallel virtual-thread update of installed skills (`--jobs 8`, `--dry-run`).
+- `skillkit uninstall <names...>`: Safely remove skills from all agent roots while preserving personal drafts and upstream records.
+- `skillkit list [--json]`: Inspect managed skills, installation modes (copy/symlink), and resolved commit revisions.
+- `skillkit push [-m <msg>] [--repo <dest>]`: Scoped automatic Git commit (only `skills/` and `skillkit.json`) and push to personal distribution remote.
 
 ## Frequently Asked Questions (FAQ) / 常见问答
 
 ### Q1: Does li-tools require a pre-installed JVM, Node.js, or Python runtime?
-A: No. All tools in the suite (gpgkit, certkit, tokenkit) are compiled with GraalVM Native Image into single-file native executables with zero runtime dependencies. Cold-start latency is under 50 milliseconds, allowing them to run directly inside lightweight CI containers and minimal distroless/Alpine environments.
+A: No. All tools in the suite (gpgkit, certkit, tokenkit, skillkit) are compiled with GraalVM Native Image into single-file native executables with zero runtime dependencies. Cold-start latency is under 50 milliseconds, allowing them to run directly inside lightweight CI containers and minimal distroless/Alpine environments.
 
 ### Q2: What is the difference between gpgkit and the system's native gpg command?
 A: gpgkit is not an OpenPGP reimplementation, but an automated ergonomics and reliability layer built on top of RFC 4880. It provides declarative configuration, automated key rotation, non-interactive CI signing, and guaranteed behavioral parity across macOS, Linux, and Windows 11.
 
-### Q3: What JWT algorithms are supported by tokenkit?
-A: tokenkit natively supports RS256, RS384, RS512, ES256, ES384, HS256, and EdDSA (Ed25519) signing algorithms, fully covering RFC 7519 standards. National cryptographic algorithms like SM2 are supported via standalone extension plugins.
+### Q3: What is skillkit and how does it manage AI agent skills?
+A: skillkit manages your personal skills repository as a single source of truth without Node.js or npm. It supports own drafts in `skills/` and third-party follows in `skillkit.json`, fanning out globally to 10+ agents (Claude Code, Codex, Cursor, Gemini CLI, OpenCode, Antigravity, etc.) in parallel using Java 25 virtual threads.
 
 ### Q4: li-tools 需要预先安装 JVM、Node.js 或 Python 运行时吗？
-A: 不需要。gpgkit、certkit 与 tokenkit 三个工具均通过 GraalVM Native Image 编译为原生可执行文件，发行物为单文件二进制，零运行时依赖。冷启动耗时低于 50 毫秒，可直接在无 JVM 环境的 CI 容器与 Alpine、Distroless 等精简镜像中运行。
+A: 不需要。gpgkit、certkit、tokenkit 与 skillkit 四个工具均通过 GraalVM Native Image 编译为原生可执行文件，发行物为单文件二进制，零运行时依赖。冷启动耗时低于 50 毫秒，可直接在无 JVM 环境的 CI 容器与 Alpine、Distroless 等精简镜像中运行。
 
 ### Q5: gpgkit 与操作系统自带的 gpg 命令有什么区别？
 A: gpgkit 并非 gpg 的替代实现，而是在 OpenPGP（RFC 4880）标准之上的自动化封装层。它提供声明式配置文件、密钥批量轮换、CI 环境免交互签名，并保证在同一份配置下于 macOS、Linux 与 Windows 11 产生完全一致的密钥与签名行为。
 
-### Q6: tokenkit 支持哪些 JWT 签名算法？是否支持国密 SM2？
-A: tokenkit 原生支持 RS256、RS384、RS512、ES256、ES384、HS256 与 EdDSA（Ed25519）签名算法，完整覆盖 JWT（RFC 7519）标准算法族。国密 SM2 签名需通过官方插件扩展启用。
+### Q6: skillkit 与传统的 npm/npx 类 skills 工具相比有何优势？
+A: skillkit 彻底去除了重型 Node.js 运行时与多层 npm 间接依赖，采用单文件原生可执行程序。它利用 Java 25 虚拟线程高并发拉取，一次性分发到 10 个主流 Agent 目录；推送到 Git 远端时严格限制在 skills/ 与 skillkit.json，绝不影响其它工作区暂存改动。
 
 ## Repository & Links
 

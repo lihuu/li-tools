@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # li-tools installer (macOS & Linux)
-# Installs gpgkit and certkit to ~/.local/bin
+# Installs gpgkit, certkit, tokenkit, and skillkit to ~/.local/bin
 # Usage:
 #   curl -fsSL https://tools.lihu.me/install.sh | bash
 #   curl -fsSL https://tools.lihu.me/install.sh | bash -s gpgkit
 #   curl -fsSL https://tools.lihu.me/install.sh | bash -s certkit
 #   curl -fsSL https://tools.lihu.me/install.sh | bash -s tokenkit
+#   curl -fsSL https://tools.lihu.me/install.sh | bash -s skillkit
 # ==============================================================================
 set -euo pipefail
 
@@ -76,13 +77,17 @@ case "${TARGET}" in
   tokenkit)
     install_tool "tokenkit"
     ;;
+  skillkit)
+    install_tool "skillkit"
+    ;;
   all|"")
     install_tool "gpgkit"
     install_tool "certkit"
     install_tool "tokenkit"
+    install_tool "skillkit"
     ;;
   *)
-    echo "❌ Unknown target: ${TARGET}. Valid targets: all, gpgkit, certkit, tokenkit"
+    echo "❌ Unknown target: ${TARGET}. Valid targets: all, gpgkit, certkit, tokenkit, skillkit"
     exit 1
     ;;
 esac

@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>li-tools — 零依赖开发者安全 CLI 套件 | gpgkit / certkit / tokenkit</title>
-  <meta name="description" content="li-tools 是一套零依赖的开发者安全 CLI 套件，包含 gpgkit、certkit、tokenkit 三个工具。基于 Java 25 与 GraalVM Native Image 原生编译，macOS、Linux、Windows 11 三平台行为一致。">
-  <meta name="keywords" content="开发者工具, GPG管理, SSL证书, TLS, OpenSSL替代, Token管理, API密钥加密, certkit, gpgkit, tokenkit, Java 25, GraalVM原生镜像, Windows 11证书, 约定大于配置">
+  <title>li-tools — 零依赖开发者安全与提效 CLI 套件 | gpgkit / certkit / tokenkit / skillkit</title>
+  <meta name="description" content="li-tools 是一套零依赖的开发者安全与提效 CLI 套件，包含 gpgkit、certkit、tokenkit、skillkit 四个工具。基于 Java 25 与 GraalVM Native Image 原生编译，macOS、Linux、Windows 11 三平台行为一致。">
+  <meta name="keywords" content="开发者工具, GPG管理, SSL证书, TLS, OpenSSL替代, Token管理, API密钥加密, Skills管理, AI Agent, certkit, gpgkit, tokenkit, skillkit, Java 25, GraalVM原生镜像, Windows 11证书, 约定大于配置">
   <meta name="author" content="lihuu">
   <link rel="canonical" href="https://tools.lihu.me/index_zh.html">
   <link rel="alternate" hreflang="en" href="https://tools.lihu.me/">
@@ -45,7 +45,7 @@
         "programmingLanguage": "Java 25",
         "runtimePlatform": "GraalVM Native Image",
         "operatingSystem": "macOS, Linux, Windows 11",
-        "description": "基于 Java 25 与 GraalVM Native Image 的现代命令行安全与开发小工具集合，包含 gpgkit、certkit 与 tokenkit。",
+        "description": "基于 Java 25 与 GraalVM Native Image 的现代命令行安全与提效工具集合，包含 gpgkit、certkit、tokenkit 与 skillkit。",
         "url": "https://tools.lihu.me/index_zh.html",
         "license": "https://opensource.org/licenses/Apache-2.0",
         "offers": {
@@ -78,7 +78,7 @@
             "name": "li-tools 是什么？",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "li-tools 是专为开发者打造的现代命令行安全工具箱，秉承约定大于配置理念，包含 GPG 密钥生命周期管理工具 gpgkit、零配置 SSL/TLS 瑞士军刀 certkit，以及加密 Token 内存注入工具 tokenkit。"
+              "text": "li-tools 是专为开发者打造的现代命令行安全与提效工具箱，秉承约定大于配置理念，包含 GPG 密钥生命周期管理工具 gpgkit、零配置 SSL/TLS 瑞士军刀 certkit、加密 Token 内存注入工具 tokenkit，以及多 Agent Skills 资产库管理工具 skillkit。"
             }
           },
           {
@@ -203,7 +203,7 @@
     </div>
 
     <!-- The Tools Suite Grid -->
-    <div id="suite" class="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-24">
+    <div id="suite" class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-24">
       
       <!-- GPGKIT Card -->
       <a href="gpgkit/index_zh.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-indigo-500/20 hover:border-indigo-500/50 block">
@@ -284,6 +284,34 @@
           <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">&lt;10ms 注入</span>
           <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">内嵌 SQLite</span>
         </div>
+      </a>
+
+      <!-- SKILLKIT Card -->
+      <a href="skillkit/index_zh.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-cyan-500/20 hover:border-cyan-500/50 block">
+        <div class="absolute -right-12 -top-12 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-cyan-500/20 transition-all"></div>
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <span class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-2xl font-bold shadow-inner">⚡</span>
+            <div>
+              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-cyan-300 transition">skillkit</h2>
+              <span class="text-xs font-mono text-cyan-400">个人 Skills 资产库与分发中心</span>
+            </div>
+          </div>
+          <span class="text-slate-500 group-hover:text-cyan-400 transition transform group-hover:translate-x-1">→</span>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed mb-6">
+          统一管理个人原创与上游 Git 仓库，告别繁重 npm/npx。借助 Java 25 虚拟线程一键并行广播分发至 10+ 主流 AI Agent。
+        </p>
+        <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-cyan-300 border border-cyan-950/60 mb-5 flex items-center justify-between">
+          <span>$ skillkit install my-skill</span>
+          <span class="text-emerald-400 text-[10px] font-semibold">✔ 10 端同步就绪</span>
+        </div>
+        <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">10 Agent 广播</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Java 25 虚拟线程</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">零 npm/npx 依赖</span>
+        </div>
+      </a>
     </div>
 
     <!-- Philosophy -->
@@ -367,6 +395,12 @@
             tokenkit 摒弃了在项目内散落明文 <code class="text-amber-400">.env</code> 文件的传统做法。所有密钥集中密文保存在全局 <code class="text-amber-400">~/.tokenkit/tokens.db</code>（AES-256-GCM 加密），通过 <code class="text-amber-400">eval $(tokenkit env)</code> 在 10ms 内直接注入当前终端进程内存，磁盘零落地，Git 零污染。
           </p>
         </div>
+        <div class="glass-card p-6 rounded-xl">
+          <h4 class="font-bold text-white mb-2">skillkit 如何简化多个 AI Coding Agent 的技能管理？</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            无需手工编写软链脚本或依赖笨重的 Node.js/npm 生态。<code class="text-cyan-400">skillkit</code> 通过 Java 25 虚拟线程高并发，一条命令将个人原创与第三方 Git 仓库自动广播分发至 10+ 主流 AI Coding Agent（Claude Code、Codex、Cursor、Gemini CLI、OpenCode、Antigravity 等），并提供严格的作用域自动提交与远端推送。
+          </p>
+        </div>
       </div>
     </div>
 
@@ -383,6 +417,7 @@
         <a href="gpgkit/index_zh.html" class="hover:text-indigo-400 transition">gpgkit</a>
         <a href="certkit/index_zh.html" class="hover:text-emerald-400 transition">certkit</a>
         <a href="tokenkit/index_zh.html" class="hover:text-amber-400 transition">tokenkit</a>
+        <a href="skillkit/index_zh.html" class="hover:text-cyan-400 transition">skillkit</a>
         <a href="SKILL.md" class="hover:text-emerald-400 transition">🤖 SKILL.md</a>
         <a href="llms.txt" class="hover:text-indigo-400 transition">llms.txt</a>
         <a href="index.html" class="hover:text-white transition">English</a>
@@ -395,11 +430,11 @@
     const commands = {
       shell: 'curl -fsSL https://tools.lihu.me/install.sh | bash',
       ps1: 'irm https://tools.lihu.me/install.ps1 | iex',
-      agent: '请帮我安装 li-tools 套件 (gpgkit, certkit & tokenkit): https://tools.lihu.me/ 并查阅 https://tools.lihu.me/SKILL.md 执行初始化。',
+      agent: '请帮我安装 li-tools 套件 (gpgkit, certkit, tokenkit & skillkit): https://tools.lihu.me/ 并查阅 https://tools.lihu.me/SKILL.md 执行初始化。',
       skills: 'curl -fsSL https://tools.lihu.me/install-skills.sh | bash',
       releases: 'https://github.com/lihuu/li-tools/releases/latest',
-      brew: 'brew tap lihuu/tap && brew install gpgkit certkit tokenkit',
-      scoop: 'scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install gpgkit certkit tokenkit'
+      brew: 'brew tap lihuu/tap && brew install gpgkit certkit tokenkit skillkit',
+      scoop: 'scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install gpgkit certkit tokenkit skillkit'
     };
 
     function setTab(tab) {

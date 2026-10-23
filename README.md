@@ -57,7 +57,9 @@ li-tools/
 ├── site/                       # Modern landing pages deployed to GitHub Pages
 │   ├── index.html              # Suite portal homepage
 │   ├── gpgkit/index.html       # gpgkit landing page
-│   └── certkit/index.html      # certkit landing page
+│   ├── certkit/index.html      # certkit landing page
+│   ├── tokenkit/index.html     # tokenkit landing page
+│   └── skillkit/index.html     # skillkit landing page
 ├── gpgkit/                     # GPG key lifecycle manager (Pure JDK, zero runtime dependencies)
 │   ├── SPEC.md                 # Contract specifications
 │   ├── build-native.sh         # GraalVM Native Image compilation script
@@ -70,8 +72,11 @@ li-tools/
 │   ├── SPEC.md                 # Contract specifications
 │   ├── build-native.sh         # GraalVM Native Image compilation script
 │   └── src/
-├── .github/workflows/          # CI/CD and GitHub Pages automation
 ├── skillkit/                   # Personal skills repository and parallel agent installation
+│   ├── SPEC.md                 # Contract specifications
+│   ├── build-native.sh         # GraalVM Native Image compilation script
+│   └── src/
+├── .github/workflows/          # CI/CD and GitHub Pages automation
 └── README.md
 ```
 
@@ -98,11 +103,13 @@ Choose your preferred package manager or installer:
 brew tap lihuu/tap
 
 # Install tools
-brew install gpgkit certkit
+brew install gpgkit certkit tokenkit skillkit
 
 # Or install individually without tapping first:
 brew install lihuu/tap/gpgkit
 brew install lihuu/tap/certkit
+brew install lihuu/tap/tokenkit
+brew install lihuu/tap/skillkit
 ```
 
 ### 2. Scoop (Windows)
@@ -111,7 +118,7 @@ brew install lihuu/tap/certkit
 scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket
 
 # Install tools
-scoop install gpgkit certkit
+scoop install gpgkit certkit tokenkit skillkit
 ```
 
 ### 3. One-Line Script Installer (macOS, Linux & Windows 11)

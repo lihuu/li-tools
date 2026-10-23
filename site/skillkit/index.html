@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>skillkit — Personal Skills Hub & Parallel Multi-Agent Distribution | Java 25 & Zero npm/npx</title>
+  <meta name="description" content="Manage your personal AI skills repository as a single source of truth. Install own or upstream skills globally across 10+ AI coding agents in parallel with zero Node/npm/npx dependencies.">
+  <meta name="keywords" content="ai agent skills, claude code skills, codex skills, cursor skills, gemini cli skills, opencode skills, antigravity skills, skill manager, skills distribution, java 25, virtual threads, graalvm native image">
+  <meta name="author" content="lihuu">
+  <link rel="canonical" href="https://tools.lihu.me/skillkit/">
+  <link rel="alternate" hreflang="en" href="https://tools.lihu.me/skillkit/">
+  <link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/skillkit/index_zh.html">
+  <link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/skillkit/">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="agent-skill" type="text/markdown" href="https://tools.lihu.me/skillkit/SKILL.md">
+  <link rel="help" type="text/plain" href="https://tools.lihu.me/llms.txt" title="LLM Context">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tools.lihu.me/skillkit/">
+  <meta property="og:title" content="skillkit — Personal Skills Hub & Multi-Agent Sync">
+  <meta property="og:description" content="One command to distribute own and upstream skills to 10+ AI agents in parallel. Zero Node/npm/npx overhead, powered by Java 25 & GraalVM.">
+  <meta property="og:image" content="https://tools.lihu.me/assets/og-image.svg">
+  <meta property="og:site_name" content="li-tools">
+  <meta property="og:locale" content="en_US">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="skillkit — Personal Skills Hub & Multi-Agent Sync">
+  <meta name="twitter:description" content="Unified skills repository for Claude, Codex, Cursor, Gemini, OpenCode, and Antigravity. Zero runtime dependencies.">
+  <meta name="twitter:image" content="https://tools.lihu.me/assets/og-image.svg">
+
+  <!-- Schema.org JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "skillkit",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "macOS, Linux, Windows 11",
+        "description": "Modern cross-platform AI agent skills repository manager and parallel distribution CLI with zero npm or runtime dependencies.",
+        "url": "https://tools.lihu.me/skillkit/",
+        "license": "https://opensource.org/licenses/Apache-2.0",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "lihuu",
+          "url": "https://github.com/lihuu"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "li-tools",
+            "item": "https://tools.lihu.me/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "skillkit",
+            "item": "https://tools.lihu.me/skillkit/"
+          }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is skillkit?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "skillkit is a zero-dependency CLI tool built with Java 25 and GraalVM Native Image to manage your personal AI agent skills collection. It installs own and upstream skills globally across all supported AI coding agents (Claude Code, Codex, Cursor, Gemini CLI, OpenCode, Antigravity, etc.) in parallel and publishes personal content to Git remotes without external skills/npm/npx commands."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does skillkit require Node.js, npm, or npx to be installed?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. skillkit is compiled into a standalone native binary with zero runtime dependencies. It uses native system Git for remote repository fetching and Java 25 virtual threads for high-speed parallel operations, eliminating the heavyweight Node.js runtime and flaky package manager lockfiles."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which AI agents are supported by skillkit?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "A single install or update command fan-outs to 10 supported agent environments: Codex, Pi, ZCode, Claude Code, Qwen Code, Cursor, Gemini CLI, Hermes, OpenCode, and Antigravity. Shared target paths are automatically de-duplicated."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does skillkit protect local edits and unrelated git changes?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "skillkit checks content digests and states before overwriting or uninstalling copied skills, refusing to overwrite manually modified files. When publishing with 'skillkit push', commits are strictly scoped to skills/ and skillkit.json, preserving any other uncommitted or staged work in the workspace."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              accent: '#a855f7'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0b0f19; }
+    .glass-card {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(14, 165, 233, 0.15);
+    }
+    .glow-cyan {
+      box-shadow: 0 0 60px -15px rgba(14, 165, 233, 0.22);
+    }
+  </style>
+</head>
+<body class="text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-black">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800/80 sticky top-0 z-50 bg-[#0b0f19]/80 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <a href="../index.html" class="text-xs font-mono px-2 py-1 bg-slate-800 text-slate-400 rounded hover:text-white transition">li-tools/</a>
+        <div class="h-4 w-[1px] bg-slate-800"></div>
+        <span class="font-bold text-lg tracking-tight flex items-center gap-2">
+          <span class="w-6 h-6 rounded bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-sm font-mono font-bold border border-cyan-500/30">⚡</span>
+          skillkit
+        </span>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">v0.3.0</span>
+      </div>
+
+      <nav class="flex items-center space-x-6 text-sm">
+        <a href="#agents" class="text-slate-400 hover:text-white transition">Supported Agents</a>
+        <a href="#features" class="text-slate-400 hover:text-white transition">Features</a>
+        <a href="#install" class="text-slate-400 hover:text-white transition">Install</a>
+        <a href="#commands" class="text-slate-400 hover:text-white transition">Commands</a>
+        <a href="#faq" class="text-slate-400 hover:text-white transition">FAQ</a>
+        <a href="../tokenkit/index.html" class="text-slate-400 hover:text-amber-400 transition flex items-center gap-1.5">
+          <span>tokenkit</span>
+          <span class="text-xs">↗</span>
+        </a>
+        <a href="../certkit/index.html" class="text-slate-400 hover:text-emerald-400 transition flex items-center gap-1.5">
+          <span>certkit</span>
+          <span class="text-xs">↗</span>
+        </a>
+        <a href="../gpgkit/index.html" class="text-slate-400 hover:text-indigo-400 transition flex items-center gap-1.5">
+          <span>gpgkit</span>
+          <span class="text-xs">↗</span>
+        </a>
+        <a href="index_zh.html" class="px-2.5 py-1 text-xs font-mono font-semibold rounded-md bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/30 transition flex items-center gap-1.5" title="切换为简体中文">
+          <span>🌐</span> 中文
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="max-w-6xl mx-auto px-6 pt-16 pb-24">
+    <div class="text-center max-w-3xl mx-auto mb-14">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-mono mb-6">
+        <span>⚡</span> 10+ AI Agents Fanout • Java 25 Virtual Threads • Zero npm/npx Overhead
+      </div>
+      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+        Personal <span class="bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-400 bg-clip-text text-transparent">Skills Hub</span> &amp; Multi-Agent Sync.
+      </h1>
+      <p class="text-lg text-slate-400 leading-relaxed">
+        Stop wrestling with scattered agent paths and bloated npm scripts. Maintain your own skills repository, subscribe to upstream Git repos, and distribute across all your coding agents in parallel.
+      </p>
+    </div>
+
+    <!-- Terminal Window Demo -->
+    <div class="max-w-3xl mx-auto glass-card rounded-xl overflow-hidden shadow-2xl glow-cyan mb-16">
+      <div class="bg-slate-900/90 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-3 h-3 rounded-full bg-rose-500/80"></div>
+          <div class="w-3 h-3 rounded-full bg-amber-500/80"></div>
+          <div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+          <span class="text-xs font-mono text-slate-500 ml-2">skillkit terminal workflow</span>
+        </div>
+        <span class="text-xs font-mono text-slate-500">zsh</span>
+      </div>
+      <div class="p-6 font-mono text-sm leading-relaxed overflow-x-auto text-slate-300">
+        <!-- Step 1: Install own skill -->
+        <div class="flex items-center gap-2 text-slate-500 mb-2">
+          <span class="text-cyan-400">~</span>
+          <span class="text-slate-400">$</span>
+          <span class="text-white">skillkit install my-custom-skill</span>
+        </div>
+        <div class="text-slate-400 mb-4 pl-4 border-l-2 border-cyan-500/30">
+          <div class="text-emerald-400">✔ Discovered 'my-custom-skill' in repository skills/</div>
+          <div class="text-slate-300">✔ Deployed to 8 global agent roots (Claude Code, Codex, Cursor, Gemini CLI, OpenCode, Antigravity...)</div>
+        </div>
+
+        <!-- Step 2: Install external skill with upstream tracking -->
+        <div class="flex items-center gap-2 text-slate-500 mb-2">
+          <span class="text-cyan-400">~</span>
+          <span class="text-slate-400">$</span>
+          <span class="text-white">skillkit install web-search --repo owner/community-skills</span>
+        </div>
+        <div class="text-slate-400 mb-4 pl-4 border-l-2 border-indigo-500/30">
+          <div>ℹ Resolved commit 7f3b89a from https://github.com/owner/community-skills</div>
+          <div class="text-emerald-400">✔ Recorded upstream metadata in skillkit.json and installed to all agents</div>
+        </div>
+
+        <!-- Step 3: Parallel Update -->
+        <div class="flex items-center gap-2 text-slate-500 mb-2">
+          <span class="text-cyan-400">~</span>
+          <span class="text-slate-400">$</span>
+          <span class="text-white">skillkit update --jobs 8</span>
+        </div>
+        <div class="text-slate-400 mb-4 pl-4 border-l-2 border-sky-500/30">
+          <div class="text-slate-300">⚡ Checked 14 skills across upstreams with 8 virtual threads in 184ms</div>
+          <div class="text-emerald-400">✔ All agent installations are up to date</div>
+        </div>
+
+        <!-- Step 4: Publish -->
+        <div class="flex items-center gap-2 text-slate-500 mb-2">
+          <span class="text-cyan-400">~</span>
+          <span class="text-slate-400">$</span>
+          <span class="text-white">skillkit push -m "feat: add my-custom-skill and web-search upstream"</span>
+        </div>
+        <div class="text-slate-400 pl-4 border-l-2 border-emerald-500/30">
+          <div>ℹ Scoped commit created for skills/ and skillkit.json (other staged files preserved)</div>
+          <div class="text-emerald-400">✔ Pushed to origin/main successfully</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Supported Agents Grid -->
+    <div id="agents" class="max-w-5xl mx-auto mb-24">
+      <div class="text-center mb-10">
+        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">One Command, Global Fan-Out</h2>
+        <p class="text-slate-400 text-sm">No need to configure individual agent paths. skillkit automatically discovers and writes to all major agent directories with zero path collisions.</p>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3.5">
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">🤖</div>
+          <div class="font-bold text-sm text-white">Codex / Pi</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.agents/skills</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">🧠</div>
+          <div class="font-bold text-sm text-white">Claude Code</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.claude/skills</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">✨</div>
+          <div class="font-bold text-sm text-white">Gemini CLI</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.gemini/skills</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">🎯</div>
+          <div class="font-bold text-sm text-white">Cursor</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.cursor/skills</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">🌌</div>
+          <div class="font-bold text-sm text-white">Antigravity</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.gemini/antigravity</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">💻</div>
+          <div class="font-bold text-sm text-white">OpenCode</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.config/opencode</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">⚡</div>
+          <div class="font-bold text-sm text-white">Hermes</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.hermes/skills</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">🌐</div>
+          <div class="font-bold text-sm text-white">Qwen Code</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.qwen/skills</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">🚀</div>
+          <div class="font-bold text-sm text-white">ZCode</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.agents/skills</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">🔗</div>
+          <div class="font-bold text-sm text-white">Shared Roots</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">Auto Deduplication</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Core Features Grid -->
+    <div id="features" class="max-w-5xl mx-auto mb-24">
+      <div class="text-center mb-12">
+        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">Designed for Power Engineers &amp; Multi-Agent Workflows</h2>
+        <p class="text-slate-400 text-sm">Engineered around safety, speed, and standard file operations.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        <!-- Feature 1 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl font-bold mb-4">
+            🚀
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-cyan-300 transition">Zero npm / npx Overhead</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Compiled ahead-of-time with GraalVM Native Image into a single binary. No Node.js runtime, no lockfile corruption, and no npm network overhead.
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl font-bold mb-4">
+            📁
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-cyan-300 transition">Dual Content Architecture</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Own drafts live in <code class="text-cyan-300">skills/</code> as normal files. Third-party follows live in <code class="text-cyan-300">skillkit.json</code>. No complex import/subscribe commands.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl font-bold mb-4">
+            ⚡
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-cyan-300 transition">Java 25 Virtual Threads</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Concurrent source resolution and snapshot downloads powered by Loom virtual threads (<code class="text-cyan-300">--jobs 8</code>). Fast, non-blocking, and bounded.
+          </p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl font-bold mb-4">
+            🛡️
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-cyan-300 transition">Scoped Push Protection</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            <code class="text-cyan-300">skillkit push</code> commits additions and deletions strictly inside <code class="text-cyan-300">skills/</code> and <code class="text-cyan-300">skillkit.json</code>. Any other staged Git work remains intact.
+          </p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl font-bold mb-4">
+            🔒
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-cyan-300 transition">Local Edit Safeguard</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Maintains cryptographic content digests in <code class="text-cyan-300">.skillkit-state.json</code>. Refuses to overwrite or uninstall skills that you've customized in an agent root.
+          </p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl font-bold mb-4">
+            🤖
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-cyan-300 transition">Agent Skill Protocol</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Full compliance with agentskills.io. AI coding agents can consume <code class="text-cyan-300">skillkit list --json</code> and understand repository structure autonomously.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Commands Reference Section -->
+    <div id="commands" class="max-w-5xl mx-auto mb-24">
+      <div class="text-center mb-10">
+        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">Five Clean Commands. Zero Bloat.</h2>
+        <p class="text-slate-400 text-sm">Everything you need to author, install, update, and distribute skills.</p>
+      </div>
+
+      <div class="space-y-4">
+        <!-- Command 1 -->
+        <div class="glass-card p-5 rounded-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="font-mono text-cyan-300 text-sm font-semibold flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-cyan-500/20 border border-cyan-500/30 text-xs">install</span>
+              <span>skillkit install &lt;names...&gt; [--repo &lt;source&gt;] [--symlink] [--jobs &lt;n&gt;]</span>
+            </div>
+            <span class="text-xs font-mono text-slate-500">Copy or symlink to all 10 agent directories</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Installs your own skills from <code class="text-slate-200">skills/</code> or external repositories via <code class="text-slate-200">--repo owner/repo</code>. External installations automatically record source, path, and resolved commit in <code class="text-slate-200">skillkit.json</code>.
+          </p>
+        </div>
+
+        <!-- Command 2 -->
+        <div class="glass-card p-5 rounded-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="font-mono text-cyan-300 text-sm font-semibold flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-cyan-500/20 border border-cyan-500/30 text-xs">update</span>
+              <span>skillkit update [names...] [--jobs &lt;n&gt;] [--dry-run]</span>
+            </div>
+            <span class="text-xs font-mono text-slate-500">Parallel refresh of all installed skills</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Checks all active installations against current local files or upstream Git commits. Executes bounded virtual-thread network fetches (default jobs = 4).
+          </p>
+        </div>
+
+        <!-- Command 3 -->
+        <div class="glass-card p-5 rounded-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="font-mono text-cyan-300 text-sm font-semibold flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-cyan-500/20 border border-cyan-500/30 text-xs">uninstall</span>
+              <span>skillkit uninstall &lt;names...&gt; [--dry-run]</span>
+            </div>
+            <span class="text-xs font-mono text-slate-500">Clean global removal</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Removes target directories from all global agent roots. Safeguards your original drafts in <code class="text-slate-200">skills/</code> and retains upstream metadata in <code class="text-slate-200">skillkit.json</code>.
+          </p>
+        </div>
+
+        <!-- Command 4 -->
+        <div class="glass-card p-5 rounded-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="font-mono text-cyan-300 text-sm font-semibold flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-cyan-500/20 border border-cyan-500/30 text-xs">list</span>
+              <span>skillkit list [--json]</span>
+            </div>
+            <span class="text-xs font-mono text-slate-500">Tabular status and agent overview</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Displays an aggregated table of all installed skills, installation types (copy / symlink), active source repositories, and resolved Git commits.
+          </p>
+        </div>
+
+        <!-- Command 5 -->
+        <div class="glass-card p-5 rounded-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="font-mono text-cyan-300 text-sm font-semibold flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-cyan-500/20 border border-cyan-500/30 text-xs">push</span>
+              <span>skillkit push [-m &lt;msg&gt;] [--repo &lt;dest&gt;] [--dry-run]</span>
+            </div>
+            <span class="text-xs font-mono text-slate-500">Publish to personal Git remote</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Auto-initializes Git if needed, saves remote origin, stages additions/deletions only under <code class="text-slate-200">skills/</code> and <code class="text-slate-200">skillkit.json</code>, and pushes to your remote distribution source.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Installation Section -->
+    <div id="install" class="max-w-4xl mx-auto mb-24">
+      <div class="text-center mb-10">
+        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">Instant Installation</h2>
+        <p class="text-slate-400 text-sm">Standalone native binary. Zero JVM, zero npm, zero Python dependencies.</p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-6">
+        <!-- Shell / Direct -->
+        <div class="glass-card p-6 rounded-xl border-cyan-500/20">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-bold text-sm text-white">macOS &amp; Linux (One-Line Script)</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">curl</span>
+          </div>
+          <div class="bg-black/60 rounded-lg p-3 font-mono text-xs text-cyan-300 border border-slate-800 mb-3 overflow-x-auto">
+            curl -fsSL https://tools.lihu.me/install.sh | bash -s skillkit
+          </div>
+          <p class="text-xs text-slate-400">Downloads standalone binary directly to <code class="text-slate-300">~/.local/bin/skillkit</code>.</p>
+        </div>
+
+        <!-- Windows PowerShell -->
+        <div class="glass-card p-6 rounded-xl border-cyan-500/20">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-bold text-sm text-white">Windows 11 (PowerShell)</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">irm</span>
+          </div>
+          <div class="bg-black/60 rounded-lg p-3 font-mono text-xs text-cyan-300 border border-slate-800 mb-3 overflow-x-auto">
+            irm https://tools.lihu.me/install.ps1 | iex
+          </div>
+          <p class="text-xs text-slate-400">Automated native Windows 64-bit binary extraction and User PATH update.</p>
+        </div>
+
+        <!-- Homebrew -->
+        <div class="glass-card p-6 rounded-xl border-cyan-500/20">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-bold text-sm text-white">Homebrew Tap (macOS / Linux)</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">brew</span>
+          </div>
+          <div class="bg-black/60 rounded-lg p-3 font-mono text-xs text-cyan-300 border border-slate-800 mb-3 overflow-x-auto">
+            brew install lihuu/tap/skillkit
+          </div>
+          <p class="text-xs text-slate-400">Maintained Formula with automated version updates.</p>
+        </div>
+
+        <!-- Scoop -->
+        <div class="glass-card p-6 rounded-xl border-cyan-500/20">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-bold text-sm text-white">Scoop Bucket (Windows)</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">scoop</span>
+          </div>
+          <div class="bg-black/60 rounded-lg p-3 font-mono text-xs text-cyan-300 border border-slate-800 mb-3 overflow-x-auto">
+            scoop install skillkit
+          </div>
+          <p class="text-xs text-slate-400">First-class Windows developer experience.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div id="faq" class="max-w-4xl mx-auto mb-20">
+      <h2 class="text-2xl font-bold tracking-tight text-white mb-8 text-center">Frequently Asked Questions</h2>
+      <div class="space-y-4">
+        <div class="glass-card p-6 rounded-xl">
+          <h3 class="font-bold text-base text-white mb-2">How does skillkit differ from community npm/npx-based skill tools?</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Existing tools typically require a heavy Node.js runtime, download dozens of transitive dependencies via npm, and often modify unrelated global files. skillkit is a single native binary (&lt;30MB) powered by Java 25 and GraalVM. It uses your system's native Git for secure authentication, enforces strict commit scoping, and fans out directly to all major agent directories without runtime friction.
+          </p>
+        </div>
+
+        <div class="glass-card p-6 rounded-xl">
+          <h3 class="font-bold text-base text-white mb-2">Can I install skills from private GitHub repositories?</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Yes. skillkit orchestrates your system's native <code class="text-cyan-300">git</code> CLI. It inherits your existing SSH keys, GitHub CLI (<code class="text-cyan-300">gh</code>) credential helpers, and commit signing keys automatically without ever reading or copying private tokens.
+          </p>
+        </div>
+
+        <div class="glass-card p-6 rounded-xl">
+          <h3 class="font-bold text-base text-white mb-2">What happens if two agents share the same skills path?</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            skillkit resolves and de-duplicates target paths before executing file operations. Shared directories (like <code class="text-cyan-300">~/.agents/skills/</code> shared by Codex and Pi) are written exactly once and cleanly tracked in state files.
+          </p>
+        </div>
+
+        <div class="glass-card p-6 rounded-xl">
+          <h3 class="font-bold text-base text-white mb-2">Does skillkit support symlinks instead of copying?</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Yes! Running <code class="text-cyan-300">skillkit install my-skill --symlink</code> creates symbolic links to your local repository or immutable cache snapshots. When updating, skillkit automatically respects each skill's established installation mode.
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-[#070b13] py-12 text-slate-400 text-xs font-mono">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-2">
+        <span class="text-white font-bold">li-tools</span>
+        <span>•</span>
+        <span>skillkit</span>
+        <span>•</span>
+        <span>Apache 2.0 License</span>
+      </div>
+      <div class="flex items-center space-x-6">
+        <a href="https://github.com/lihuu/li-tools" target="_blank" rel="noopener" class="hover:text-white transition">GitHub</a>
+        <a href="../llms.txt" class="hover:text-cyan-400 transition">llms.txt</a>
+        <a href="SKILL.md" class="hover:text-cyan-400 transition">Agent Skill</a>
+        <a href="../sitemap.xml" class="hover:text-white transition">Sitemap</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
