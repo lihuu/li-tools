@@ -1,10 +1,10 @@
 # li-tools AI Agent Skill Installer for Windows PowerShell
-# Installs gpgkit, certkit & tokenkit skills into AI agent skill directories.
+# Installs gpgkit, certkit, tokenkit & skillkit skills into AI agent skill directories.
 $ErrorActionPreference = "Stop"
 
 $baseUrl = "https://tools.lihu.me"
 
-Write-Host "🤖 Installing li-tools Agent Skills (gpgkit, certkit & tokenkit)..." -ForegroundColor Cyan
+Write-Host "🤖 Installing li-tools Agent Skills (gpgkit, certkit, tokenkit & skillkit)..." -ForegroundColor Cyan
 
 $userHome = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
 $targetDirs = @()
@@ -36,10 +36,12 @@ foreach ($dir in $uniqueDirs) {
     $gpgkitDir = [System.IO.Path]::Combine($dir, "gpgkit")
     $certkitDir = [System.IO.Path]::Combine($dir, "certkit")
     $tokenkitDir = [System.IO.Path]::Combine($dir, "tokenkit")
+    $skillkitDir = [System.IO.Path]::Combine($dir, "skillkit")
 
     New-Item -ItemType Directory -Force -Path $gpgkitDir | Out-Null
     New-Item -ItemType Directory -Force -Path $certkitDir | Out-Null
     New-Item -ItemType Directory -Force -Path $tokenkitDir | Out-Null
+    New-Item -ItemType Directory -Force -Path $skillkitDir | Out-Null
 
     try {
         $gpgkitDest = [System.IO.Path]::Combine($gpgkitDir, "SKILL.md")
@@ -64,8 +66,16 @@ foreach ($dir in $uniqueDirs) {
     } catch {
         Write-Warning "    ⚠ Failed to download tokenkit skill: $_"
     }
+
+    try {
+        $skillkitDest = [System.IO.Path]::Combine($skillkitDir, "SKILL.md")
+        Invoke-RestMethod -Uri "$baseUrl/skillkit/SKILL.md" -OutFile $skillkitDest
+        Write-Host "    ✔ Installed skillkit skill -> $skillkitDest" -ForegroundColor Green
+    } catch {
+        Write-Warning "    ⚠ Failed to download skillkit skill: $_"
+    }
 }
 
 Write-Host ""
 Write-Host "✅ All skills installed successfully!" -ForegroundColor Green
-Write-Host "AI coding agents will now automatically recognize and operate gpgkit, certkit & tokenkit." -ForegroundColor Cyan
+Write-Host "AI coding agents will now automatically recognize and operate gpgkit, certkit, tokenkit & skillkit." -ForegroundColor Cyan

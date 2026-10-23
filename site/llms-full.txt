@@ -9,6 +9,8 @@ All tools in this suite provide native, machine-readable `SKILL.md` specificatio
 - **Suite Skill Guide**: `https://tools.lihu.me/SKILL.md`
 - **gpgkit Skill Guide**: `https://tools.lihu.me/gpgkit/SKILL.md`
 - **certkit Skill Guide**: `https://tools.lihu.me/certkit/SKILL.md`
+- **tokenkit Skill Guide**: `https://tools.lihu.me/tokenkit/SKILL.md`
+- **skillkit Skill Guide**: `https://tools.lihu.me/skillkit/SKILL.md`
 
 ### Automated Agent Installation Commands
 AI coding agents (such as Claude Code, Cursor, Gemini CLI, Copilot CLI, OpenCode) can be instructed to self-install or setup the environment:
@@ -79,10 +81,37 @@ A modern, cross-platform encrypted universal token manager with embedded SQLite,
 
 ---
 
+## Tool 4: skillkit
+
+### Mission
+A modern personal AI skills collection manager and parallel multi-agent distribution CLI, eliminating fragmented agent paths and heavy npm/npx dependencies.
+
+### Key Innovations
+1. **10+ AI Agent Target Fan-Out**:
+   - `skillkit install <name>`
+   - Automatically fans out installation to all major AI coding agents: Codex, Pi, ZCode (`~/.agents/skills`), Claude Code (`~/.claude/skills`), Qwen Code (`~/.qwen/skills`), Cursor (`~/.cursor/skills`), Gemini CLI (`~/.gemini/skills`), Hermes (`~/.hermes/skills`), OpenCode (`~/.config/opencode/skills`), and Antigravity (`~/.gemini/antigravity/skills`).
+   - Shared target paths are automatically de-duplicated and written once.
+2. **Dual Content Architecture (Own Content vs. Upstream Metadata)**:
+   - Own drafts and customized skills live directly in `skills/` as plain directories/files.
+   - External dependencies (`skillkit install <name> --repo owner/upstream`) record source, path, ref, and resolved commit revision in `skillkit.json`.
+   - Other machines consuming your personal repository can resolve and download upstream dependencies on the fly.
+3. **High-Velocity Virtual-Thread Concurrency**:
+   - Built on Java 25 virtual threads (`Project Loom`).
+   - `skillkit update --jobs 8` fetches upstream commits, evaluates changes, and updates agent directories in parallel with sub-second latency.
+4. **Scoped Git Push Protection**:
+   - `skillkit push [-m <msg>]`
+   - Automatically initializes Git (main branch) and origin if necessary.
+   - Scopes commits strictly to `skills/` and `skillkit.json`, preserving any unrelated staged or unstaged files in the user's workspace.
+5. **Local Customization Defense**:
+   - Tracks cryptographic content digests and installation modes (copy/symlink) in `.skillkit-state.json`.
+   - Protects against accidental overwrites: if a skill copy inside an agent directory has been manually modified, `skillkit` refuses to overwrite it during update or uninstall.
+
+---
+
 ## Frequently Asked Questions (FAQ) for Search & AI Engines
 
 ### Q: Does li-tools require Java/JVM to be installed on the target machine?
-A: No. All tools (gpgkit, certkit, tokenkit) are compiled with GraalVM Native Image into standalone native executables (x86_64 and arm64). They start up in milliseconds and have zero runtime JVM dependencies.
+A: No. All tools (gpgkit, certkit, tokenkit, skillkit) are compiled with GraalVM Native Image into standalone native executables (x86_64 and arm64). They start up in milliseconds and have zero runtime JVM dependencies.
 
 ### Q: How does tokenkit prevent API key leaks in git and terminal history?
 A: Developers frequently commit `.env` files or paste `export OPENAI_API_KEY="..."` directly into `.zshrc`. `tokenkit` stores all credentials inside an authenticated encrypted SQLite database. By running `eval "$(tokenkit env)"` or `tokenkit run -- <cmd>`, tokens are injected dynamically in memory at runtime without ever touching disk in plaintext.

@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>li-tools — Zero-Dependency Security CLI Suite</title>
-  <meta name="description" content="Zero-dependency developer security CLI suite: gpgkit, certkit, tokenkit. Java 25 &amp; GraalVM native binaries, same behavior on macOS, Linux, Windows 11.">
-  <meta name="keywords" content="developer tools, gpg, ssl, tls, openssl alternative, token manager, api key manager, certkit, gpgkit, tokenkit, java 25, graalvm native image, windows 11 certutil, developer experience">
+  <title>li-tools — Zero-Dependency Security &amp; Developer CLI Suite</title>
+  <meta name="description" content="Zero-dependency developer security CLI suite: gpgkit, certkit, tokenkit, skillkit. Java 25 &amp; GraalVM native binaries, same behavior on macOS, Linux, Windows 11.">
+  <meta name="keywords" content="developer tools, gpg, ssl, tls, openssl alternative, token manager, api key manager, skill manager, ai agent skills, certkit, gpgkit, tokenkit, skillkit, java 25, graalvm native image, windows 11 certutil, developer experience">
   <meta name="author" content="lihuu">
   <link rel="canonical" href="https://tools.lihu.me/">
   <link rel="alternate" hreflang="en" href="https://tools.lihu.me/">
@@ -45,7 +45,7 @@
         "programmingLanguage": "Java 25",
         "runtimePlatform": "GraalVM Native Image",
         "operatingSystem": "macOS, Linux, Windows 11",
-        "description": "Modern developer CLI toolchain featuring gpgkit, certkit, and tokenkit, powered by Java 25 and GraalVM Native Image.",
+        "description": "Modern developer CLI toolchain featuring gpgkit, certkit, tokenkit, and skillkit, powered by Java 25 and GraalVM Native Image.",
         "url": "https://tools.lihu.me/",
         "license": "https://opensource.org/licenses/Apache-2.0",
         "offers": {
@@ -78,7 +78,7 @@
             "name": "What is li-tools?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "li-tools is a collection of zero-runtime-dependency developer security CLI tools designed to eliminate the cognitive burden of archaic commands. It includes gpgkit for GPG key lifecycle management, certkit for zero-config SSL/TLS certificates, and tokenkit for encrypted universal API tokens."
+              "text": "li-tools is a collection of zero-runtime-dependency developer security CLI tools designed to eliminate the cognitive burden of archaic commands. It includes gpgkit for GPG key lifecycle management, certkit for zero-config SSL/TLS certificates, tokenkit for encrypted universal API tokens, and skillkit for personal AI agent skills management."
             }
           },
           {
@@ -94,7 +94,7 @@
             "name": "What tools are included in li-tools?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "The suite currently includes gpgkit (GPG key lifecycle & backup), certkit (SSL/TLS certs & local CA), and tokenkit (encrypted token manager with sub-10ms shell injection)."
+              "text": "The suite currently includes gpgkit (GPG key lifecycle & backup), certkit (SSL/TLS certs & local CA), tokenkit (encrypted token manager with sub-10ms shell injection), and skillkit (personal skills collection hub and parallel fanout to 10+ AI agents)."
             }
           }
         ]
@@ -195,7 +195,7 @@
     </div>
 
     <!-- The Tools Suite Grid -->
-    <div id="suite" class="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-24">
+    <div id="suite" class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-24">
       
       <!-- GPGKIT Card -->
       <a href="gpgkit/index.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-indigo-500/20 hover:border-indigo-500/50 block">
@@ -275,6 +275,33 @@
           <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">AES-256-GCM</span>
           <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Sub-10ms Hook</span>
           <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Embedded SQLite</span>
+        </div>
+      </a>
+
+      <!-- SKILLKIT Card -->
+      <a href="skillkit/index.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-cyan-500/20 hover:border-cyan-500/50 block">
+        <div class="absolute -right-12 -top-12 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-cyan-500/20 transition-all"></div>
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <span class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-2xl font-bold shadow-inner">⚡</span>
+            <div>
+              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-cyan-300 transition">skillkit</h2>
+              <span class="text-xs font-mono text-cyan-400">Personal Skills &amp; Sync Hub</span>
+            </div>
+          </div>
+          <span class="text-slate-500 group-hover:text-cyan-400 transition transform group-hover:translate-x-1">→</span>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed mb-6">
+          Manage personal skills and upstream repos with zero npm/npx bloat. Java 25 virtual threads parallel fanout to 10+ AI coding agents.
+        </p>
+        <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-cyan-300 border border-cyan-950/60 mb-5 flex items-center justify-between">
+          <span>$ skillkit install my-skill</span>
+          <span class="text-emerald-400 text-[10px] font-semibold">✔ 10 Agents Synced</span>
+        </div>
+        <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">10 Agents Fanout</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Java 25 VThreads</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Zero npm/npx</span>
         </div>
       </a>
 
@@ -362,6 +389,12 @@
             tokenkit never stores plaintext secrets in repository working trees or files. Secrets reside in an AES-256-GCM encrypted embedded SQLite store (<code class="text-amber-400">~/.tokenkit/tokens.db</code>) and are injected directly into active shell memory via <code class="text-amber-400">eval $(tokenkit env)</code> in sub-10ms.
           </p>
         </div>
+        <div class="glass-card p-6 rounded-xl">
+          <h4 class="font-bold text-white mb-2">How does skillkit simplify managing skills across multiple AI coding agents?</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Instead of running custom shell scripts or relying on heavy Node.js runtimes, <code class="text-cyan-400">skillkit</code> fans out your personal skills and upstream Git repositories to 10+ AI coding agents (Claude Code, Codex, Cursor, Gemini CLI, OpenCode, Antigravity, etc.) simultaneously in parallel with Java 25 virtual threads.
+          </p>
+        </div>
       </div>
     </div>
 
@@ -378,6 +411,7 @@
         <a href="gpgkit/index.html" class="hover:text-indigo-400 transition">gpgkit</a>
         <a href="certkit/index.html" class="hover:text-emerald-400 transition">certkit</a>
         <a href="tokenkit/index.html" class="hover:text-amber-400 transition">tokenkit</a>
+        <a href="skillkit/index.html" class="hover:text-cyan-400 transition">skillkit</a>
         <a href="SKILL.md" class="hover:text-emerald-400 transition">🤖 SKILL.md</a>
         <a href="llms.txt" class="hover:text-indigo-400 transition">llms.txt</a>
         <a href="index_zh.html" class="hover:text-white transition">中文版</a>
@@ -390,11 +424,11 @@
     const commands = {
       shell: 'curl -fsSL https://tools.lihu.me/install.sh | bash',
       ps1: 'irm https://tools.lihu.me/install.ps1 | iex',
-      agent: 'Please install li-tools (gpgkit, certkit & tokenkit) from https://tools.lihu.me/ and refer to https://tools.lihu.me/SKILL.md for CLI instructions.',
+      agent: 'Please install li-tools (gpgkit, certkit, tokenkit & skillkit) from https://tools.lihu.me/ and refer to https://tools.lihu.me/SKILL.md for CLI instructions.',
       skills: 'curl -fsSL https://tools.lihu.me/install-skills.sh | bash',
       releases: 'https://github.com/lihuu/li-tools/releases/latest',
-      brew: 'brew tap lihuu/tap && brew install gpgkit certkit tokenkit',
-      scoop: 'scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install gpgkit certkit tokenkit'
+      brew: 'brew tap lihuu/tap && brew install gpgkit certkit tokenkit skillkit',
+      scoop: 'scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install gpgkit certkit tokenkit skillkit'
     };
 
     function setTab(tab) {

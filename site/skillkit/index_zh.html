@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-Hans" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>skillkit — 个人 Skills 资产库与多 Agent 全局并行分发工具 | Java 25 &amp; 零 npm/npx 依赖</title>
+  <meta name="description" content="用 Java 25 打造的跨平台 AI Agent Skills 资产库管理与全自动分发工具。支持一键并行同步至 Claude Code、Codex、Cursor、Gemini CLI、OpenCode、Antigravity 等 10 个主流 Agent，彻底告别臃肿的 npm/npx。">
+  <meta name="keywords" content="ai agent skills, claude code skills, codex skills, cursor skills, gemini cli skills, opencode skills, antigravity skills, 技能管理, 跨平台分发, java 25, 虚拟线程, graalvm native image">
+  <meta name="author" content="lihuu">
+  <link rel="canonical" href="https://tools.lihu.me/skillkit/index_zh.html">
+  <link rel="alternate" hreflang="en" href="https://tools.lihu.me/skillkit/">
+  <link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/skillkit/index_zh.html">
+  <link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/skillkit/">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="agent-skill" type="text/markdown" href="https://tools.lihu.me/skillkit/SKILL.md">
+  <link rel="help" type="text/plain" href="https://tools.lihu.me/llms.txt" title="LLM Context">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tools.lihu.me/skillkit/index_zh.html">
+  <meta property="og:title" content="skillkit — 个人 Skills 资产库与多 Agent 全局并行分发工具">
+  <meta property="og:description" content="一条命令并行分发原创与第三方 Skills 至 10+ AI Coding Agents。零 npm/npx 运行时依赖，Java 25 与 GraalVM 极速驱动。">
+  <meta property="og:image" content="https://tools.lihu.me/assets/og-image.svg">
+  <meta property="og:site_name" content="li-tools">
+  <meta property="og:locale" content="zh_CN">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="skillkit — 个人 Skills 资产库与多 Agent 全局并行分发工具">
+  <meta name="twitter:description" content="Claude、Codex、Cursor、Gemini、OpenCode、Antigravity 的统一 Skills 资产库。零运行时依赖。">
+  <meta name="twitter:image" content="https://tools.lihu.me/assets/og-image.svg">
+
+  <!-- Schema.org JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "skillkit",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "macOS, Linux, Windows 11",
+        "description": "现代跨平台 AI Agent Skills 资产库管理与并行分发 CLI 工具，基于 Java 25 与 GraalVM，零 npm/npx 依赖。",
+        "url": "https://tools.lihu.me/skillkit/index_zh.html",
+        "license": "https://opensource.org/licenses/Apache-2.0",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "lihuu",
+          "url": "https://github.com/lihuu"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "li-tools",
+            "item": "https://tools.lihu.me/index_zh.html"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "skillkit",
+            "item": "https://tools.lihu.me/skillkit/index_zh.html"
+          }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "什么是 skillkit？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "skillkit 是一款零依赖的 CLI 工具，基于 Java 25 与 GraalVM Native Image 构建，用于管理个人的 AI Agent Skills 资产库。支持一键将原创或第三方 skills 全局并行分发至所有受支持的 AI Coding Agents（Claude Code、Codex、Cursor、Gemini CLI、OpenCode、Antigravity 等），并提供严格的作用域提交与远端推送，无需外部 skills、npm 或 npx 命令。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "使用 skillkit 需要安装 Node.js、npm 或 npx 吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "完全不需要。skillkit 编译为单文件原生可执行程序，零运行时依赖。它直接调用系统原生 Git 进行远端仓库拉取，并使用 Java 25 虚拟线程执行高并发并行分发与更新，彻底免除 Node.js 运行时的臃肿以及 npm 锁文件冲突。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "skillkit 支持哪些 AI Coding Agent？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "一次 install 或 update 操作可同时覆盖 10 个主流 Agent 环境：Codex、Pi、ZCode、Claude Code、Qwen Code、Cursor、Gemini CLI、Hermes、OpenCode 和 Antigravity。共享目标路径会自动去重与合并管理。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "skillkit 如何防止覆盖手改文件并保护无关 Git 暂存？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "skillkit 在覆盖或卸载前会校验文件内容摘要与安装状态，被手动编辑过的目标目录会被保护并拒绝覆盖。在执行 'skillkit push' 时，自动提交仅严格限定在 skills/ 目录和 skillkit.json，绝不影响工作区中其他无关代码的暂存状态。"
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              accent: '#a855f7'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0b0f19; }
+    .glass-card {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(14, 165, 233, 0.15);
+    }
+    .glow-cyan {
+      box-shadow: 0 0 60px -15px rgba(14, 165, 233, 0.22);
+    }
+  </style>
+</head>
+<body class="text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-black">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800/80 sticky top-0 z-50 bg-[#0b0f19]/80 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <a href="../index_zh.html" class="text-xs font-mono px-2 py-1 bg-slate-800 text-slate-400 rounded hover:text-white transition">li-tools/</a>
+        <div class="h-4 w-[1px] bg-slate-800"></div>
+        <span class="font-bold text-lg tracking-tight flex items-center gap-2">
+          <span class="w-6 h-6 rounded bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-sm font-mono font-bold border border-cyan-500/30">⚡</span>
+          skillkit
+        </span>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">v0.3.0</span>
+      </div>
+
+      <nav class="flex items-center space-x-6 text-sm">
+        <a href="#agents" class="text-slate-400 hover:text-white transition">支持的 Agent</a>
+        <a href="#features" class="text-slate-400 hover:text-white transition">核心特性</a>
+        <a href="#install" class="text-slate-400 hover:text-white transition">安装方式</a>
+        <a href="#commands" class="text-slate-400 hover:text-white transition">命令手册</a>
+        <a href="#faq" class="text-slate-400 hover:text-white transition">常见问答</a>
+        <a href="../tokenkit/index_zh.html" class="text-slate-400 hover:text-amber-400 transition flex items-center gap-1.5">
+          <span>tokenkit</span>
+          <span class="text-xs">↗</span>
+        </a>
+        <a href="../certkit/index_zh.html" class="text-slate-400 hover:text-emerald-400 transition flex items-center gap-1.5">
+          <span>certkit</span>
+          <span class="text-xs">↗</span>
+        </a>
+        <a href="../gpgkit/index_zh.html" class="text-slate-400 hover:text-indigo-400 transition flex items-center gap-1.5">
+          <span>gpgkit</span>
+          <span class="text-xs">↗</span>
+        </a>
+        <a href="index.html" class="px-2.5 py-1 text-xs font-mono font-semibold rounded-md bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/30 transition flex items-center gap-1.5" title="Switch to English">
+          <span>🌐</span> English
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="max-w-6xl mx-auto px-6 pt-16 pb-24">
+    <div class="text-center max-w-3xl mx-auto mb-14">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-mono mb-6">
+        <span>⚡</span> 10+ 主流 Agent 一键分发 • Java 25 虚拟线程并行 • 零 npm/npx 依赖
+      </div>
+      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+        个人 <span class="bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-400 bg-clip-text text-transparent">Skills 资产库</span> 与多 Agent 分发利器。
+      </h1>
+      <p class="text-lg text-slate-400 leading-relaxed">
+        告别割裂繁复的 Agent 配置目录与脆弱的软链脚本。以个人 Git 仓库为中心，统一管理原创与第三方 Skills，利用虚拟线程一键并行分发至全生态 AI 编程助手。
+      </p>
+    </div>
+
+    <!-- Terminal Window Demo -->
+    <div class="max-w-3xl mx-auto glass-card rounded-xl overflow-hidden shadow-2xl glow-cyan mb-16">
+      <div class="bg-slate-900/90 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-3 h-3 rounded-full bg-rose-500/80"></div>
+          <div class="w-3 h-3 rounded-full bg-amber-500/80"></div>
+          <div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+          <span class="text-xs font-mono text-slate-500 ml-2">skillkit 终端工作流演示</span>
+        </div>
+        <span class="text-xs font-mono text-slate-500">zsh</span>
+      </div>
+      <div class="p-6 font-mono text-sm leading-relaxed overflow-x-auto text-slate-300">
+        <!-- Step 1: Install own skill -->
+        <div class="flex items-center gap-2 text-slate-500 mb-2">
+          <span class="text-cyan-400">~</span>
+          <span class="text-slate-400">$</span>
+          <span class="text-white">skillkit install my-custom-skill</span>
+        </div>
+        <div class="text-slate-400 mb-4 pl-4 border-l-2 border-cyan-500/30">
+          <div class="text-emerald-400">✔ 从个人仓库 skills/ 自动发现 'my-custom-skill'</div>
+          <div class="text-slate-300">✔ 已同步分发至 8 个全局 Agent 目录 (Claude Code, Codex, Cursor, Gemini CLI, OpenCode, Antigravity...)</div>
+        </div>
+
+        <!-- Step 2: Install external skill with upstream tracking -->
+        <div class="flex items-center gap-2 text-slate-500 mb-2">
+          <span class="text-cyan-400">~</span>
+          <span class="text-slate-400">$</span>
+          <span class="text-white">skillkit install web-search --repo owner/community-skills</span>
+        </div>
+        <div class="text-slate-400 mb-4 pl-4 border-l-2 border-indigo-500/30">
+          <div>ℹ 已解析上游提交 7f3b89a (https://github.com/owner/community-skills)</div>
+          <div class="text-emerald-400">✔ 自动在 skillkit.json 记录来源元数据，并部署至所有 Agent 目标</div>
+        </div>
+
+        <!-- Step 3: Parallel Update -->
+        <div class="flex items-center gap-2 text-slate-500 mb-2">
+          <span class="text-cyan-400">~</span>
+          <span class="text-slate-400">$</span>
+          <span class="text-white">skillkit update --jobs 8</span>
+        </div>
+        <div class="text-slate-400 mb-4 pl-4 border-l-2 border-sky-500/30">
+          <div class="text-slate-300">⚡ 使用 8 个虚拟线程并行拉取并校验 14 项 skills（耗时 184ms）</div>
+          <div class="text-emerald-400">✔ 所有已安装 Agent Skills 均已处于最新状态</div>
+        </div>
+
+        <!-- Step 4: Publish -->
+        <div class="flex items-center gap-2 text-slate-500 mb-2">
+          <span class="text-cyan-400">~</span>
+          <span class="text-slate-400">$</span>
+          <span class="text-white">skillkit push -m "feat: 新增 my-custom-skill 与 web-search 上游"</span>
+        </div>
+        <div class="text-slate-400 pl-4 border-l-2 border-emerald-500/30">
+          <div>ℹ 自动提交仅包含 skills/ 和 skillkit.json（其他暂存区改动完好保留）</div>
+          <div class="text-emerald-400">✔ 成功推送至个人私有源 origin/main</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Supported Agents Grid -->
+    <div id="agents" class="max-w-5xl mx-auto mb-24">
+      <div class="text-center mb-10">
+        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">单次安装，全生态自动广播（Fan-Out）</h2>
+        <p class="text-slate-400 text-sm">无需手动记忆每个 Agent 的专属路径。skillkit 自动识别并分发到所有主流 Agent 目录，共享路径自动去重合并。</p>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3.5">
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">🤖</div>
+          <div class="font-bold text-sm text-white">Codex / Pi</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.agents/skills</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">🧠</div>
+          <div class="font-bold text-sm text-white">Claude Code</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.claude/skills</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">✨</div>
+          <div class="font-bold text-sm text-white">Gemini CLI</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.gemini/skills</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">🎯</div>
+          <div class="font-bold text-sm text-white">Cursor</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.cursor/skills</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">🌌</div>
+          <div class="font-bold text-sm text-white">Antigravity</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.gemini/antigravity</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">💻</div>
+          <div class="font-bold text-sm text-white">OpenCode</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.config/opencode</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">⚡</div>
+          <div class="font-bold text-sm text-white">Hermes</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.hermes/skills</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">🌐</div>
+          <div class="font-bold text-sm text-white">Qwen Code</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.qwen/skills</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">🚀</div>
+          <div class="font-bold text-sm text-white">ZCode</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">~/.agents/skills</div>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center border-cyan-500/20">
+          <div class="text-xl mb-1">🔗</div>
+          <div class="font-bold text-sm text-white">共享目录</div>
+          <div class="text-[10px] font-mono text-slate-400 mt-1">智能路径去重</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Core Features Grid -->
+    <div id="features" class="max-w-5xl mx-auto mb-24">
+      <div class="text-center mb-12">
+        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">专为多 Agent 开发者打造的核心工程设计</h2>
+        <p class="text-slate-400 text-sm">追求极致的安全防护、毫秒级响应以及遵循常规文件管理习惯。</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        <!-- Feature 1 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl font-bold mb-4">
+            🚀
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-cyan-300 transition">零 npm/npx 臃肿依赖</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            基于 GraalVM Native Image 编译为单文件原生可执行程序。无需 Node.js 运行时，彻底告别脆弱的 npm 包依赖网络与幽灵锁文件。
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl font-bold mb-4">
+            📁
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-cyan-300 transition">双轨内容架构设计</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            原创草稿以常规文件放在 <code class="text-cyan-300">skills/</code> 自动发现；第三方依赖以元数据记录在 <code class="text-cyan-300">skillkit.json</code>。无繁琐的导入或注册流程。
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl font-bold mb-4">
+            ⚡
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-cyan-300 transition">Java 25 虚拟线程高并发</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            利用 Project Loom 虚拟线程并发执行来源解析与快照下载（<code class="text-cyan-300">--jobs 8</code>），非阻塞、有界并发，毫秒级响应。
+          </p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl font-bold mb-4">
+            🛡️
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-cyan-300 transition">作用域推送保护机制</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            <code class="text-cyan-300">skillkit push</code> 严格仅自动提交 <code class="text-cyan-300">skills/</code> 与 <code class="text-cyan-300">skillkit.json</code> 路径，绝不污染或误提工作区中的其他代码修改。
+          </p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl font-bold mb-4">
+            🔒
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-cyan-300 transition">本地手改防覆盖屏障</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            通过 <code class="text-cyan-300">.skillkit-state.json</code> 维护加密内容摘要。如果你在某个 Agent 目录里手动修改了该 Skill，工具会智能识别并拒绝静默覆盖。
+          </p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl font-bold mb-4">
+            🤖
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-cyan-300 transition">原生 Agent Skill 协议</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            全面适配 agentskills.io 标准。支持 <code class="text-cyan-300">skillkit list --json</code> 机器可读输出，AI Coding Agent 可自主感知和调度。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Commands Reference Section -->
+    <div id="commands" class="max-w-5xl mx-auto mb-24">
+      <div class="text-center mb-10">
+        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">精炼的 5 大命令体系</h2>
+        <p class="text-slate-400 text-sm">满足从本地编写、依赖追踪、批量并行更新到私有源发布的完整闭环。</p>
+      </div>
+
+      <div class="space-y-4">
+        <!-- Command 1 -->
+        <div class="glass-card p-5 rounded-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="font-mono text-cyan-300 text-sm font-semibold flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-cyan-500/20 border border-cyan-500/30 text-xs">install</span>
+              <span>skillkit install &lt;names...&gt; [--repo &lt;source&gt;] [--symlink] [--jobs &lt;n&gt;]</span>
+            </div>
+            <span class="text-xs font-mono text-slate-500">复制或软链分发至全部 10 个 Agent 目录</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            安装原创 Skill（从 <code class="text-slate-200">skills/</code> 自动发现）或外部仓库项（指定 <code class="text-slate-200">--repo owner/repo</code>）。外部安装会自动记录来源、路径与 commit 到 <code class="text-slate-200">skillkit.json</code>。
+          </p>
+        </div>
+
+        <!-- Command 2 -->
+        <div class="glass-card p-5 rounded-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="font-mono text-cyan-300 text-sm font-semibold flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-cyan-500/20 border border-cyan-500/30 text-xs">update</span>
+              <span>skillkit update [names...] [--jobs &lt;n&gt;] [--dry-run]</span>
+            </div>
+            <span class="text-xs font-mono text-slate-500">并行刷新已安装的全部或指定 Skills</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            比对本地原稿改动与上游 Git 远端最新提交，通过有界虚拟线程高并发拉取并同步到各 Agent（默认并发数为 4）。
+          </p>
+        </div>
+
+        <!-- Command 3 -->
+        <div class="glass-card p-5 rounded-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="font-mono text-cyan-300 text-sm font-semibold flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-cyan-500/20 border border-cyan-500/30 text-xs">uninstall</span>
+              <span>skillkit uninstall &lt;names...&gt; [--dry-run]</span>
+            </div>
+            <span class="text-xs font-mono text-slate-500">全局干净卸载，保护原稿记录</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            从所有 Agent 目标中安全清理对应目录，同时完整保留个人 <code class="text-slate-200">skills/</code> 原稿与 <code class="text-slate-200">skillkit.json</code> 来源配置。
+          </p>
+        </div>
+
+        <!-- Command 4 -->
+        <div class="glass-card p-5 rounded-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="font-mono text-cyan-300 text-sm font-semibold flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-cyan-500/20 border border-cyan-500/30 text-xs">list</span>
+              <span>skillkit list [--json]</span>
+            </div>
+            <span class="text-xs font-mono text-slate-500">全局安装状态与版本概览</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            清晰列出所有已分发技能的安装模式（复制/软链）、来源仓库、解析提交版本以及所托管的 Agent 目录列表。
+          </p>
+        </div>
+
+        <!-- Command 5 -->
+        <div class="glass-card p-5 rounded-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="font-mono text-cyan-300 text-sm font-semibold flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-cyan-500/20 border border-cyan-500/30 text-xs">push</span>
+              <span>skillkit push [-m &lt;msg&gt;] [--repo &lt;dest&gt;] [--dry-run]</span>
+            </div>
+            <span class="text-xs font-mono text-slate-500">一键发布至个人 Git 私有源</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            普通目录首次使用自动初始化 Git 并配置 origin；自动提交 <code class="text-slate-200">skills/</code> 和 <code class="text-slate-200">skillkit.json</code> 的新增、修改与删除，安全推送到远端。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Installation Section -->
+    <div id="install" class="max-w-4xl mx-auto mb-24">
+      <div class="text-center mb-10">
+        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">极速安装指引</h2>
+        <p class="text-slate-400 text-sm">单文件原生可执行程序。无需 JVM，无需 npm，无需 Python 环境。</p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-6">
+        <!-- Shell / Direct -->
+        <div class="glass-card p-6 rounded-xl border-cyan-500/20">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-bold text-sm text-white">macOS 与 Linux (一键脚本)</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">curl</span>
+          </div>
+          <div class="bg-black/60 rounded-lg p-3 font-mono text-xs text-cyan-300 border border-slate-800 mb-3 overflow-x-auto">
+            curl -fsSL https://tools.lihu.me/install.sh | bash -s skillkit
+          </div>
+          <p class="text-xs text-slate-400">直接下载对应架构的原生可执行二进制至 <code class="text-slate-300">~/.local/bin/skillkit</code>。</p>
+        </div>
+
+        <!-- Windows PowerShell -->
+        <div class="glass-card p-6 rounded-xl border-cyan-500/20">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-bold text-sm text-white">Windows 11 (PowerShell)</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">irm</span>
+          </div>
+          <div class="bg-black/60 rounded-lg p-3 font-mono text-xs text-cyan-300 border border-slate-800 mb-3 overflow-x-auto">
+            irm https://tools.lihu.me/install.ps1 | iex
+          </div>
+          <p class="text-xs text-slate-400">全自动解压 Windows 64位 原生二进制并写入用户级环境变量 PATH。</p>
+        </div>
+
+        <!-- Homebrew -->
+        <div class="glass-card p-6 rounded-xl border-cyan-500/20">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-bold text-sm text-white">Homebrew Tap (macOS / Linux)</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">brew</span>
+          </div>
+          <div class="bg-black/60 rounded-lg p-3 font-mono text-xs text-cyan-300 border border-slate-800 mb-3 overflow-x-auto">
+            brew install lihuu/tap/skillkit
+          </div>
+          <p class="text-xs text-slate-400">官方维护的 Homebrew Formula，支持跟随版本更新。</p>
+        </div>
+
+        <!-- Scoop -->
+        <div class="glass-card p-6 rounded-xl border-cyan-500/20">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-bold text-sm text-white">Scoop Bucket (Windows)</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">scoop</span>
+          </div>
+          <div class="bg-black/60 rounded-lg p-3 font-mono text-xs text-cyan-300 border border-slate-800 mb-3 overflow-x-auto">
+            scoop install skillkit
+          </div>
+          <p class="text-xs text-slate-400">Windows 开发者的极佳包管理选择。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div id="faq" class="max-w-4xl mx-auto mb-20">
+      <h2 class="text-2xl font-bold tracking-tight text-white mb-8 text-center">常见问题解答</h2>
+      <div class="space-y-4">
+        <div class="glass-card p-6 rounded-xl">
+          <h3 class="font-bold text-base text-white mb-2">skillkit 与社区现有的 npm/npx 类 Skills 管理工具有什么本质不同？</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            社区方案通常依赖数百兆的 Node.js 运行时环境，通过 npm 下载大量间接依赖，容易产生全局状态冲突且操作繁琐。skillkit 是一个体积不足 30MB 的单文件原生二进制，借助 Java 25 原生编译与系统 Git 交互，直接面向 10 个主流 Agent 目录进行广播，原生支持作用域 Git 提交，无任何运行时负担。
+          </p>
+        </div>
+
+        <div class="glass-card p-6 rounded-xl">
+          <h3 class="font-bold text-base text-white mb-2">支持从 GitHub 私有仓库中安装 Skills 吗？</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            完全支持。skillkit 底层直接调用本机的 <code class="text-cyan-300">git</code> 命令行工具，天然复用你现有的 SSH Key、GitHub CLI (<code class="text-cyan-300">gh</code>) 凭据与 Git 签名配置，工具自身不窃取、不保存也不中转任何私钥或 Token。
+          </p>
+        </div>
+
+        <div class="glass-card p-6 rounded-xl">
+          <h3 class="font-bold text-base text-white mb-2">当多个 Agent 共享同一个路径时，skillkit 会重复写入吗？</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            不会。skillkit 在写入前会先对所有解析后的绝对路径进行合并与去重（如 Codex 与 Pi 共享的 <code class="text-cyan-300">~/.agents/skills/</code>），同一物理路径在单次操作中仅执行一次文件写入，并统一维护状态记录。
+          </p>
+        </div>
+
+        <div class="glass-card p-6 rounded-xl">
+          <h3 class="font-bold text-base text-white mb-2">支持软链接（Symlink）安装模式吗？</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            支持。只需在安装时加上 <code class="text-cyan-300">--symlink</code> 参数，skillkit 就会将各 Agent 目录软链至本地原稿或固化提交的缓存快照。后续执行 update 时，工具会自动保持各技能已设定的安装模式。
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-[#070b13] py-12 text-slate-400 text-xs font-mono">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-2">
+        <span class="text-white font-bold">li-tools</span>
+        <span>•</span>
+        <span>skillkit</span>
+        <span>•</span>
+        <span>Apache 2.0 许可证</span>
+      </div>
+      <div class="flex items-center space-x-6">
+        <a href="https://github.com/lihuu/li-tools" target="_blank" rel="noopener" class="hover:text-white transition">GitHub</a>
+        <a href="../llms.txt" class="hover:text-cyan-400 transition">llms.txt</a>
+        <a href="SKILL.md" class="hover:text-cyan-400 transition">Agent Skill 协议</a>
+        <a href="../sitemap.xml" class="hover:text-white transition">站点地图</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
