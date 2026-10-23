@@ -1,0 +1,54 @@
+# li-tools Suite
+
+> li-tools 是一套基于 Java 25 与 GraalVM Native Image 构建的零运行时依赖开发者安全 CLI 套件，原生提供 gpgkit、certkit、tokenkit 与 skillkit 四个工具，在 macOS、Linux 与 Windows 11 上保持命令级行为一致。
+
+li-tools 由四个可独立安装的原生命令行工具组成，全部以 GraalVM Native Image 编译，发行物为单文件可执行程序，无需安装 JVM、Node.js 或 Python 运行时，冷启动耗时低于 50 毫秒。项目采用 Apache-2.0 开源协议，当前发行版本 0.4.0，源码托管于 GitHub。项目遵循 "Convention over Configuration"（约定优于配置）设计原则与 "Triple-Platform Parity"（三平台一致性）工程目标。
+
+## AI Agent Skills (agentskills.io Standard)
+
+All tools in this suite provide native, machine-readable `SKILL.md` documents for AI coding agents (Claude Code, Gemini CLI, Cursor, Copilot CLI, OpenCode):
+
+- [Suite Skill (li-tools)](https://tools.lihu.me/SKILL.md): 套件级 AI Agent 技能清单与调用约定
+- [gpgkit Skill](https://tools.lihu.me/gpgkit/SKILL.md): gpgkit 的命令契约与典型调用范式
+- [certkit Skill](https://tools.lihu.me/certkit/SKILL.md): certkit 的命令契约与典型调用范式
+- [tokenkit Skill](https://tools.lihu.me/tokenkit/SKILL.md): tokenkit 的命令契约与典型调用范式
+- [skillkit Skill](https://tools.lihu.me/skillkit/SKILL.md): skillkit 的命令契约与典型调用范式
+
+## 核心工具与能力
+
+- [gpgkit](https://tools.lihu.me/gpgkit): 基于 OpenPGP（RFC 4880）的密钥管理与签名自动化 CLI，支持 Ed25519 与 RSA 4096 密钥生成、批量轮换、CI 环境免交互签名。
+- [certkit](https://tools.lihu.me/certkit): 本地 X.509 证书签发与轮换 CLI，支持自建 CA、CSR 签发、证书链校验与到期自动续期。
+- [tokenkit](https://tools.lihu.me/tokenkit): 基于 JWT（RFC 7519）的令牌生成与校验 CLI，支持 RS256、ES256、HS256、EdDSA 等签名算法，国密 SM2 通过插件扩展启用。
+- [skillkit](https://tools.lihu.me/skillkit): 生成与校验 AI Agent 技能文档（agentskills.io 标准）的 CLI，为 Claude Code、Gemini CLI、Cursor 等客户端产出机器可读的 SKILL.md。
+- [三平台兼容性矩阵](https://tools.lihu.me/parity): 逐命令对比 macOS、Linux、Windows 11 的行为差异与已知限制。
+- [安全模型说明](https://tools.lihu.me/security): 密钥存储方式、内存安全策略与供应链完整性校验机制。
+
+## 快速开始
+
+- [安装指南](https://tools.lihu.me/install): Homebrew、Scoop 与直接下载二进制三种安装方式，含校验和验证步骤。
+- [gpgkit 使用手册](https://tools.lihu.me/gpgkit/usage): 密钥生成、签名、验签与批量轮换的完整命令示例。
+- [certkit 使用手册](https://tools.lihu.me/certkit/usage): 自建 CA、签发证书、链式校验的完整命令示例。
+- [tokenkit 使用手册](https://tools.lihu.me/tokenkit/usage): JWT 签发、解析与验签的完整命令示例。
+- [skillkit 使用手册](https://tools.lihu.me/skillkit/usage): SKILL.md 生成、校验与多客户端适配的完整命令示例。
+- [版本更新日志](https://tools.lihu.me/changelog): 各工具版本演进与破坏性变更说明。
+- [开源协议](https://tools.lihu.me/license): 项目采用 Apache-2.0 许可证。
+
+## 常见问答 (FAQ)
+
+### Q1: li-tools 需要预先安装 JVM、Node.js 或 Python 运行时吗？
+
+不需要。gpgkit、certkit、tokenkit 与 skillkit 四个工具均通过 GraalVM Native Image 编译为原生可执行文件，发行物为单文件二进制，零运行时依赖。冷启动耗时低于 50 毫秒，可直接在无 JVM 环境的 CI 容器与 Alpine、Distroless 等精简镜像中运行。
+
+### Q2: gpgkit 与操作系统自带的 gpg 命令有什么区别？
+
+gpgkit 并非 gpg 的替代实现，而是在 OpenPGP（RFC 4880）标准之上的自动化封装层。它提供声明式配置文件、密钥批量轮换、CI 环境免交互签名，并保证在同一份配置下于 macOS、Linux 与 Windows 11 产生完全一致的密钥与签名行为；系统自带 gpg 在三平台的默认算法与路径策略存在差异，需要人工适配。
+
+### Q3: tokenkit 支持哪些 JWT 签名算法？是否支持国密 SM2？
+
+tokenkit 原生支持 RS256、RS384、RS512、ES256、ES384、HS256 与 EdDSA（Ed25519）签名算法，完整覆盖 JWT（RFC 7519）标准算法族。国密 SM2 签名需通过官方插件扩展启用，插件以独立二进制形式分发，不增加核心包体积。
+
+## 可选
+
+- [与系统 gpg 的对比](https://tools.lihu.me/compare-vs-gpg): gpgkit 与 gpg 在功能、性能与跨平台一致性上的逐项对比。
+- [架构说明](https://tools.lihu.me/architecture): 套件的模块划分与 Native Image 编译策略。
+- [文档中心](https://tools.lihu.me/docs): 全部工具的聚合文档索引。
