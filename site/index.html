@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>li-tools — Zero-Dependency Developer CLI Suite</title>
-  <meta name="description" content="Zero-dependency developer CLI suite: gpgkit, certkit, tokenkit, skillkit. Java 25 &amp; GraalVM native binaries, same behavior on macOS, Linux, Windows 11.">
+  <title>li-tools — Zero-Dependency Security CLI Suite</title>
+  <meta name="description" content="Zero-dependency security CLI suite: gpgkit, certkit, tokenkit, skillkit. Java 25 &amp; GraalVM native, identical behavior on macOS, Linux, Windows 11.">
   <meta name="keywords" content="developer tools, gpg, ssl, tls, openssl alternative, token manager, api key manager, skill manager, ai agent skills, certkit, gpgkit, tokenkit, skillkit, java 25, graalvm native image, windows 11 certutil, developer experience">
   <meta name="author" content="lihuu">
   <link rel="canonical" href="https://tools.lihu.me/">
@@ -38,26 +38,45 @@
     "@graph": [
       {
         "@type": "SoftwareApplication",
-        "name": "li-tools",
+        "name": "li-tools Suite",
+        "alternateName": "li-tools",
         "applicationCategory": "DeveloperApplication",
+        "applicationSubCategory": "Security CLI",
+        "operatingSystem": "macOS, Linux, Windows 11",
+        "url": "https://tools.lihu.me/",
+        "description": "Zero-dependency developer security CLI suite powered by Java 25 and GraalVM Native Image, featuring gpgkit, certkit, tokenkit, and skillkit with command-level parity on macOS, Linux, and Windows 11.",
         "softwareVersion": "0.4.0",
-        "codeRepository": "https://github.com/lihuu/li-tools",
+        "license": "https://www.apache.org/licenses/LICENSE-2.0",
         "programmingLanguage": "Java 25",
         "runtimePlatform": "GraalVM Native Image",
-        "operatingSystem": "macOS, Linux, Windows 11",
-        "description": "Modern developer CLI toolchain featuring gpgkit, certkit, tokenkit, and skillkit, powered by Java 25 and GraalVM Native Image.",
-        "url": "https://tools.lihu.me/",
-        "license": "https://opensource.org/licenses/Apache-2.0",
+        "codeRepository": "https://github.com/lihuu/li-tools",
+        "sameAs": ["https://tools.lihu.me/SKILL.md"],
         "offers": {
           "@type": "Offer",
           "price": "0",
-          "priceCurrency": "USD"
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock"
         },
         "author": {
           "@type": "Person",
           "name": "lihuu",
           "url": "https://github.com/lihuu"
-        }
+        },
+        "featureList": [
+          "Zero runtime dependency, single-file native binary",
+          "Cold start under 50ms",
+          "Command-level parity on macOS, Linux, and Windows 11",
+          "OpenPGP (RFC 4880) key management via gpgkit",
+          "X.509 certificate issuance and rotation via certkit",
+          "JWT (RFC 7519) token signing and verification via tokenkit",
+          "AI agent SKILL.md generation and validation via skillkit"
+        ],
+        "hasPart": [
+          { "@type": "SoftwareApplication", "name": "gpgkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/gpgkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
+          { "@type": "SoftwareApplication", "name": "certkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/certkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
+          { "@type": "SoftwareApplication", "name": "tokenkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/tokenkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
+          { "@type": "SoftwareApplication", "name": "skillkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/skillkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } }
+        ]
       },
       {
         "@type": "BreadcrumbList",
@@ -75,26 +94,26 @@
         "mainEntity": [
           {
             "@type": "Question",
-            "name": "What is li-tools?",
+            "name": "li-tools 需要预先安装 JVM、Node.js 或 Python 运行时吗？",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "li-tools is a collection of zero-runtime-dependency developer security CLI tools designed to eliminate the cognitive burden of archaic commands. It includes gpgkit for GPG key lifecycle management, certkit for zero-config SSL/TLS certificates, tokenkit for encrypted universal API tokens, and skillkit for personal AI agent skills management."
+              "text": "不需要。gpgkit、certkit、tokenkit 与 skillkit 四个工具均通过 GraalVM Native Image 编译为原生可执行文件，发行物为单文件二进制，零运行时依赖。冷启动耗时低于 50 毫秒，可直接在无 JVM 环境的 CI 容器与 Alpine、Distroless 等精简镜像中运行。"
             }
           },
           {
             "@type": "Question",
-            "name": "Does li-tools require Java or JVM to be installed?",
+            "name": "gpgkit 与操作系统自带的 gpg 命令有什么区别？",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "No. All tools in the li-tools matrix are compiled ahead-of-time using GraalVM Native Image into self-contained standalone binary executables. No JVM or JRE is required."
+              "text": "gpgkit 并非 gpg 的替代实现，而是在 OpenPGP（RFC 4880）标准之上的自动化封装层。它提供声明式配置文件、密钥批量轮换、CI 环境免交互签名，并保证在同一份配置下于 macOS、Linux 与 Windows 11 产生完全一致的密钥与签名行为。"
             }
           },
           {
             "@type": "Question",
-            "name": "What tools are included in li-tools?",
+            "name": "tokenkit 支持哪些 JWT 签名算法？是否支持国密 SM2？",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "The suite currently includes gpgkit (GPG key lifecycle & backup), certkit (SSL/TLS certs & local CA), tokenkit (encrypted token manager with sub-10ms shell injection), and skillkit (personal skills collection hub and parallel fanout to 10+ AI agents)."
+              "text": "tokenkit 原生支持 RS256、RS384、RS512、ES256、ES384、HS256 与 EdDSA（Ed25519）签名算法，完整覆盖 JWT（RFC 7519）标准算法族。国密 SM2 签名需通过官方插件扩展启用，插件以独立二进制形式分发，不增加核心包体积。"
             }
           }
         ]
@@ -331,6 +350,56 @@
           <p class="text-xs text-slate-400 leading-relaxed">
             Java 25 architecture compiled with GraalVM Native Image into self-contained single executables. Sub-millisecond startup, no JRE required.
           </p>
+        </div>
+      </div>
+
+      <!-- Triple-Platform Parity Specification Matrix Table -->
+      <div class="mt-8 glass-card p-6 rounded-2xl overflow-hidden border border-slate-800">
+        <h4 class="font-bold text-base mb-4 text-white flex items-center gap-2">
+          <span>⚖️</span> Triple-Platform Parity Specification Matrix
+        </h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-mono text-slate-300">
+            <thead>
+              <tr class="border-b border-slate-700/80 text-slate-400">
+                <th class="py-2.5 px-3">Tool</th>
+                <th class="py-2.5 px-3">Primary Standard</th>
+                <th class="py-2.5 px-3">macOS Backend</th>
+                <th class="py-2.5 px-3">Linux Backend</th>
+                <th class="py-2.5 px-3">Windows 11 Backend</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60">
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-indigo-400">gpgkit</td>
+                <td class="py-2.5 px-3">OpenPGP (RFC 4880)</td>
+                <td class="py-2.5 px-3">Apple Keychain / CLI</td>
+                <td class="py-2.5 px-3">0600 GNUPGHOME / Agent</td>
+                <td class="py-2.5 px-3">GnuPG Win32 / Git GPG</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-emerald-400">certkit</td>
+                <td class="py-2.5 px-3">X.509 PKIX (RFC 5280)</td>
+                <td class="py-2.5 px-3">System Keychain trust</td>
+                <td class="py-2.5 px-3">update-ca-certificates</td>
+                <td class="py-2.5 px-3">certutil -user (no UAC)</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-amber-400">tokenkit</td>
+                <td class="py-2.5 px-3">JWT (RFC 7519) + AES-GCM</td>
+                <td class="py-2.5 px-3">Embedded SQLite + PBKDF2</td>
+                <td class="py-2.5 px-3">Embedded SQLite + PBKDF2</td>
+                <td class="py-2.5 px-3">Embedded SQLite + DPAPI</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-cyan-400">skillkit</td>
+                <td class="py-2.5 px-3">agentskills.io Standard</td>
+                <td class="py-2.5 px-3">10+ Agents (~/.claude, etc.)</td>
+                <td class="py-2.5 px-3">10+ Agents (~/.claude, etc.)</td>
+                <td class="py-2.5 px-3">10+ Agents (%USERPROFILE%)</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
