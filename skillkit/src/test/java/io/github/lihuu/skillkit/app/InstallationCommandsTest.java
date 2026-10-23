@@ -170,6 +170,31 @@ class InstallationCommandsTest {
     }
 
     @Test
+    void fallbackRepositoryRecordsSourceAndLinksToCacheUnderSkillkitHome() throws IOException, InterruptedException {
+        Path remote = temporary.resolve("git-source");
+        Files.createDirectories(remote.resolve("skills/external"));
+        Files.writeString(remote.resolve("skills/external/SKILL.md"), "cached content");
+        git(remote, "init", "-b", "main");
+        git(remote, "add", "skills");
+        git(remote, "commit", "-m", "first");
+        StringWriter out = new StringWriter();
+        StringWriter err = new StringWriter();
+        int code = CliApplication.run(new String[]{"install", "external", "--repo", remote.toUri().toString(),
+                        "--ref", "main", "--symlink"}, home(), temporary,
+                new PrintWriter(out, true), new PrintWriter(err, true), Map.of(), false);
+        assertEquals(0, code, err.toString());
+        assertTrue(Files.readString(home().resolve(".skillkit/repository/skillkit.json")).contains("external"));
+        Path installed = home().resolve(".agents/skills/external");
+        assertEquals("cached content", Files.readString(installed.resolve("SKILL.md")));
+        assertTrue(Files.isDirectory(home().resolve(".skillkit/cache")), "Downloads must stay under .skillkit/cache");
+        assertTrue(installed.toRealPath().startsWith(home().resolve(".skillkit/cache").toRealPath()));
+        assertTrue(Files.isDirectory(home().resolve(".skillkit/cache/git")));
+        assertTrue(Files.isDirectory(home().resolve(".skillkit/cache/staging")));
+        assertFalse(Files.exists(home().resolve(".cache/skillkit")));
+        assertFalse(Files.exists(home().resolve(".skillkit/repository/skills/external")));
+    }
+
+    @Test
     void gitSourceTracksBranchUpdatesAndSymlinkUsesVersionedSnapshot() throws IOException, InterruptedException {
         Path remote = temporary.resolve("git-upstream");
         Files.createDirectories(remote.resolve("skills/external"));
