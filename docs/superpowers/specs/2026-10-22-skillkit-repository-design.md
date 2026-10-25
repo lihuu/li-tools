@@ -1,6 +1,6 @@
 # skillkit：个人 skills 仓库与安装管理（当前需求）
 
-状态：以用户最新简化要求为准。公开命令只有 install、update、uninstall、list、push；install 统一安装自己的或别人的 skill，默认全局分发到所有内置 Agent 目标。无需 import、track、untrack、初始化或 Agent 选择步骤。存储保持本地内容与上游元数据两种方式。
+状态：以 2026-10-23 用户最新要求为准。公开命令为 install、update、uninstall、list、push、pull。pull 首次克隆个人仓库，之后快进拉取；install 默认分发到公共 ~/.agents/skills，可用 --agent 指定多个目标。无需 import、track、untrack 或初始化命令。存储保持本地内容与上游元数据两种方式，缓存统一在 ~/.skillkit/cache。以下历史设计以 skillkit/SPEC.md 的当前契约为准。
 
 ## 用户已明确的目标
 
@@ -58,8 +58,9 @@
 - `uninstall <names...>` 全局卸载，保留原稿和来源记录。
 - `list` 显示安装状态。
 - `push` 自动提交个人内容和来源记录并发布远端，供其他机器作为私有源安装。
+- `pull` 首次将个人仓库克隆到本地，后续从 origin 快进拉取；保留未提交内容及分歧提交，不自动分发。
 
-所有操作面向全部内置全局目录，不增加 Agent、项目作用域选择。目录创建、复制和 Git 版本管理继续使用常规文件/Git 操作。保留 copy/symlink、批量并行、来源版本记录与受管理目标保护；不扩展在线市场、npm 同步或启动其他 Agent。
+安装默认写公共 ~/.agents/skills；--agent 可指定多个 Agent，按其标准全局目录分发，共享路径去重。更新、查询和卸载默认维护所有既有安装，也可按 Agent 过滤。不增加项目作用域。个人仓库的拉取/发布由 pull/push 提供，其余文件编辑和 Git 历史操作继续使用常规工具。保留 copy/symlink、批量并行、来源版本记录与受管理目标保护；不扩展在线市场、npm 同步或启动其他 Agent。
 
 ## 并行与数据一致性约束
 
