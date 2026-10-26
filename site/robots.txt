@@ -3,6 +3,26 @@
 
 User-agent: *
 Allow: /
+# Disallow scripts from crawling across all agents
+Disallow: /*.sh$
+Disallow: /*.ps1$
+
+# Google Web Search Crawler
+# Prevent indexing non-HTML specifications/scripts in search result snippets
+User-agent: Googlebot
+Allow: /
+Disallow: /*.sh$
+Disallow: /*.ps1$
+Disallow: /*.md$
+Disallow: /llms*.txt
+
+# Microsoft Bing & Copilot Crawler
+User-agent: Bingbot
+Allow: /
+Disallow: /*.sh$
+Disallow: /*.ps1$
+Disallow: /*.md$
+Disallow: /llms*.txt
 
 # OpenAI Search & Crawlers
 User-agent: GPTBot
@@ -22,15 +42,8 @@ Allow: /
 User-agent: PerplexityBot
 Allow: /
 
-# Google Search & Gemini
-User-agent: Googlebot
-Allow: /
-
+# Google Gemini / Vertex / AI Training
 User-agent: Google-Extended
-Allow: /
-
-# Microsoft Bing & Copilot
-User-agent: Bingbot
 Allow: /
 
 # Apple Intelligence
