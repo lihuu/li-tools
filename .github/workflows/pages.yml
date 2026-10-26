@@ -73,15 +73,12 @@ jobs:
                   "https://tools.lihu.me/index_zh.html",
                   "https://tools.lihu.me/skillkit/",
                   "https://tools.lihu.me/skillkit/index_zh.html",
-                  "https://tools.lihu.me/skillkit/SKILL.md",
                   "https://tools.lihu.me/tokenkit/",
                   "https://tools.lihu.me/tokenkit/index_zh.html",
                   "https://tools.lihu.me/gpgkit/",
                   "https://tools.lihu.me/gpgkit/index_zh.html",
                   "https://tools.lihu.me/certkit/",
-                  "https://tools.lihu.me/certkit/index_zh.html",
-                  "https://tools.lihu.me/llms.txt",
-                  "https://tools.lihu.me/llms-full.txt"
+                  "https://tools.lihu.me/certkit/index_zh.html"
               ]
           }
           data = json.dumps(payload).encode("utf-8")
