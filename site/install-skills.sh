@@ -24,6 +24,7 @@ Options:
   --default, -d       Install only to standard directory (~/.agents/skills) [Default]
   --all, -a           Install to all detected agent directories
   --target <dir>, -t  Install to a custom directory
+  --skip, -s, --none  Do not install skills and exit cleanly
   --force, -f         Force reinstallation even if skills are already up to date
   --help, -h          Show this help message
 EOF
@@ -52,6 +53,10 @@ while [[ $# -gt 0 ]]; do
             CUSTOM_DIR="$2"
             shift 2
             ;;
+        --skip|-s|--none)
+            echo "ℹ Skipped skill installation."
+            exit 0
+            ;;
         --force|-f)
             FORCE=true
             shift
@@ -76,8 +81,9 @@ if [[ "$EXPLICIT_MODE" -eq 0 ]] && [[ -t 0 ]] && [[ -r /dev/tty ]]; then
     echo "  1) Standard agent directory: ${STANDARD_DIR} (Recommended, default)"
     echo "  2) All detected agent directories (~/.agents/skills, ~/.gemini/skills, ~/.claude/skills, etc.)"
     echo "  3) Custom directory"
+    echo "  4) Skip / Do not install skills (不安装，直接退出)"
     echo ""
-    read -r -p "Enter choice [1-3] (default 1): " choice </dev/tty || choice=""
+    read -r -p "Enter choice [1-4] (default 1): " choice </dev/tty || choice=""
     case "$choice" in
         2)
             MODE="all"
@@ -91,6 +97,10 @@ if [[ "$EXPLICIT_MODE" -eq 0 ]] && [[ -t 0 ]] && [[ -r /dev/tty ]]; then
                 echo "No directory entered, falling back to standard directory."
                 MODE="default"
             fi
+            ;;
+        4|[qQ]|[nN]|skip)
+            echo "ℹ Skipped skill installation."
+            exit 0
             ;;
         *)
             MODE="default"

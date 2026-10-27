@@ -5,6 +5,8 @@ Param(
     [switch]$Default,
     [switch]$All,
     [string]$Target,
+    [switch]$Skip,
+    [switch]$None,
     [switch]$Force,
     [switch]$Help
 )
@@ -23,9 +25,15 @@ Options:
   -Default       Install only to standard directory (~/.agents/skills) [Default]
   -All           Install to all detected agent directories
   -Target <dir>  Install to a custom directory
+  -Skip, -None   Do not install skills and exit cleanly
   -Force         Force reinstallation even if skills are already up to date
   -Help          Show this help message
 "@
+    exit 0
+}
+
+if ($Skip -or $None) {
+    Write-Host "ℹ Skipped skill installation." -ForegroundColor Yellow
     exit 0
 }
 
@@ -51,8 +59,9 @@ if ($All) {
         Write-Host "  1) Standard agent directory: $standardDir (Recommended, default)" -ForegroundColor Yellow
         Write-Host "  2) All detected agent directories (~/.agents/skills, ~/.gemini/skills, ~/.claude/skills, etc.)"
         Write-Host "  3) Custom directory"
+        Write-Host "  4) Skip / Do not install skills (不安装，直接退出)"
         Write-Host ""
-        $choice = Read-Host "Enter choice [1-3] (default 1)"
+        $choice = Read-Host "Enter choice [1-4] (default 1)"
         if ($choice -eq "2") {
             $mode = "all"
         } elseif ($choice -eq "3") {
@@ -61,6 +70,9 @@ if ($All) {
                 $mode = "custom"
                 $Target = $customPath
             }
+        } elseif ($choice -eq "4" -or $choice -eq "q" -or $choice -eq "n" -or $choice -eq "skip") {
+            Write-Host "ℹ Skipped skill installation." -ForegroundColor Yellow
+            exit 0
         }
     } catch {
         $mode = "default"
