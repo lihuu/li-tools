@@ -1,78 +1,143 @@
 # li-tools AI Agent Skill Installer for Windows PowerShell
 # Installs gpgkit, certkit, tokenkit & skillkit skills into AI agent skill directories.
+[CmdletBinding()]
+Param(
+    [switch]$Default,
+    [switch]$All,
+    [string]$Target,
+    [switch]$Skip,
+    [switch]$None,
+    [switch]$Force,
+    [switch]$Help
+)
+
 $ErrorActionPreference = "Stop"
 
+if ($Help) {
+    Write-Host @"
+li-tools Agent Skills Installer for Windows PowerShell
+
+Usage:
+  .\install-skills.ps1 [options]
+  irm https://tools.lihu.me/install-skills.ps1 | iex
+
+Options:
+  -Default       Install only to standard directory (~/.agents/skills) [Default]
+  -All           Install to all detected agent directories
+  -Target <dir>  Install to a custom directory
+  -Skip, -None   Do not install skills and exit cleanly
+  -Force         Force reinstallation even if skills are already up to date
+  -Help          Show this help message
+"@
+    exit 0
+}
+
+if ($Skip -or $None) {
+    Write-Host "ℹ Skipped skill installation." -ForegroundColor Yellow
+    exit 0
+}
+
 $baseUrl = "https://tools.lihu.me"
-
-Write-Host "🤖 Installing li-tools Agent Skills (gpgkit, certkit, tokenkit & skillkit)..." -ForegroundColor Cyan
-
 $userHome = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
+$standardDir = [System.IO.Path]::Combine($userHome, ".agents", "skills")
+
+$scriptDir = $PSScriptRoot
+if ([string]::IsNullOrWhiteSpace($scriptDir) -and $MyInvocation.MyCommand.Path) {
+    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+}
+
+$mode = "default"
+if ($All) {
+    $mode = "all"
+} elseif (![string]::IsNullOrWhiteSpace($Target)) {
+    $mode = "custom"
+} elseif ([Environment]::UserInteractive -and -not $Default -and $Host.UI.RawUI.KeyAvailable -ne $null) {
+    try {
+        Write-Host "🤖 li-tools Agent Skills Installer" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "Select target installation directory:"
+        Write-Host "  1) Standard agent directory: $standardDir (Recommended, default)" -ForegroundColor Yellow
+        Write-Host "  2) All detected agent directories (~/.agents/skills, ~/.gemini/skills, ~/.claude/skills, etc.)"
+        Write-Host "  3) Custom directory"
+        Write-Host "  4) Skip / Do not install skills (不安装，直接退出)"
+        Write-Host ""
+        $choice = Read-Host "Enter choice [1-4] (default 1)"
+        if ($choice -eq "2") {
+            $mode = "all"
+        } elseif ($choice -eq "3") {
+            $customPath = Read-Host "Enter custom skills directory path"
+            if (![string]::IsNullOrWhiteSpace($customPath)) {
+                $mode = "custom"
+                $Target = $customPath
+            }
+        } elseif ($choice -eq "4" -or $choice -eq "q" -or $choice -eq "n" -or $choice -eq "skip") {
+            Write-Host "ℹ Skipped skill installation." -ForegroundColor Yellow
+            exit 0
+        }
+    } catch {
+        $mode = "default"
+    }
+}
+
 $targetDirs = @()
-
-# 1. Standard cross-runtime agent directory (~/.agents/skills/)
-$targetDirs += [System.IO.Path]::Combine($userHome, ".agents", "skills")
-
-# 2. Gemini CLI personal skills directory (~/.gemini/skills/)
-$geminiDir = [System.IO.Path]::Combine($userHome, ".gemini", "skills")
-if (Test-Path -Path $geminiDir) {
-    $targetDirs += $geminiDir
-}
-
-# 3. Claude Code skills directory (~/.claude/skills/)
-$claudeDir = [System.IO.Path]::Combine($userHome, ".claude", "skills")
-if (Test-Path -Path $claudeDir) {
-    $targetDirs += $claudeDir
-}
-
-# 4. Workspace-local .ai/skills directory if present
-if (Test-Path -Path ".ai\skills") {
-    $targetDirs += (Get-Item ".ai\skills").FullName
+if ($mode -eq "custom") {
+    $targetDirs += $Target
+} elseif ($mode -eq "all") {
+    $targetDirs += $standardDir
+    $geminiDir = [System.IO.Path]::Combine($userHome, ".gemini", "skills")
+    if (Test-Path -Path $geminiDir) { $targetDirs += $geminiDir }
+    $claudeDir = [System.IO.Path]::Combine($userHome, ".claude", "skills")
+    if (Test-Path -Path $claudeDir) { $targetDirs += $claudeDir }
+    if (Test-Path -Path ".ai\skills") { $targetDirs += (Get-Item ".ai\skills").FullName }
+} else {
+    $targetDirs += $standardDir
 }
 
 $uniqueDirs = $targetDirs | Select-Object -Unique
 
+Write-Host "🤖 Installing li-tools Agent Skills (gpgkit, certkit, tokenkit & skillkit)..." -ForegroundColor Cyan
+
+$skills = @("gpgkit", "certkit", "tokenkit", "skillkit")
+
 foreach ($dir in $uniqueDirs) {
     Write-Host "  → Target: $dir" -ForegroundColor DarkGray
-    $gpgkitDir = [System.IO.Path]::Combine($dir, "gpgkit")
-    $certkitDir = [System.IO.Path]::Combine($dir, "certkit")
-    $tokenkitDir = [System.IO.Path]::Combine($dir, "tokenkit")
-    $skillkitDir = [System.IO.Path]::Combine($dir, "skillkit")
+    foreach ($skill in $skills) {
+        $destDir = [System.IO.Path]::Combine($dir, $skill)
+        $destFile = [System.IO.Path]::Combine($destDir, "SKILL.md")
+        New-Item -ItemType Directory -Force -Path $destDir | Out-Null
 
-    New-Item -ItemType Directory -Force -Path $gpgkitDir | Out-Null
-    New-Item -ItemType Directory -Force -Path $certkitDir | Out-Null
-    New-Item -ItemType Directory -Force -Path $tokenkitDir | Out-Null
-    New-Item -ItemType Directory -Force -Path $skillkitDir | Out-Null
+        $localSrc = if ($scriptDir) { [System.IO.Path]::Combine($scriptDir, $skill, "SKILL.md") } else { $null }
 
-    try {
-        $gpgkitDest = [System.IO.Path]::Combine($gpgkitDir, "SKILL.md")
-        Invoke-RestMethod -Uri "$baseUrl/gpgkit/SKILL.md" -OutFile $gpgkitDest
-        Write-Host "    ✔ Installed gpgkit skill -> $gpgkitDest" -ForegroundColor Green
-    } catch {
-        Write-Warning "    ⚠ Failed to download gpgkit skill: $_"
-    }
-
-    try {
-        $certkitDest = [System.IO.Path]::Combine($certkitDir, "SKILL.md")
-        Invoke-RestMethod -Uri "$baseUrl/certkit/SKILL.md" -OutFile $certkitDest
-        Write-Host "    ✔ Installed certkit skill -> $certkitDest" -ForegroundColor Green
-    } catch {
-        Write-Warning "    ⚠ Failed to download certkit skill: $_"
-    }
-
-    try {
-        $tokenkitDest = [System.IO.Path]::Combine($tokenkitDir, "SKILL.md")
-        Invoke-RestMethod -Uri "$baseUrl/tokenkit/SKILL.md" -OutFile $tokenkitDest
-        Write-Host "    ✔ Installed tokenkit skill -> $tokenkitDest" -ForegroundColor Green
-    } catch {
-        Write-Warning "    ⚠ Failed to download tokenkit skill: $_"
-    }
-
-    try {
-        $skillkitDest = [System.IO.Path]::Combine($skillkitDir, "SKILL.md")
-        Invoke-RestMethod -Uri "$baseUrl/skillkit/SKILL.md" -OutFile $skillkitDest
-        Write-Host "    ✔ Installed skillkit skill -> $skillkitDest" -ForegroundColor Green
-    } catch {
-        Write-Warning "    ⚠ Failed to download skillkit skill: $_"
+        if ($localSrc -and (Test-Path -Path $localSrc)) {
+            if (-not $Force -and (Test-Path -Path $destFile)) {
+                $srcHash = (Get-FileHash -Path $localSrc -Algorithm SHA256).Hash
+                $destHash = (Get-FileHash -Path $destFile -Algorithm SHA256).Hash
+                if ($srcHash -eq $destHash) {
+                    Write-Host "    ✔ $skill skill is already up to date -> $destFile (skipped)" -ForegroundColor DarkGray
+                    continue
+                }
+            }
+            Copy-Item -Path $localSrc -Destination $destFile -Force
+            Write-Host "    ✔ Installed $skill skill -> $destFile (local)" -ForegroundColor Green
+        } else {
+            try {
+                $tempFile = [System.IO.Path]::GetTempFileName()
+                Invoke-RestMethod -Uri "$baseUrl/$skill/SKILL.md" -OutFile $tempFile
+                if (-not $Force -and (Test-Path -Path $destFile)) {
+                    $newHash = (Get-FileHash -Path $tempFile -Algorithm SHA256).Hash
+                    $destHash = (Get-FileHash -Path $destFile -Algorithm SHA256).Hash
+                    if ($newHash -eq $destHash) {
+                        Remove-Item -Path $tempFile -Force -ErrorAction SilentlyContinue
+                        Write-Host "    ✔ $skill skill is already up to date -> $destFile (skipped)" -ForegroundColor DarkGray
+                        continue
+                    }
+                }
+                Move-Item -Path $tempFile -Destination $destFile -Force
+                Write-Host "    ✔ Installed $skill skill -> $destFile" -ForegroundColor Green
+            } catch {
+                Write-Warning "    ⚠ Failed to download $skill skill: $_"
+            }
+        }
     }
 }
 

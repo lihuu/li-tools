@@ -4,16 +4,59 @@
 # Installs gpgkit, certkit, tokenkit, and skillkit to ~/.local/bin
 # Usage:
 #   curl -fsSL https://tools.lihu.me/install.sh | bash
-#   curl -fsSL https://tools.lihu.me/install.sh | bash -s gpgkit
-#   curl -fsSL https://tools.lihu.me/install.sh | bash -s certkit
-#   curl -fsSL https://tools.lihu.me/install.sh | bash -s tokenkit
-#   curl -fsSL https://tools.lihu.me/install.sh | bash -s skillkit
+#   curl -fsSL https://tools.lihu.me/install.sh | bash -s -- gpgkit
+#   curl -fsSL https://tools.lihu.me/install.sh | bash -s -- --force
 # ==============================================================================
 set -euo pipefail
 
 REPO="lihuu/li-tools"
 INSTALL_DIR="${HOME}/.local/bin"
-TARGET="${1:-all}"
+TARGET="all"
+FORCE=false
+
+show_help() {
+  cat << 'EOF'
+li-tools binary installer
+
+Usage:
+  install.sh [target] [options]
+  curl -fsSL https://tools.lihu.me/install.sh | bash -s -- [target] [options]
+
+Targets:
+  all                 Install all tools (gpgkit, certkit, tokenkit, skillkit) [Default]
+  gpgkit              Install GPG key & signature management CLI
+  certkit             Install TLS certificate & local CA management CLI
+  tokenkit            Install encrypted universal token manager CLI
+  skillkit            Install AI agent skills distribution CLI
+
+Options:
+  --force, -f         Force reinstallation even if already installed and up to date
+  --help, -h          Show this help message
+EOF
+}
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --force|-f)
+      FORCE=true
+      shift
+      ;;
+    --help|-h)
+      show_help
+      exit 0
+      ;;
+    gpgkit|certkit|tokenkit|skillkit|all)
+      TARGET="$1"
+      shift
+      ;;
+    *)
+      echo "❌ Unknown argument: $1" >&2
+      show_help >&2
+      exit 1
+      ;;
+  esac
+done
 
 echo "⚡ li-tools installer"
 echo "Target directory: ${INSTALL_DIR}"
@@ -37,12 +80,32 @@ esac
 
 echo "Detected platform: ${PLATFORM}-${ARCH_SUFFIX}"
 
+# Resolve latest version from GitHub Releases for idempotency checking
+LATEST_TAG=""
+if [ "${FORCE}" != true ]; then
+  LATEST_TAG="$(curl -fsSL -o /dev/null -w "%{url_effective}" "https://github.com/${REPO}/releases/latest" 2>/dev/null | awk -F'/' '{print $NF}' || echo "")"
+fi
+LATEST_VERSION="${LATEST_TAG#v}"
+
 install_tool() {
   local tool="$1"
   local binary_name="${tool}"
   local dest="${INSTALL_DIR}/${binary_name}"
   local archive_asset="${tool}-${PLATFORM}-${ARCH_SUFFIX}.tar.gz"
   local raw_asset="${tool}-${PLATFORM}-${ARCH_SUFFIX}"
+
+  # Idempotency check: skip download if already installed and version matches latest release
+  if [ "${FORCE}" != true ] && [ -x "${dest}" ]; then
+    local current_version
+    current_version="$("${dest}" --version 2>/dev/null | awk '{print $2}' || echo "")"
+    if [ -n "${current_version}" ] && [ -n "${LATEST_VERSION}" ] && [ "${current_version}" = "${LATEST_VERSION}" ]; then
+      echo "✔ ${tool} is already installed and up to date (${current_version}) -> ${dest} (skipped)"
+      return 0
+    elif [ -z "${LATEST_VERSION}" ] && [ -n "${current_version}" ]; then
+      echo "✔ ${tool} is already installed (${current_version}) -> ${dest} (skipped, use --force to reinstall)"
+      return 0
+    fi
+  fi
 
   echo "⬇️  Downloading ${tool} from GitHub Releases..."
   local archive_url="https://github.com/${REPO}/releases/latest/download/${archive_asset}"
@@ -80,15 +143,11 @@ case "${TARGET}" in
   skillkit)
     install_tool "skillkit"
     ;;
-  all|"")
+  all)
     install_tool "gpgkit"
     install_tool "certkit"
     install_tool "tokenkit"
     install_tool "skillkit"
-    ;;
-  *)
-    echo "❌ Unknown target: ${TARGET}. Valid targets: all, gpgkit, certkit, tokenkit, skillkit"
-    exit 1
     ;;
 esac
 

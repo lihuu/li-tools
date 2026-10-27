@@ -1,14 +1,34 @@
 # ==============================================================================
 # li-tools installer for Windows 11 (PowerShell)
-# Installs gpgkit.exe and certkit.exe to $HOME\.local\bin
+# Installs gpgkit.exe, certkit.exe, tokenkit.exe, and skillkit.exe to $HOME\.local\bin
 # Usage in PowerShell:
 #   irm https://tools.lihu.me/install.ps1 | iex
+#   .\install.ps1 -Target skillkit -Force
 # ==============================================================================
+[CmdletBinding()]
 param(
-    [string]$Target = "all"
+    [string]$Target = "all",
+    [switch]$Force,
+    [switch]$Help
 )
 
 $ErrorActionPreference = "Stop"
+
+if ($Help) {
+    Write-Host @"
+li-tools Windows Installer
+
+Usage:
+  .\install.ps1 [options]
+  irm https://tools.lihu.me/install.ps1 | iex
+
+Options:
+  -Target <tool>  Install specific tool (all, gpgkit, certkit, tokenkit, skillkit) [Default: all]
+  -Force          Force reinstallation even if already installed and up to date
+  -Help           Show this help message
+"@
+    exit 0
+}
 
 $Repo = "lihuu/li-tools"
 $InstallDir = Join-Path $HOME ".local\bin"
@@ -30,6 +50,20 @@ function Install-Tool([string]$ToolName) {
     $DestPath = Join-Path $InstallDir $BinaryName
     $ZipUrl = "https://github.com/$Repo/releases/latest/download/$ZipAsset"
     $RawUrl = "https://github.com/$Repo/releases/latest/download/$RawAsset"
+
+    # Idempotency check: skip if binary exists and is functional
+    if (-not $Force -and (Test-Path $DestPath)) {
+        try {
+            $verOutput = (& $DestPath --version 2>$null)
+            if ($verOutput) {
+                $currentVer = ($verOutput -split '\s+')[1]
+                Write-Host "✔ $ToolName is already installed ($currentVer) -> $DestPath (skipped, use -Force to reinstall)" -ForegroundColor Green
+                return
+            }
+        } catch {
+            # Continue to download if execution failed
+        }
+    }
 
     Write-Host "⬇️  Downloading $ToolName from GitHub Releases..."
     $installed = $false
