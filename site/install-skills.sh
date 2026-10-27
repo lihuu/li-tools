@@ -10,6 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo
 MODE="default"
 EXPLICIT_MODE=0
 CUSTOM_DIR=""
+FORCE=false
 
 show_help() {
     cat << 'EOF'
@@ -23,6 +24,7 @@ Options:
   --default, -d       Install only to standard directory (~/.agents/skills) [Default]
   --all, -a           Install to all detected agent directories
   --target <dir>, -t  Install to a custom directory
+  --force, -f         Force reinstallation even if skills are already up to date
   --help, -h          Show this help message
 EOF
 }
@@ -49,6 +51,10 @@ while [[ $# -gt 0 ]]; do
             EXPLICIT_MODE=1
             CUSTOM_DIR="$2"
             shift 2
+            ;;
+        --force|-f)
+            FORCE=true
+            shift
             ;;
         --help|-h)
             show_help
@@ -136,12 +142,37 @@ for dir in "${UNIQUE_DIRS[@]}"; do
 
         # If local source file exists in script dir, copy directly; otherwise download
         if [[ -n "$SCRIPT_DIR" ]] && [[ -f "${SCRIPT_DIR}/${skill}/SKILL.md" ]]; then
-            cp "${SCRIPT_DIR}/${skill}/SKILL.md" "${dest_file}"
-            echo "    ✔ Installed ${skill} skill -> ${dest_file} (local)"
-        elif curl -fsSL "${BASE_URL}/${skill}/SKILL.md" -o "${dest_file}"; then
-            echo "    ✔ Installed ${skill} skill -> ${dest_file}"
+            local_src="${SCRIPT_DIR}/${skill}/SKILL.md"
+            if [[ "$FORCE" != true ]] && [[ -f "${dest_file}" ]] && cmp -s "${local_src}" "${dest_file}"; then
+                echo "    ✔ ${skill} skill is already up to date -> ${dest_file} (skipped)"
+            else
+                cp "${local_src}" "${dest_file}"
+                if [[ "$FORCE" == true ]]; then
+                    echo "    ✔ Reinstalled ${skill} skill -> ${dest_file} (local)"
+                elif [[ -f "${dest_file}" ]]; then
+                    echo "    ✔ Updated ${skill} skill -> ${dest_file} (local)"
+                else
+                    echo "    ✔ Installed ${skill} skill -> ${dest_file} (local)"
+                fi
+            fi
         else
-            echo "    ⚠ Failed to download ${skill} skill" >&2
+            tmp_file="$(mktemp)"
+            if curl -fsSL "${BASE_URL}/${skill}/SKILL.md" -o "${tmp_file}"; then
+                if [[ "$FORCE" != true ]] && [[ -f "${dest_file}" ]] && cmp -s "${tmp_file}" "${dest_file}"; then
+                    echo "    ✔ ${skill} skill is already up to date -> ${dest_file} (skipped)"
+                    rm -f "${tmp_file}"
+                else
+                    mv "${tmp_file}" "${dest_file}"
+                    if [[ "$FORCE" == true ]]; then
+                        echo "    ✔ Reinstalled ${skill} skill -> ${dest_file}"
+                    else
+                        echo "    ✔ Installed ${skill} skill -> ${dest_file}"
+                    fi
+                fi
+            else
+                rm -f "${tmp_file}"
+                echo "    ⚠ Failed to download ${skill} skill" >&2
+            fi
         fi
     done
 done

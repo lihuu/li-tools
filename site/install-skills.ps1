@@ -5,6 +5,7 @@ Param(
     [switch]$Default,
     [switch]$All,
     [string]$Target,
+    [switch]$Force,
     [switch]$Help
 )
 
@@ -22,6 +23,7 @@ Options:
   -Default       Install only to standard directory (~/.agents/skills) [Default]
   -All           Install to all detected agent directories
   -Target <dir>  Install to a custom directory
+  -Force         Force reinstallation even if skills are already up to date
   -Help          Show this help message
 "@
     exit 0
@@ -95,11 +97,30 @@ foreach ($dir in $uniqueDirs) {
         $localSrc = if ($scriptDir) { [System.IO.Path]::Combine($scriptDir, $skill, "SKILL.md") } else { $null }
 
         if ($localSrc -and (Test-Path -Path $localSrc)) {
+            if (-not $Force -and (Test-Path -Path $destFile)) {
+                $srcHash = (Get-FileHash -Path $localSrc -Algorithm SHA256).Hash
+                $destHash = (Get-FileHash -Path $destFile -Algorithm SHA256).Hash
+                if ($srcHash -eq $destHash) {
+                    Write-Host "    ✔ $skill skill is already up to date -> $destFile (skipped)" -ForegroundColor DarkGray
+                    continue
+                }
+            }
             Copy-Item -Path $localSrc -Destination $destFile -Force
             Write-Host "    ✔ Installed $skill skill -> $destFile (local)" -ForegroundColor Green
         } else {
             try {
-                Invoke-RestMethod -Uri "$baseUrl/$skill/SKILL.md" -OutFile $destFile
+                $tempFile = [System.IO.Path]::GetTempFileName()
+                Invoke-RestMethod -Uri "$baseUrl/$skill/SKILL.md" -OutFile $tempFile
+                if (-not $Force -and (Test-Path -Path $destFile)) {
+                    $newHash = (Get-FileHash -Path $tempFile -Algorithm SHA256).Hash
+                    $destHash = (Get-FileHash -Path $destFile -Algorithm SHA256).Hash
+                    if ($newHash -eq $destHash) {
+                        Remove-Item -Path $tempFile -Force -ErrorAction SilentlyContinue
+                        Write-Host "    ✔ $skill skill is already up to date -> $destFile (skipped)" -ForegroundColor DarkGray
+                        continue
+                    }
+                }
+                Move-Item -Path $tempFile -Destination $destFile -Force
                 Write-Host "    ✔ Installed $skill skill -> $destFile" -ForegroundColor Green
             } catch {
                 Write-Warning "    ⚠ Failed to download $skill skill: $_"
