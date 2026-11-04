@@ -37,7 +37,7 @@ def main():
     suffix = ".exe" if os.name == "nt" else ""
     binaries = {
         tool: REPOSITORY / tool / "target" / (tool + suffix)
-        for tool in ("gpgkit", "certkit", "tokenkit", "skillkit")
+        for tool in ("gpgkit", "certkit", "tokenkit", "skillkit", "dukit")
     }
     for binary in binaries.values():
         if not binary.is_file():
@@ -102,6 +102,18 @@ def main():
         skills_repo.mkdir()
         run([skillkit, "--repository", str(skills_repo), "list"], directory, environment)
         print("skillkit: skills repository list PASS", flush=True)
+
+        dukit = binaries["dukit"]
+        scan_root = directory / "dukit-tree" / "inner"
+        scan_root.mkdir(parents=True)
+        (scan_root / "payload.bin").write_bytes(b"x" * 4096)
+        report = run([dukit, "scan", str(scan_root), "--depth", "1"], directory, environment)
+        assert "payload.bin" in report and "dukit-tree" in report, report
+        document = json.loads(run([dukit, "scan", str(scan_root), "--json"], directory, environment))
+        assert document["meta"]["tool"] == "dukit", document
+        assert document["tree"]["size"] == 4096, document
+        run([dukit, "browse", str(scan_root)], directory, environment, expected=2)
+        print("dukit: scan report and JSON export PASS", flush=True)
 
 
 if __name__ == "__main__":

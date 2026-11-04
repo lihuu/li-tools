@@ -26,6 +26,7 @@
 | **[`certkit`](certkit/)** | Modern SSL/TLS certificate Swiss Army knife | Convention over configuration, trusted local Root CA, smart domain/IP SAN auto-sniffing, single-argument format conversion, triple-platform trust | `Active` |
 | **[`tokenkit`](tokenkit/)** | Modern cross-platform encrypted token manager | Embedded encrypted SQLite, AES-256-GCM + PBKDF2, sub-10ms terminal shell injection (`tokenkit env`), cross-machine encrypted migration bundles | `Active` |
 | **[`skillkit`](skillkit/)** | Local agent skill management | Local content + metadata-only upstreams, parallel install/update, personal repository pull/push, shared or selected agent targets | `Active` |
+| **[`dukit`](dukit/)** | Cross-platform disk usage analyzer | ncdu-inspired scan reports, apparent-size semantics with hardlink dedup, JSON export, line-based interactive browser | `Active` |
 
 ---
 
@@ -76,6 +77,9 @@ li-tools/
 │   ├── SPEC.md                 # Contract specifications
 │   ├── build-native.sh         # GraalVM Native Image compilation script
 │   └── src/
+├── dukit/                      # Cross-platform disk usage analyzer (Pure JDK filesystem scanning)
+│   ├── build-native.sh         # GraalVM Native Image compilation script
+│   └── src/
 ├── .github/workflows/          # CI/CD and GitHub Pages automation
 └── README.md
 ```
@@ -103,13 +107,14 @@ Choose your preferred package manager or installer:
 brew tap lihuu/tap
 
 # Install tools
-brew install gpgkit certkit tokenkit skillkit
+brew install gpgkit certkit tokenkit skillkit dukit
 
 # Or install individually without tapping first:
 brew install lihuu/tap/gpgkit
 brew install lihuu/tap/certkit
 brew install lihuu/tap/tokenkit
 brew install lihuu/tap/skillkit
+brew install lihuu/tap/dukit
 ```
 
 ### 2. Scoop (Windows)
@@ -118,7 +123,7 @@ brew install lihuu/tap/skillkit
 scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket
 
 # Install tools
-scoop install gpgkit certkit tokenkit skillkit
+scoop install gpgkit certkit tokenkit skillkit dukit
 ```
 
 ### 3. One-Line Script Installer (macOS, Linux & Windows 11)

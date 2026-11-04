@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dukit — Cross-Platform Disk Usage Analyzer CLI</title>
+  <meta name="description" content="Find what is eating your disk. ncdu-inspired directory scanning with a line-based interactive browser and JSON export, compiled to a single native binary for macOS, Linux and Windows.">
+  <meta name="keywords" content="disk usage, disk analyzer, du, ncdu, ncdu alternative, disk space, directory size, disk usage analyzer, java 25, graalvm native image, windows disk usage, cross-platform">
+  <meta name="author" content="lihuu">
+  <link rel="canonical" href="https://tools.lihu.me/dukit/">
+  <link rel="alternate" hreflang="en" href="https://tools.lihu.me/dukit/">
+  <link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/dukit/index_zh.html">
+  <link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/dukit/">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="agent-skill" type="text/markdown" href="https://tools.lihu.me/dukit/SKILL.md">
+  <link rel="help" type="text/plain" href="https://tools.lihu.me/llms.txt" title="LLM Context">
+  <meta name="google-site-verification" content="epNE0uQpK-nZdlM1cicMcKft0wK4cvnStftRZS5B8CU">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tools.lihu.me/dukit/">
+  <meta property="og:title" content="dukit — Cross-Platform Disk Usage Analyzer CLI">
+  <meta property="og:description" content="Scan directory trees, export JSON, browse line by line. One static binary, identical numbers on macOS, Linux and Windows.">
+  <meta property="og:image" content="https://tools.lihu.me/assets/og-image.svg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="dukit — Cross-Platform Disk Usage Analyzer">
+  <meta property="og:site_name" content="li-tools">
+  <meta property="og:locale" content="en_US">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="dukit — Cross-Platform Disk Usage Analyzer CLI">
+  <meta name="twitter:description" content="ncdu-inspired disk usage analysis with a line-based interactive browser. Zero runtime dependencies.">
+  <meta name="twitter:image" content="https://tools.lihu.me/assets/og-image.svg">
+  <meta name="twitter:image:alt" content="dukit — Cross-Platform Disk Usage Analyzer">
+
+  <!-- Schema.org JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "dukit",
+        "applicationCategory": "DeveloperApplication",
+        "softwareVersion": "0.4.0",
+        "codeRepository": "https://github.com/lihuu/li-tools",
+        "programmingLanguage": "Java 25",
+        "runtimePlatform": "GraalVM Native Image",
+        "operatingSystem": "macOS, Linux, Windows 11",
+        "description": "Cross-platform disk usage analyzer with scan reports, JSON export and a line-based interactive browser, compiled to a single native binary.",
+        "url": "https://tools.lihu.me/dukit/",
+        "image": "https://tools.lihu.me/assets/og-image.svg",
+        "datePublished": "2026-11-05",
+        "dateModified": "2026-11-05",
+        "license": "https://opensource.org/licenses/Apache-2.0",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "lihuu",
+          "url": "https://github.com/lihuu"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "li-tools",
+            "item": "https://tools.lihu.me/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "dukit",
+            "item": "https://tools.lihu.me/dukit/"
+          }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is dukit?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "dukit is a cross-platform disk usage analyzer inspired by ncdu. It scans a directory tree once, prints a size-sorted report, exports machine-readable JSON, and offers a line-based interactive browser for drilling into the biggest directories. It ships as a single native binary for macOS, Linux and Windows."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Why does dukit report apparent sizes instead of allocated blocks?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The Java standard library exposes no portable allocated-block metric (st_blocks is not reachable through java.nio.file), and per-platform FFI would break the zero-dependency guarantee. dukit therefore reports logical file sizes, which keeps numbers identical across APFS, ext4 and NTFS. Hardlinked content is still counted once per scan, symlinks are never followed, and directory inodes are excluded."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How do dukit numbers compare to du or ncdu?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "dukit reports apparent sizes (like du --apparent-size), counts each hardlinked file's content exactly once per scan, does not follow symlinks and does not add the directory inode's own size. Unreadable paths are reported on stderr while the scan continues."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does the interactive browser work on Windows?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. dukit browse is a line-based REPL (cd <n>, up, top, sort, q) rather than a full-screen curses UI, so it works in every terminal including the classic Windows console, Windows Terminal, and over SSH."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              accent: '#a855f7'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0b0f19; }
+    .glass-card {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(14, 165, 233, 0.15);
+    }
+    .glow-amber {
+      box-shadow: 0 0 60px -15px rgba(245, 158, 11, 0.22);
+    }
+  </style>
+</head>
+<body class="text-slate-100 font-sans antialiased selection:bg-amber-500 selection:text-black">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800/80 sticky top-0 z-50 bg-[#0b0f19]/80 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <a href="../index.html" class="text-xs font-mono px-2 py-1 bg-slate-800 text-slate-400 rounded hover:text-white transition">li-tools/</a>
+        <div class="h-4 w-[1px] bg-slate-800"></div>
+        <span class="font-bold text-lg tracking-tight flex items-center gap-2">
+          <span class="w-6 h-6 rounded bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm font-mono font-bold border border-amber-500/30">💾</span>
+          dukit
+        </span>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">v0.4.0</span>
+      </div>
+
+      <nav class="flex items-center space-x-6 text-sm">
+        <a href="#features" class="text-slate-400 hover:text-white transition">Features</a>
+        <a href="#commands" class="text-slate-400 hover:text-white transition">Commands</a>
+        <a href="#install" class="text-slate-400 hover:text-white transition">Install</a>
+        <a href="#faq" class="text-slate-400 hover:text-white transition">FAQ</a>
+        <a href="../skillkit/index.html" class="text-slate-400 hover:text-cyan-400 transition flex items-center gap-1.5">
+          <span>skillkit</span>
+          <span class="text-xs">↗</span>
+        </a>
+        <a href="../tokenkit/index.html" class="text-slate-400 hover:text-amber-400 transition flex items-center gap-1.5">
+          <span>tokenkit</span>
+          <span class="text-xs">↗</span>
+        </a>
+        <a href="../certkit/index.html" class="text-slate-400 hover:text-emerald-400 transition flex items-center gap-1.5">
+          <span>certkit</span>
+          <span class="text-xs">↗</span>
+        </a>
+        <a href="index_zh.html" class="px-2.5 py-1 text-xs font-mono font-semibold rounded-md bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 transition flex items-center gap-1.5" title="切换为简体中文">
+          <span>🌐</span> 中文
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="max-w-6xl mx-auto px-6 pt-16 pb-24">
+    <div class="text-center max-w-3xl mx-auto mb-14">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-mono mb-6">
+        <span>💾</span> ncdu-Inspired • Pure JDK • Single Native Binary
+      </div>
+      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+        Find What's <span class="bg-gradient-to-r from-amber-400 via-orange-300 to-rose-400 bg-clip-text text-transparent">Eating Your Disk</span>.
+      </h1>
+      <p class="text-lg text-slate-400 leading-relaxed">
+        Scan a directory tree once, get a size-sorted report, drill down interactively or export machine-readable JSON. One static binary, identical numbers on macOS, Linux and Windows.
+      </p>
+    </div>
+
+    <!-- Terminal Window Demo -->
+    <div class="max-w-3xl mx-auto glass-card rounded-xl overflow-hidden shadow-2xl glow-amber mb-16">
+      <div class="bg-slate-900/90 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-3 h-3 rounded-full bg-rose-500/80"></div>
+          <div class="w-3 h-3 rounded-full bg-amber-500/80"></div>
+          <div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+          <span class="text-xs font-mono text-slate-500 ml-2">dukit terminal workflow</span>
+        </div>
+        <span class="text-xs font-mono text-slate-500">zsh</span>
+      </div>
+      <div class="p-6 font-mono text-sm leading-relaxed overflow-x-auto text-slate-300">
+        <!-- Step 1: Scan -->
+        <div class="flex items-center gap-2 text-slate-500 mb-2">
+          <span class="text-amber-400">~</span>
+          <span class="text-slate-400">$</span>
+          <span class="text-white">dukit scan ~/Projects --depth 1</span>
+        </div>
+        <div class="text-slate-400 mb-4 pl-4 border-l-2 border-amber-500/30">
+          <div class="text-slate-300">/Users/li/Projects  18.4 GiB</div>
+          <div class="text-slate-300">├──   14.2 GiB   77.2%  service/</div>
+          <div class="text-slate-300">└──    4.1 GiB   22.3%  prototypes/</div>
+        </div>
+
+        <!-- Step 2: Browse -->
+        <div class="flex items-center gap-2 text-slate-500 mb-2">
+          <span class="text-amber-400">~</span>
+          <span class="text-slate-400">$</span>
+          <span class="text-white">dukit browse ~/Projects</span>
+        </div>
+        <div class="text-slate-400 mb-4 pl-4 border-l-2 border-orange-500/30">
+          <div class="text-slate-300">  1    14.2 GiB   77.2%  service/</div>
+          <div class="text-slate-300">  2     4.1 GiB   22.3%  prototypes/</div>
+          <div class="text-slate-500">cd 1 · up · top · sort size|name|count · q quit</div>
+        </div>
+
+        <!-- Step 3: JSON export -->
+        <div class="flex items-center gap-2 text-slate-500 mb-2">
+          <span class="text-amber-400">~</span>
+          <span class="text-slate-400">$</span>
+          <span class="text-white">dukit scan ~/Projects --json &gt; usage.json</span>
+        </div>
+        <div class="text-slate-400 pl-4 border-l-2 border-emerald-500/30">
+          <div class="text-emerald-400">✔ Machine-readable tree for CI, agents and dashboards</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Core Features Grid -->
+    <div id="features" class="max-w-5xl mx-auto mb-24">
+      <div class="text-center mb-12">
+        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">Honest Numbers, Zero Dependencies</h2>
+        <p class="text-slate-400 text-sm">Engineered around predictable semantics and a single static binary.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        <!-- Feature 1 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
+            🚀
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">Single Native Binary</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Compiled ahead-of-time with GraalVM Native Image. No JVM, no install steps — drop it into CI containers, Alpine images or air-gapped servers.
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
+            🧹
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">Pure JDK, Zero Dependencies</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            One pass of <code class="text-amber-300">Files.walkFileTree</code> with no third-party libraries. Nothing reflective, nothing to configure — the whole engine is auditable in an afternoon.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
+            🧭
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">ncdu-Style Browsing</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            A line-based REPL instead of a curses UI: <code class="text-amber-300">cd &lt;n&gt;</code>, <code class="text-amber-300">up</code>, <code class="text-amber-300">top</code>, <code class="text-amber-300">sort</code>. Works in every terminal, including the classic Windows console and SSH.
+          </p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
+            📤
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">JSON Export</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            <code class="text-amber-300">--json</code> emits the full subtree with per-directory aggregates, written by a zero-reflection streaming writer — agents and CI can consume it directly.
+          </p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
+            ⚖️
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">Honest Size Semantics</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Apparent sizes for cross-platform parity, hardlinked content counted once per scan, symlinks never followed, unreadable paths skipped with a warning instead of aborting.
+          </p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
+            ⏱️
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">Scan Progress</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Interactive terminals get a live in-place counter (files, bytes, current path); piped output stays clean and ANSI-free automatically.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Commands Reference Section -->
+    <div id="commands" class="max-w-5xl mx-auto mb-24">
+      <div class="text-center mb-10">
+        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">Two Commands. That's the Point.</h2>
+        <p class="text-slate-400 text-sm">Everything else is a flag, not a subcommand zoo.</p>
+      </div>
+
+      <div class="space-y-4">
+        <!-- Command 1 -->
+        <div class="glass-card p-5 rounded-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="font-mono text-amber-300 text-sm font-semibold flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-xs">scan</span>
+              <span>dukit scan [path] [--depth &lt;n&gt;] [--exclude &lt;glob&gt;...] [--json]</span>
+            </div>
+            <span class="text-xs font-mono text-slate-500">Size-sorted tree report</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Walks the tree once and prints directories and files ordered by size. <code class="text-slate-200">--depth</code> cuts the display only — sizes always cover whole subtrees. <code class="text-slate-200">--exclude</code> takes repeatable globs: a bare name matches any path component, a pattern with <code class="text-slate-200">/</code> matches relative to the scan root.
+          </p>
+        </div>
+
+        <!-- Command 2 -->
+        <div class="glass-card p-5 rounded-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="font-mono text-amber-300 text-sm font-semibold flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-xs">browse</span>
+              <span>dukit browse [path] [--exclude &lt;glob&gt;...]</span>
+            </div>
+            <span class="text-xs font-mono text-slate-500">Interactive line-based explorer</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Scans first, then lists the biggest entries of the current directory. <code class="text-slate-200">cd &lt;n&gt;</code> descends, <code class="text-slate-200">up</code>/<code class="text-slate-200">top</code> climb back, <code class="text-slate-200">sort size|name|count</code> reorders, <code class="text-slate-200">q</code> quits. Requires an interactive terminal — piped invocations fail fast with a hint toward <code class="text-slate-200">scan</code>.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Installation Section -->
+    <div id="install" class="max-w-4xl mx-auto mb-24">
+      <div class="text-center mb-10">
+        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">Instant Installation</h2>
+        <p class="text-slate-400 text-sm">Standalone native binary. Zero JVM, zero Python, zero scripts to trust.</p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-6">
+        <!-- Shell / Direct -->
+        <div class="glass-card p-6 rounded-xl border-amber-500/20">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-bold text-sm text-white">macOS &amp; Linux (One-Line Script)</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">curl</span>
+          </div>
+          <div class="bg-black/60 rounded-lg p-3 font-mono text-xs text-amber-300 border border-slate-800 mb-3 overflow-x-auto">
+            curl -fsSL https://tools.lihu.me/install.sh | bash -s dukit
+          </div>
+          <p class="text-xs text-slate-400">Downloads the standalone binary directly to <code class="text-slate-300">~/.local/bin/dukit</code>.</p>
+        </div>
+
+        <!-- Windows PowerShell -->
+        <div class="glass-card p-6 rounded-xl border-amber-500/20">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-bold text-sm text-white">Windows 11 (PowerShell)</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">irm</span>
+          </div>
+          <div class="bg-black/60 rounded-lg p-3 font-mono text-xs text-amber-300 border border-slate-800 mb-3 overflow-x-auto">
+            irm https://tools.lihu.me/install.ps1 | iex
+          </div>
+          <p class="text-xs text-slate-400">Automated native Windows 64-bit binary extraction and User PATH update.</p>
+        </div>
+
+        <!-- Homebrew -->
+        <div class="glass-card p-6 rounded-xl border-amber-500/20">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-bold text-sm text-white">Homebrew Tap (macOS / Linux)</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">brew</span>
+          </div>
+          <div class="bg-black/60 rounded-lg p-3 font-mono text-xs text-amber-300 border border-slate-800 mb-3 overflow-x-auto">
+            brew install lihuu/tap/dukit
+          </div>
+          <p class="text-xs text-slate-400">Maintained Formula with automated version updates.</p>
+        </div>
+
+        <!-- Scoop -->
+        <div class="glass-card p-6 rounded-xl border-amber-500/20">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-bold text-sm text-white">Scoop Bucket (Windows)</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">scoop</span>
+          </div>
+          <div class="bg-black/60 rounded-lg p-3 font-mono text-xs text-amber-300 border border-slate-800 mb-3 overflow-x-auto">
+            scoop install dukit
+          </div>
+          <p class="text-xs text-slate-400">First-class Windows developer experience.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div id="faq" class="max-w-4xl mx-auto mb-20">
+      <h2 class="text-2xl font-bold tracking-tight text-white mb-8 text-center">Frequently Asked Questions</h2>
+      <div class="space-y-4">
+        <div class="glass-card p-6 rounded-xl">
+          <h3 class="font-bold text-base text-white mb-2">How do dukit's numbers compare to du or ncdu?</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            dukit reports apparent sizes — the sum of logical file sizes, like <code class="text-amber-300">du --apparent-size</code>. Hardlinked content counts exactly once per scan, symlinks are never followed, and directory inodes add nothing. Unreadable paths are collected as warnings while the scan continues, so a locked directory never hides the rest of the picture.
+          </p>
+        </div>
+
+        <div class="glass-card p-6 rounded-xl">
+          <h3 class="font-bold text-base text-white mb-2">Why apparent sizes instead of allocated blocks?</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            The Java standard library exposes no portable allocated-block metric, and per-platform FFI would break the zero-dependency, zero-native-metadata guarantee this project is built on. Apparent sizes are also the only metric that means the same thing on APFS, ext4 and NTFS — the whole point of dukit being cross-platform.
+          </p>
+        </div>
+
+        <div class="glass-card p-6 rounded-xl">
+          <h3 class="font-bold text-base text-white mb-2">Can dukit delete files like ncdu?</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Not yet — and that is deliberate. Deletion is where an analyzer stops being safe to point at arbitrary paths; dukit v1 only reads. Machine-readable <code class="text-amber-300">--json</code> output makes it easy to script the cleanup you actually want, with your own confirmation rules.
+          </p>
+        </div>
+
+        <div class="glass-card p-6 rounded-xl">
+          <h3 class="font-bold text-base text-white mb-2">Does the browser work over SSH and on Windows?</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Yes. <code class="text-amber-300">dukit browse</code> is a line-based REPL rather than a full-screen curses UI, so it needs nothing but a working stdin: classic Windows console, Windows Terminal, tmux panes and SSH sessions all behave identically.
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-[#070b13] py-12 text-slate-400 text-xs font-mono">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-2">
+        <span class="text-white font-bold">li-tools</span>
+        <span>•</span>
+        <span>dukit</span>
+        <span>•</span>
+        <span>Apache 2.0 License</span>
+      </div>
+      <div class="flex items-center space-x-6">
+        <a href="https://github.com/lihuu/li-tools" target="_blank" rel="noopener" class="hover:text-white transition">GitHub</a>
+        <a href="../llms.txt" class="hover:text-amber-400 transition">llms.txt</a>
+        <a href="SKILL.md" class="hover:text-amber-400 transition">Agent Skill</a>
+        <a href="../sitemap.xml" class="hover:text-white transition">Sitemap</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

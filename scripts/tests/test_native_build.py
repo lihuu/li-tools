@@ -7,7 +7,7 @@ import unittest
 
 
 REPOSITORY = Path(__file__).resolve().parents[2]
-TOOLS = ("gpgkit", "certkit", "tokenkit", "skillkit")
+TOOLS = ("gpgkit", "certkit", "tokenkit", "skillkit", "dukit")
 
 
 class NativeBuildTest(unittest.TestCase):
@@ -29,7 +29,7 @@ class NativeBuildTest(unittest.TestCase):
 set -e
 printf 'maven:%s\n' "$*" >> "$BUILD_CALL_LOG"
 if [ "${FAIL_MAVEN:-0}" != 0 ]; then exit "$FAIL_MAVEN"; fi
-for tool in gpgkit certkit tokenkit skillkit; do
+for tool in gpgkit certkit tokenkit skillkit dukit; do
     mkdir -p "$BUILD_FIXTURE_ROOT/$tool/target"
     : > "$BUILD_FIXTURE_ROOT/$tool/target/$tool.jar"
 done
@@ -93,7 +93,7 @@ exit 1
         self.assertEqual(0, result.returncode, result.stderr)
         calls = self.calls()
         self.assertTrue(calls[0].startswith("maven:"), calls)
-        self.assertIn("-pl gpgkit,certkit,tokenkit,skillkit -am", calls[0])
+        self.assertIn("-pl gpgkit,certkit,tokenkit,skillkit,dukit -am", calls[0])
         self.assertEqual(["native:" + tool for tool in TOOLS], calls[1:])
         for tool in TOOLS:
             self.assertTrue((self.root / tool / "target" / tool).is_file())

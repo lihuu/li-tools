@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # li-tools installer (macOS & Linux)
-# Installs gpgkit, certkit, tokenkit, and skillkit to ~/.local/bin
+# Installs gpgkit, certkit, tokenkit, skillkit, and dukit to ~/.local/bin
 # Usage:
 #   curl -fsSL https://tools.lihu.me/install.sh | bash
 #   curl -fsSL https://tools.lihu.me/install.sh | bash -s -- gpgkit
@@ -23,11 +23,12 @@ Usage:
   curl -fsSL https://tools.lihu.me/install.sh | bash -s -- [target] [options]
 
 Targets:
-  all                 Install all tools (gpgkit, certkit, tokenkit, skillkit) [Default]
+  all                 Install all tools (gpgkit, certkit, tokenkit, skillkit, dukit) [Default]
   gpgkit              Install GPG key & signature management CLI
   certkit             Install TLS certificate & local CA management CLI
   tokenkit            Install encrypted universal token manager CLI
   skillkit            Install AI agent skills distribution CLI
+  dukit               Install cross-platform disk usage analyzer CLI
 
 Options:
   --force, -f         Force reinstallation even if already installed and up to date
@@ -46,7 +47,7 @@ while [[ $# -gt 0 ]]; do
       show_help
       exit 0
       ;;
-    gpgkit|certkit|tokenkit|skillkit|all)
+    gpgkit|certkit|tokenkit|skillkit|dukit|all)
       TARGET="$1"
       shift
       ;;
@@ -143,11 +144,15 @@ case "${TARGET}" in
   skillkit)
     install_tool "skillkit"
     ;;
+  dukit)
+    install_tool "dukit"
+    ;;
   all)
     install_tool "gpgkit"
     install_tool "certkit"
     install_tool "tokenkit"
     install_tool "skillkit"
+    install_tool "dukit"
     ;;
 esac
 
