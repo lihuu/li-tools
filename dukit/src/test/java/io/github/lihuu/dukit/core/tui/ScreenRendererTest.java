@@ -21,10 +21,11 @@ class ScreenRendererTest {
     private DirEntry root;
     private ScanResult scan;
     private TuiState state;
+    private Path base;
 
     @BeforeEach
     void buildTree() throws IOException {
-        Path base = temporary.resolve("tree");
+        base = temporary.resolve("tree");
         Files.createDirectories(base.resolve("alpha/nested"));
         Files.createDirectories(base.resolve("beta"));
         Files.writeString(base.resolve("alpha/big.bin"), "x".repeat(300), StandardCharsets.US_ASCII);
@@ -33,6 +34,43 @@ class ScreenRendererTest {
         scan = new DirectoryScanner(List.of()).scan(base, (files, bytes, dir) -> { });
         root = scan.root();
         state = new TuiState(scan);
+    }
+
+    @Test
+    void tRevealsTheCurrentDirectoriesLargestFiles() throws IOException {
+        TuiState files = stateWithFiles(5);
+        files.handle(Key.ENTER, 6);
+
+        String hidden = String.join("\n", new ScreenRenderer(false).render(files, 80, 10));
+        assertFalse(hidden.contains("big.bin"), "files stay out of the listing until t: " + hidden);
+
+        files.handle(Key.TOGGLE_FILES, 6);
+        List<String> lines = new ScreenRenderer(false).render(files, 80, 10);
+
+        assertTrue(lines.get(1).contains("1 files shown"), lines.get(1));
+        assertTrue(lines.get(3).contains("nested/"), lines.get(3));
+        assertTrue(lines.get(4).contains("big.bin"), lines.get(4));
+        assertFalse(lines.get(4).contains("big.bin/"), "a file has no directory slash: " + lines.get(4));
+        assertTrue(lines.get(9).contains("files(on)"), lines.get(9));
+    }
+
+    @Test
+    void styledFileRowsStillFitTheWidth() throws IOException {
+        TuiState files = stateWithFiles(5);
+        files.handle(Key.ENTER, 6);
+        files.handle(Key.TOGGLE_FILES, 6);
+
+        List<String> lines = new ScreenRenderer(true).render(files, 40, 12);
+
+        for (String line : lines) {
+            String visible = line.replaceAll("\033\\[[0-9;]*m", "");
+            assertTrue(visible.length() <= 40, "visible width exceeded: [" + visible + "]");
+        }
+        assertTrue(lines.get(4).contains("\033[90m"), "file rows are dimmed: " + lines.get(4));
+    }
+
+    private TuiState stateWithFiles(int limit) throws IOException {
+        return new TuiState(new DirectoryScanner(List.of()).scan(base, (files, bytes, dir) -> { }, limit));
     }
 
     @Test

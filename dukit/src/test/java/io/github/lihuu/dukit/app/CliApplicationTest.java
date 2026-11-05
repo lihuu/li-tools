@@ -35,6 +35,7 @@ class CliApplicationTest {
         assertEquals(3, document.metaDirectories);
         assertEquals(List.of("a", "b"), document.childNames);
         assertFalse(document.json.contains("\"top.txt\""), "files are not tree nodes: " + document.json);
+        assertFalse(document.json.contains("topFiles"), "the browser preview is not part of the JSON contract: " + document.json);
     }
 
     @Test

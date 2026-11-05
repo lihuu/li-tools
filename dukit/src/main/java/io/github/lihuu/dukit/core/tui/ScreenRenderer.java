@@ -2,6 +2,8 @@ package io.github.lihuu.dukit.core.tui;
 
 import io.github.lihuu.dukit.core.delete.DeletePlan;
 import io.github.lihuu.dukit.core.model.DirEntry;
+import io.github.lihuu.dukit.core.model.FileEntry;
+import io.github.lihuu.dukit.core.model.TreeEntry;
 import io.github.lihuu.dukit.core.report.HumanBytes;
 import org.jetbrains.annotations.NotNull;
 
@@ -48,14 +50,19 @@ public final class ScreenRenderer {
 
         DirEntry current = state.current();
         lines.add(style(BOLD, fit(state.currentPath() + "  " + HumanBytes.format(current.size()), columns)));
-        lines.add(style(DIM, fit(String.format(Locale.US, "%s in own files · %,d directories · %,d files",
-                HumanBytes.format(current.ownFileSize()), current.dirCount(), current.fileCount()), columns)));
+        String summary = String.format(Locale.US, "%s in own files · %,d directories · %,d files",
+                HumanBytes.format(current.ownFileSize()), current.dirCount(), current.fileCount());
+        if (state.showFiles() && !current.topFiles().isEmpty()) {
+            summary += String.format(Locale.US, " · %,d files shown", current.topFiles().size());
+        }
+        lines.add(style(DIM, fit(summary, columns)));
         lines.add(style(DIM, "─".repeat(columns)));
 
-        List<DirEntry> entries = state.entries();
+        List<TreeEntry> entries = state.entries();
         int listRows = Math.max(1, rows - 4);
         if (entries.isEmpty()) {
-            lines.add(style(DIM, fit("  (no subdirectories)", columns)));
+            String empty = state.showFiles() ? "  (no entries)" : "  (no subdirectories)";
+            lines.add(style(DIM, fit(empty, columns)));
             for (int i = 1; i < listRows; i++) {
                 lines.add("");
             }
@@ -99,22 +106,27 @@ public final class ScreenRenderer {
         return lines;
     }
 
-    private @NotNull String entryLine(@NotNull List<DirEntry> entries, int index,
+    private @NotNull String entryLine(@NotNull List<TreeEntry> entries, int index,
             boolean selected, long parentSize, int columns) {
-        DirEntry entry = entries.get(index);
+        TreeEntry entry = entries.get(index);
         double percent = parentSize > 0 ? 100.0 * entry.size() / parentSize : 0.0;
         String prefix = String.format(Locale.US, "%s %3d  %9s  %5.1f%%  ",
                 selected ? "▶" : " ", index + 1, HumanBytes.format(entry.size()), percent);
-        String line = fit(prefix + entry.name() + "/", columns);
+        String label = entry instanceof DirEntry ? entry.name() + "/" : entry.name();
+        String line = fit(prefix + label, columns);
         if (selected && color) {
             return REVERSE + padRight(line, columns) + RESET;
+        }
+        if (entry instanceof FileEntry && color) {
+            return DIM + line + RESET;
         }
         return line;
     }
 
     private @NotNull String footer(@NotNull TuiState state, int count, int columns) {
         String position = count == 0 ? "0/0" : (state.selected() + 1) + "/" + count;
-        String help = "↑↓ move  ⏎ enter  ⌫ back  s sort(" + state.sortKey().label() + ")  d delete  q quit";
+        String help = "↑↓ move  ⏎ enter  ⌫ back  s sort(" + state.sortKey().label()
+                + ")  d delete  t files(" + (state.showFiles() ? "on" : "off") + ")  q quit";
         int helpWidth = Math.max(0, columns - position.length() - 1);
         return fit(padRight(help, helpWidth) + " " + position, columns);
     }

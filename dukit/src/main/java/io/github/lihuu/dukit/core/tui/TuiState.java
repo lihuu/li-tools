@@ -3,7 +3,10 @@ package io.github.lihuu.dukit.core.tui;
 import io.github.lihuu.dukit.core.browse.SortKey;
 import io.github.lihuu.dukit.core.delete.DeletePlan;
 import io.github.lihuu.dukit.core.model.DirEntry;
+import io.github.lihuu.dukit.core.model.TreeEntry;
+import io.github.lihuu.dukit.core.model.FileEntry;
 import io.github.lihuu.dukit.core.model.ScanResult;
+import io.github.lihuu.dukit.core.model.TreeEntry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,11 +24,19 @@ import java.util.List;
  * <p>The state is a trail of directories plus a cursor. Entries are re-sorted on every
  * access, so changing the sort key never leaves the cursor pointing at a stale index beyond
  * the list bounds.
+ *
+ * <p>Pressing {@code t} appends the scanner's bounded preview of the current directory's
+ * largest direct files to the listing. Those rows are selectable but not enterable; the
+ * navigation trail only ever contains directories.
  */
 public final class TuiState {
+    /** How many of a directory's largest direct files the interactive listing retains. */
+    public static final int TOP_FILES = 10;
+
     private final Path rootPath;
     private final Deque<DirEntry> trail = new ArrayDeque<>();
     private SortKey sortKey = SortKey.SIZE;
+    private boolean showFiles;
     private int selected;
     private int scroll;
     private @Nullable DeletePlan pendingDelete;
@@ -44,10 +55,18 @@ public final class TuiState {
         return current;
     }
 
-    public @NotNull List<DirEntry> entries() {
-        List<DirEntry> ordered = new ArrayList<>(current().children());
-        ordered.sort(sortKey.comparator());
-        return ordered;
+    public @NotNull List<TreeEntry> entries() {
+        List<DirEntry> directories = new ArrayList<>(current().children());
+        directories.sort(sortKey.comparator());
+        List<FileEntry> files = showFiles ? current().topFiles() : List.of();
+        List<TreeEntry> entries = new ArrayList<>(directories.size() + files.size());
+        entries.addAll(directories);
+        entries.addAll(files);
+        return entries;
+    }
+
+    public boolean showFiles() {
+        return showFiles;
     }
 
     public @NotNull SortKey sortKey() {
@@ -69,8 +88,8 @@ public final class TuiState {
     /**
      * The entry the cursor is on, or {@code null} when the directory is empty.
      */
-    public @Nullable DirEntry selectedEntry() {
-        List<DirEntry> entries = entries();
+    public @Nullable TreeEntry selectedEntry() {
+        List<TreeEntry> entries = entries();
         if (selected < 0 || selected >= entries.size()) {
             return null;
         }
@@ -176,6 +195,10 @@ public final class TuiState {
                 sortKey = sortKey.next();
                 clamp(rows);
             }
+            case TOGGLE_FILES -> {
+                showFiles = !showFiles;
+                clamp(rows);
+            }
             case QUIT -> {
                 return false;
             }
@@ -203,11 +226,11 @@ public final class TuiState {
     }
 
     private void descend() {
-        List<DirEntry> entries = entries();
-        if (selected < 0 || selected >= entries.size()) {
+        List<TreeEntry> entries = entries();
+        if (selected < 0 || selected >= entries.size() || !(entries.get(selected) instanceof DirEntry directory)) {
             return;
         }
-        trail.push(entries.get(selected));
+        trail.push(directory);
         selected = 0;
         scroll = 0;
     }

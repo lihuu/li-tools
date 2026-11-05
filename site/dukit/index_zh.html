@@ -381,10 +381,10 @@
               <span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-xs">browse</span>
               <span>dukit browse [路径] [--exclude &lt;glob&gt;...]</span>
             </div>
-            <span class="text-xs font-mono text-slate-500">行式交互浏览</span>
+            <span class="text-xs font-mono text-slate-500">全屏交互浏览</span>
           </div>
           <p class="text-xs text-slate-400 leading-relaxed">
-            先扫描,然后接管终端:备用屏幕、方向键选择、<span class="text-slate-200">Enter</span> 进入、<span class="text-slate-200">Backspace</span> 返回、<span class="text-slate-200">s</span> 循环切换 大小 → 名称 → 文件数。始终按大小降序、默认选中最大项。需要交互终端——管道调用会快速失败并提示改用 <code class="text-slate-200">scan</code>。
+            先扫描,然后接管终端:备用屏幕、方向键选择、<span class="text-slate-200">Enter</span> 进入、<span class="text-slate-200">Backspace</span> 返回、<span class="text-slate-200">s</span> 循环切换 大小 → 名称 → 文件数、<span class="text-slate-200">t</span> 显示当前目录直属的最大文件。始终按大小降序、默认选中最大项。文件预览只为浏览器收集,JSON 仍保持只有目录的体积优势。需要交互终端——管道调用会快速失败并提示改用 <code class="text-slate-200">scan</code>。
           </p>
         </div>
       </div>

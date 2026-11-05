@@ -6,6 +6,7 @@ import io.github.lihuu.dukit.core.delete.DeleteResult;
 import io.github.lihuu.dukit.core.delete.DeleteService;
 import io.github.lihuu.dukit.core.delete.TreeUpdater;
 import io.github.lihuu.dukit.core.model.DirEntry;
+import io.github.lihuu.dukit.core.model.TreeEntry;
 import io.github.lihuu.dukit.core.model.ScanResult;
 import io.github.lihuu.dukit.core.trash.TrashException;
 import org.jetbrains.annotations.NotNull;
@@ -121,13 +122,17 @@ public final class FullScreenBrowser {
             state.setNotice("tree is stale after an uncertain delete; rescan to continue");
             return false;
         }
-        DirEntry selected = state.selectedEntry();
+        TreeEntry selected = state.selectedEntry();
         if (selected == null) {
             state.setNotice("nothing selected");
             return true;
         }
+        if (!(selected instanceof DirEntry directory)) {
+            state.setNotice("only directories can be deleted; files are display-only");
+            return true;
+        }
         try {
-            DeletePlan plan = deleteService.plan(scan, state.currentPath(), selected);
+            DeletePlan plan = deleteService.plan(scan, state.currentPath(), directory);
             state.requestDelete(plan);
             return true;
         } catch (DeleteException | TrashException refusal) {

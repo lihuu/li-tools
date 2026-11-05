@@ -1,6 +1,7 @@
 package io.github.lihuu.dukit.core.scan;
 
 import io.github.lihuu.dukit.core.model.DirEntry;
+import io.github.lihuu.dukit.core.model.FileEntry;
 import io.github.lihuu.dukit.core.model.ScanResult;
 import io.github.lihuu.dukit.core.model.TopEntry;
 import io.github.lihuu.dukit.core.model.TopResult;
@@ -278,6 +279,35 @@ class DirectoryScannerTest {
     }
 
     @Test
+    void retainsABoundedFilePreviewPerDirectoryOnlyWhenAsked() throws IOException {
+        Path root = tree("preview");
+        ScanResult plain = new DirectoryScanner(List.of()).scan(root, (files, bytes, dir) -> { });
+        assertTrue(plain.root().topFiles().isEmpty());
+        assertTrue(child(plain.root(), "a").topFiles().isEmpty(), "an ordinary scan keeps no file rows");
+
+        ScanResult bounded = new DirectoryScanner(List.of()).scan(root,
+                (files, bytes, dir) -> { }, 1);
+        assertEquals(List.of("top.txt"), fileNames(bounded.root()));
+        DirEntry a = child(bounded.root(), "a");
+        assertEquals(List.of("big.bin"), fileNames(a), "only the largest direct file survives");
+        assertEquals(List.of("deep.txt"), fileNames(child(a, "sub")));
+        assertTrue(child(bounded.root(), "b").topFiles().isEmpty(), "an empty directory keeps no preview");
+
+        ScanResult wider = new DirectoryScanner(List.of()).scan(root,
+                (files, bytes, dir) -> { }, 2);
+        assertEquals(List.of("big.bin", "small.txt"), fileNames(child(wider.root(), "a")));
+    }
+
+    @Test
+    void excludesApplyToTheFilePreviewToo() throws IOException {
+        Path root = tree("previewexclude");
+        ScanResult result = new DirectoryScanner(List.of("a/big.bin")).scan(root,
+                (files, bytes, dir) -> { }, 5);
+
+        assertEquals(List.of("small.txt"), fileNames(child(result.root(), "a")));
+    }
+
+    @Test
     void topKeepsOnlyTheLargestEntriesRegardlessOfVisitOrder() throws IOException {
         Path root = temporary.resolve("order");
         Files.createDirectories(root);
@@ -310,6 +340,10 @@ class DirectoryScannerTest {
 
     private static List<String> names(DirEntry entry) {
         return entry.children().stream().map(DirEntry::name).toList();
+    }
+
+    private static List<String> fileNames(DirEntry entry) {
+        return entry.topFiles().stream().map(FileEntry::name).toList();
     }
 
     private static DirEntry child(DirEntry entry, String name) {

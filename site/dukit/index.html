@@ -381,10 +381,10 @@
               <span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-xs">browse</span>
               <span>dukit browse [path] [--exclude &lt;glob&gt;...]</span>
             </div>
-            <span class="text-xs font-mono text-slate-500">Interactive line-based explorer</span>
+            <span class="text-xs font-mono text-slate-500">Interactive full-screen explorer</span>
           </div>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Scans first, then takes over the terminal: alternate screen, arrow-key selection, <span class="text-slate-200">enter</span> to descend, <span class="text-slate-200">backspace</span> to return, <span class="text-slate-200">s</span> to cycle size → name → count. Always starts sorted by size with the biggest entry selected. Requires an interactive terminal — piped invocations fail fast with a hint toward <code class="text-slate-200">scan</code>.
+            Scans first, then takes over the terminal: alternate screen, arrow-key selection, <span class="text-slate-200">enter</span> to descend, <span class="text-slate-200">backspace</span> to return, <span class="text-slate-200">s</span> to cycle size → name → count, <span class="text-slate-200">t</span> to reveal the current directory's largest direct files. Always starts sorted by size with the biggest entry selected. The bounded file preview exists only for the browser — JSON stays directories-only. Requires an interactive terminal — piped invocations fail fast with a hint toward <code class="text-slate-200">scan</code>.
           </p>
         </div>
       </div>
