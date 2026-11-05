@@ -110,7 +110,7 @@ A modern personal AI skills collection manager and parallel multi-agent distribu
 ## Tool 5: dukit
 
 ### Mission
-A cross-platform disk usage analyzer inspired by ncdu: scan a directory tree once, print a size-sorted report, export machine-readable JSON, and browse the result line by line — shipped as a single native binary for macOS, Linux, and Windows.
+A cross-platform disk usage analyzer inspired by ncdu: scan a directory tree once, emit a directories-only JSON tree by default, rank the largest directories or files with bounded streaming heaps, and browse the result line by line — shipped as a single native binary for macOS, Linux, and Windows.
 
 ### Key Innovations
 1. **One-Pass Pure JDK Scanner**:
@@ -125,10 +125,16 @@ A cross-platform disk usage analyzer inspired by ncdu: scan a directory tree onc
    - `dukit browse [path]`
    - A REPL instead of a curses UI: `cd <n>`, `up`, `top`, `sort size|name|count`, `q` — works in every terminal including the classic Windows console, tmux, and SSH.
    - Requires an interactive terminal; piped invocations fail fast with exit code 2 and a hint toward `scan`.
-4. **Machine-Readable JSON Export**:
-   - `dukit scan [path] --json`
-   - Emits `{ meta: { tool, version, path, files, directories, errors, generatedAt }, tree: { name, size, files, directories, errors, children } }` via a zero-reflection streaming writer.
-5. **Display Controls**:
+4. **Directories-Only JSON Tree**:
+   - `dukit scan [path]`
+   - Emits `{ meta: { tool, version, path, size, files, directories, errors, generatedAt }, tree: { name, size, files, directories, errors, ownFileSize, ownFileCount, children } }` via a zero-reflection streaming writer.
+   - Regular files are not tree nodes; they fold into their parent's `ownFileSize`/`ownFileCount`. On a real `/Applications` scan this cuts the node count from 660k to 87k and the payload from 63 MB to 11 MB.
+   - `--depth <n>` trims emitted levels while every aggregate still describes the whole subtree (30 KB at depth 2).
+5. **Bounded Top-N Rankings**:
+   - `dukit top [path] [--files] [--limit <n>] [--min-size <size>]`
+   - Streams the scan through two fixed-size min-heaps, so memory tracks the limit instead of the volume; nothing is collected up front.
+   - `--files` ranks individual files, `--min-size 1G` filters small entries, `--json` emits `{ meta, entries: [{ path, size }] }` (~2 KB for 20 entries).
+6. **Display Controls**:
    - `--depth <n>` cuts the display only; sizes always cover whole subtrees.
    - `--exclude <glob>` is repeatable: bare names match any path component, patterns with `/` match relative to the scan root.
 

@@ -14,13 +14,18 @@ import picocli.CommandLine.Parameters;
 import java.io.IOException;
 import java.util.List;
 
-@Command(name = "scan", description = "Scan a directory tree and print a size report sorted by size. "
+@Command(name = "scan", description = "Scan a directory tree and print every directory with its size. "
+        + "Output is JSON by default; use --text for a human-readable tree. "
         + "Sizes are apparent sizes (logical file sizes); the JDK exposes no portable allocated-block metric.")
 public final class ScanCommand extends CliCommand.Action {
     @Parameters(index = "0", arity = "0..1", defaultValue = ".", description = "Directory to scan (default: current directory)")
     String path;
 
-    @Option(names = "--depth", defaultValue = "1", description = "Directory levels to show below the root; sizes always cover whole subtrees (default: 1)")
+    @Option(names = "--text", description = "Print a human-readable tree instead of JSON")
+    boolean text;
+
+    @Option(names = "--depth", defaultValue = "-1",
+            description = "Directory levels to emit; sizes always cover whole subtrees (default: -1 = all levels, 0 = root only)")
     int depth;
 
     @Option(names = "--exclude", description = "Glob pattern to skip; a bare name matches any path component, a pattern with '/' matches the path relative to the scan root")
@@ -31,10 +36,10 @@ public final class ScanCommand extends CliCommand.Action {
         GlobalOptionsMixin options = root.globalOptions();
         ScanResult result = root.scanTree(path, excludes, options.quiet);
         root.reportScanErrors(result, options.quiet);
-        if (options.json) {
-            new JsonReporter(out(), ApplicationInfo.load()).write(result);
-        } else {
+        if (text) {
             new TreeReporter(out(), root.outputStyle(), depth).write(result);
+        } else {
+            new JsonReporter(out(), ApplicationInfo.load(), depth).write(result);
         }
         return CliExitCode.OK;
     }

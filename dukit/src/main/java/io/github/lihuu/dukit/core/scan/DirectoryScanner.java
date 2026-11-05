@@ -3,6 +3,8 @@ package io.github.lihuu.dukit.core.scan;
 import io.github.lihuu.dukit.core.model.DirEntry;
 import io.github.lihuu.dukit.core.model.ScanError;
 import io.github.lihuu.dukit.core.model.ScanResult;
+import io.github.lihuu.dukit.core.model.TopEntry;
+import io.github.lihuu.dukit.core.model.TopResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,14 +25,23 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Walks a directory tree once and aggregates apparent sizes into an immutable
- * {@link DirEntry} tree. Symlinks are never followed. Unreadable entries are collected as
- * errors; the scan continues past them. Only the scan root failing to be a readable
- * directory aborts the scan.
+ * Walks a directory tree once and aggregates apparent sizes. Two shapes are supported from
+ * the same pass:
  *
- * <p>Directories contribute their own size to the total, matching du. Hardlinked regular
- * files count their sizes once per scan (first occurrence wins); every hardlink still
- * counts as a file.
+ * <ul>
+ *   <li>{@link #scan} builds a tree of <em>directories only</em>; regular files are folded
+ *       into their parent's counters. The result is proportional to the directory count,
+ *       which is roughly an order of magnitude smaller than the file count.</li>
+ *   <li>{@link #top} builds no tree at all and keeps only the N largest directories and
+ *       files in bounded heaps, so a full scan of a huge volume costs {@code O(N)} memory
+ *       beyond the live traversal stack.</li>
+ * </ul>
+ *
+ * <p>Symlinks are never followed. Unreadable entries are collected as errors and the scan
+ * continues; only the root failing to be a readable directory aborts. Hardlinked regular
+ * files count their sizes once per scan (first occurrence wins) while still counting toward
+ * the file totals. Directories contribute only their contents, never their own inode size,
+ * which keeps numbers comparable across filesystems.
  */
 public final class DirectoryScanner {
     private static final long PROGRESS_INTERVAL_MASK = 0x3FF;
@@ -42,6 +53,32 @@ public final class DirectoryScanner {
     }
 
     public @NotNull ScanResult scan(@NotNull Path root, @NotNull ProgressListener listener) throws IOException {
+        Traversal traversal = traverse(root, listener, true, 0);
+        if (traversal.rootEntry == null) {
+            throw new IOException("cannot scan " + traversal.root + ": " + firstErrorReason(traversal));
+        }
+        return new ScanResult(traversal.rootEntry, traversal.errors);
+    }
+
+    public @NotNull TopResult top(@NotNull Path root, int limit, @NotNull ProgressListener listener) throws IOException {
+        Traversal traversal = traverse(root, listener, false, limit);
+        if (!traversal.rootVisited) {
+            throw new IOException("cannot scan " + traversal.root + ": " + firstErrorReason(traversal));
+        }
+        return new TopResult(
+                traversal.largestDirectories == null ? List.of() : traversal.largestDirectories.result(),
+                traversal.largestFiles == null ? List.of() : traversal.largestFiles.result(),
+                traversal.totalSize,
+                traversal.fileCount,
+                traversal.errors);
+    }
+
+    private static String firstErrorReason(@NotNull Traversal traversal) {
+        return traversal.errors.isEmpty() ? "not a readable directory" : traversal.errors.get(0).message();
+    }
+
+    private Traversal traverse(@NotNull Path root, @NotNull ProgressListener listener,
+            boolean buildTree, int topLimit) throws IOException {
         Path absolute = root.toAbsolutePath().normalize();
         FileSystem fileSystem = absolute.getFileSystem();
         List<PathMatcher> nameMatchers = new ArrayList<>();
@@ -54,41 +91,47 @@ public final class DirectoryScanner {
                 nameMatchers.add(matcher);
             }
         }
-
-        Visitor visitor = new Visitor(absolute, nameMatchers, relativeMatchers, listener);
-        Files.walkFileTree(absolute, Set.of(), Integer.MAX_VALUE, visitor);
-        if (visitor.rootEntry == null) {
-            String reason = visitor.errors.isEmpty() ? "not a readable directory" : visitor.errors.get(0).message();
-            throw new IOException("cannot scan " + absolute + ": " + reason);
-        }
-        listener.onUpdate(visitor.fileCount, visitor.bytesSeen, absolute);
-        return new ScanResult(visitor.rootEntry, visitor.errors);
+        Traversal traversal = new Traversal(absolute, nameMatchers, relativeMatchers, listener, buildTree, topLimit);
+        Files.walkFileTree(absolute, Set.of(), Integer.MAX_VALUE, traversal);
+        listener.onUpdate(traversal.fileCount, traversal.totalSize, absolute);
+        return traversal;
     }
 
-    private static final class Visitor extends SimpleFileVisitor<Path> {
+    private static final class Traversal extends SimpleFileVisitor<Path> {
         private final Path root;
         private final List<PathMatcher> nameMatchers;
         private final List<PathMatcher> relativeMatchers;
         private final ProgressListener listener;
+        private final boolean buildTree;
         private final Deque<Accumulator> stack = new ArrayDeque<>();
         private final Set<Object> seenFileKeys = new HashSet<>();
         private final List<ScanError> errors = new ArrayList<>();
+        private final @Nullable TopCollector largestFiles;
+        private final @Nullable TopCollector largestDirectories;
         private long fileCount;
-        private long bytesSeen;
+        private long totalSize;
+        private boolean rootVisited;
         private @Nullable DirEntry rootEntry;
 
-        Visitor(@NotNull Path root, @NotNull List<PathMatcher> nameMatchers,
-                @NotNull List<PathMatcher> relativeMatchers, @NotNull ProgressListener listener) {
+        Traversal(@NotNull Path root, @NotNull List<PathMatcher> nameMatchers,
+                @NotNull List<PathMatcher> relativeMatchers, @NotNull ProgressListener listener,
+                boolean buildTree, int topLimit) {
             this.root = root;
             this.nameMatchers = nameMatchers;
             this.relativeMatchers = relativeMatchers;
             this.listener = listener;
+            this.buildTree = buildTree;
+            this.largestFiles = topLimit > 0 ? new TopCollector(topLimit) : null;
+            this.largestDirectories = topLimit > 0 ? new TopCollector(topLimit) : null;
         }
 
         @Override
         public FileVisitResult preVisitDirectory(@NotNull Path dir, @NotNull BasicFileAttributes attrs) {
             if (excluded(dir)) {
                 return FileVisitResult.SKIP_SUBTREE;
+            }
+            if (dir.equals(root)) {
+                rootVisited = true;
             }
             stack.push(new Accumulator(dir));
             return FileVisitResult.CONTINUE;
@@ -102,10 +145,13 @@ public final class DirectoryScanner {
             boolean hardlinkTwin = attrs.fileKey() != null && !seenFileKeys.add(attrs.fileKey());
             long size = hardlinkTwin ? 0 : attrs.size();
             fileCount++;
-            bytesSeen += attrs.size();
+            totalSize += size;
             Accumulator current = stack.peek();
             if (current != null) {
-                current.children.add(new DirEntry(file.getFileName().toString(), file, false, size, 1, 0, 0, List.of()));
+                current.addFile(size);
+                if (largestFiles != null && size > 0) {
+                    largestFiles.offer(file, size);
+                }
                 progress();
             }
             return FileVisitResult.CONTINUE;
@@ -115,13 +161,9 @@ public final class DirectoryScanner {
         public FileVisitResult visitFileFailed(@NotNull Path path, @NotNull IOException failure) {
             Accumulator current = stack.peek();
             if (current != null && path.equals(current.dir)) {
-                // The directory failed to open, so its accumulator never receives a
-                // postVisit; drop it here and report against the parent instead.
                 stack.pop();
                 recordError(path, failure);
-            } else if (Files.isSymbolicLink(path)) {
-                // Broken symlinks are expected with NOFOLLOW_LINKS; not an error.
-            } else {
+            } else if (!Files.isSymbolicLink(path)) {
                 recordError(path, failure);
             }
             return FileVisitResult.CONTINUE;
@@ -133,6 +175,18 @@ public final class DirectoryScanner {
                 recordError(dir, failure);
             }
             Accumulator finished = stack.pop();
+            if (largestDirectories != null && finished.size > 0 && !dir.equals(root)) {
+                // The scan root is the query's starting point, not a discovery; reporting it
+                // would just repeat the whole total at rank 1.
+                largestDirectories.offer(dir, finished.size);
+            }
+            if (!buildTree) {
+                Accumulator parent = stack.peek();
+                if (parent != null) {
+                    parent.merge(finished);
+                }
+                return FileVisitResult.CONTINUE;
+            }
             DirEntry entry = finished.toEntry();
             if (dir.equals(root)) {
                 rootEntry = entry;
@@ -140,6 +194,7 @@ public final class DirectoryScanner {
                 Accumulator parent = stack.peek();
                 if (parent != null) {
                     parent.children.add(entry);
+                    parent.merge(finished);
                     progress();
                 }
             }
@@ -158,7 +213,7 @@ public final class DirectoryScanner {
             if ((fileCount & PROGRESS_INTERVAL_MASK) == 0) {
                 Accumulator current = stack.peek();
                 if (current != null) {
-                    listener.onUpdate(fileCount, bytesSeen, current.dir);
+                    listener.onUpdate(fileCount, totalSize, current.dir);
                 }
             }
         }
@@ -186,27 +241,49 @@ public final class DirectoryScanner {
     private static final class Accumulator {
         private final Path dir;
         private final List<DirEntry> children = new ArrayList<>();
+        private long ownFileSize;
+        private long ownFileCount;
+        private long subtreeFileCount;
+        private long subtreeDirCount;
+        private long size;
         private long errorCount;
 
         Accumulator(@NotNull Path dir) {
             this.dir = dir;
         }
 
+        private void addFile(long bytes) {
+            ownFileSize += bytes;
+            ownFileCount++;
+            size += bytes;
+        }
+
+        /**
+         * Folds a finished child directory's aggregates into this directory.
+         */
+        private void merge(@NotNull Accumulator child) {
+            size += child.size;
+            subtreeFileCount += child.ownFileCount + child.subtreeFileCount;
+            subtreeDirCount += 1 + child.subtreeDirCount;
+            errorCount += child.errorCount;
+        }
+
+        /**
+         * Folds a finished child {@link DirEntry} into this directory when a tree is built.
+         */
+        private void merge(@NotNull DirEntry child) {
+            size += child.size();
+            subtreeFileCount += child.fileCount();
+            subtreeDirCount += 1 + child.dirCount();
+            errorCount += child.errorCount();
+        }
+
         private DirEntry toEntry() {
-            long size = 0;
-            long files = 0;
-            long dirs = 0;
-            long subtreeErrors = errorCount;
-            for (DirEntry child : children) {
-                size += child.size();
-                files += child.fileCount();
-                dirs += child.dirCount() + (child.directory() ? 1 : 0);
-                subtreeErrors += child.errorCount();
-            }
             children.sort(Comparator.comparingLong((DirEntry entry) -> entry.size())
                     .reversed()
                     .thenComparing(DirEntry::name));
-            return new DirEntry(name(dir), dir, true, size, files, dirs, subtreeErrors, children);
+            return new DirEntry(name(dir), dir, size, ownFileCount + subtreeFileCount,
+                    subtreeDirCount, errorCount, ownFileSize, ownFileCount, children);
         }
 
         private static String name(@NotNull Path path) {

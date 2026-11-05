@@ -9,8 +9,10 @@ import java.io.PrintWriter;
 import java.util.Locale;
 
 /**
- * Renders a scan result as an indented tree on stdout, sorted by size descending (the
- * scanner's order). Depth cuts the display only; sizes always cover whole subtrees.
+ * Renders a scan result as an indented tree of directories on stdout, sorted by size
+ * descending (the scanner's order). Depth cuts the display only; sizes always cover whole
+ * subtrees. Directories whose own files are a meaningful part of their size get that
+ * figure appended, since individual file nodes are not part of the tree.
  */
 public final class TreeReporter {
     private final PrintWriter out;
@@ -20,7 +22,7 @@ public final class TreeReporter {
     public TreeReporter(@NotNull PrintWriter out, @NotNull OutputStyle style, int depth) {
         this.out = out;
         this.style = style;
-        this.depth = Math.max(0, depth);
+        this.depth = depth < 0 ? Integer.MAX_VALUE : depth;
     }
 
     public void write(@NotNull ScanResult result) {
@@ -35,7 +37,8 @@ public final class TreeReporter {
     private String summary(@NotNull ScanResult result) {
         DirEntry root = result.root();
         StringBuilder summary = new StringBuilder();
-        summary.append(String.format(Locale.US, "%,d files, %,d directories", root.fileCount(), root.dirCount()));
+        summary.append(String.format(Locale.US, "%,d files in %,d directories",
+                root.fileCount(), root.dirCount() + 1));
         if (!result.errors().isEmpty()) {
             summary.append(String.format(Locale.US, ", %,d paths could not be read", result.errors().size()));
         }
@@ -47,10 +50,9 @@ public final class TreeReporter {
             DirEntry child = parent.children().get(i);
             boolean last = i == parent.children().size() - 1;
             String branch = last ? "└── " : "├── ";
-            String childIndent = last ? "    " : "│   ";
             out.println(indent + branch + sizeColumn(child, parentSize) + displayName(child));
-            if (child.directory() && level < depth && !child.children().isEmpty()) {
-                renderChildren(child, indent + childIndent, child.size(), level + 1);
+            if (level < depth && !child.children().isEmpty()) {
+                renderChildren(child, indent + (last ? "    " : "│   "), child.size(), level + 1);
             }
         }
     }
@@ -64,7 +66,11 @@ public final class TreeReporter {
     }
 
     private String displayName(@NotNull DirEntry child) {
-        String name = child.directory() ? child.name() + "/" : child.name();
+        String name = child.name() + "/";
+        if (child.ownFileCount() > 0) {
+            name += style.muted(String.format(Locale.US, " (%s in %,d files)",
+                    HumanBytes.format(child.ownFileSize()), child.ownFileCount()));
+        }
         return child.errorCount() > 0 ? style.warning(name) : name;
     }
 }

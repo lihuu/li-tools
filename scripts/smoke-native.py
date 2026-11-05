@@ -107,13 +107,18 @@ def main():
         scan_root = directory / "dukit-tree" / "inner"
         scan_root.mkdir(parents=True)
         (scan_root / "payload.bin").write_bytes(b"x" * 4096)
-        report = run([dukit, "scan", str(scan_root), "--depth", "1"], directory, environment)
-        assert "payload.bin" in report and "dukit-tree" in report, report
-        document = json.loads(run([dukit, "scan", str(scan_root), "--json"], directory, environment))
+        report = run([dukit, "scan", str(scan_root), "--text", "--depth", "1"], directory, environment)
+        assert "inner" in report and "4.0 KiB" in report, report
+        document = json.loads(run([dukit, "scan", str(scan_root)], directory, environment))
         assert document["meta"]["tool"] == "dukit", document
         assert document["tree"]["size"] == 4096, document
+        shallow = json.loads(run([dukit, "scan", str(scan_root), "--depth", "0"], directory, environment))
+        assert shallow["tree"]["children"] == [], shallow
+        assert shallow["tree"]["size"] == 4096, "aggregates survive the depth cut"
+        ranked = json.loads(run([dukit, "top", str(scan_root), "--files", "--json"], directory, environment))
+        assert ranked["entries"][0]["size"] == 4096, ranked
         run([dukit, "browse", str(scan_root)], directory, environment, expected=2)
-        print("dukit: scan report and JSON export PASS", flush=True)
+        print("dukit: scan JSON, depth cut and top ranking PASS", flush=True)
 
 
 if __name__ == "__main__":

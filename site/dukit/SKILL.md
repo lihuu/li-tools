@@ -1,21 +1,22 @@
 ---
 name: dukit
-description: Use when analyzing disk usage, finding large directories or files, exporting directory size data as JSON, or interactively browsing what consumes disk space on macOS, Linux, or Windows.
+description: Use when analyzing disk usage, finding the largest directories or files, exporting directory size data as JSON, or browsing what consumes disk space on macOS, Linux, or Windows.
 ---
 
 # dukit: Disk Usage Analyzer Guide
 
-`dukit` is a cross-platform, zero-dependency CLI tool for analyzing disk usage, inspired by ncdu. It scans a directory tree once, reports sizes sorted descending, exports machine-readable JSON, and offers a line-based interactive browser. All sizes are apparent sizes (logical file sizes); hardlinked content counts once per scan, symlinks are never followed, and directory inodes add nothing.
+`dukit` is a cross-platform, zero-dependency CLI tool for analyzing disk usage, inspired by ncdu. It scans a directory tree once and answers three questions: what does the whole tree look like (JSON), what are the biggest directories or files (top), and how do I explore it interactively (browse).
+
+**The tree contains directories only.** Regular files are folded into their parent directory's counters (`ownFileSize`, `ownFileCount`) instead of becoming nodes. This keeps output proportional to the directory count rather than the file count — on a real `/Applications` scan that is 87k nodes instead of 660k. Use `top --files` when you need individual files.
 
 ## Trigger Conditions
 
 Use this skill whenever the user or task requires:
 1. Finding which directories or files consume the most disk space.
-2. Analyzing what to clean up before freeing disk space.
-3. Exporting per-directory size aggregates as JSON for automation, dashboards, or diffing.
-4. Interactively drilling into large directories in a terminal.
+2. Deciding what to clean up before freeing disk space.
+3. Exporting per-directory size aggregates as JSON for automation or diffing.
+4. Drilling into a large directory interactively in a terminal.
 5. Getting consistent disk usage numbers across macOS, Linux, and Windows.
-6. Scanning with exclusions (e.g. skipping `node_modules`, `target`, `.git`).
 
 ## Installation
 
@@ -33,74 +34,111 @@ brew install lihuu/tap/dukit
 scoop install dukit
 ```
 
-## Core Commands
+## Commands
 
-### `dukit scan [path] [--depth <n>] [--exclude <glob>...] [--json]`
+### `dukit scan [path] [--depth <n>] [--exclude <glob>...] [--text]`
 
-Scans the directory tree once and prints a size-sorted report to stdout.
+Scans the tree and prints every directory with its size. **Output is JSON by default.**
 
 ```bash
-# Current directory, one level below the root (default)
-dukit scan
-
-# Two levels deep, sorted by size
-dukit scan ~/Projects --depth 2
-
-# Skip heavyweight dependency directories wherever they appear
-dukit scan ~/Projects --exclude node_modules --exclude .git
-
-# Machine-readable output for scripts and agents
-dukit scan ~/Projects --json
+dukit scan /Applications              # full directory tree as JSON (every level)
+dukit scan /Applications --depth 2    # 2 levels: ~30 KB instead of ~11 MB
+dukit scan /Applications --text       # human-readable tree instead of JSON
+dukit scan . --exclude node_modules --exclude .git
 ```
 
-- `--depth <n>` (default 1) cuts the *display* only; every printed size always covers its whole subtree.
-- `--exclude` is repeatable. A bare name (`node_modules`) matches any path component; a pattern containing `/` (`a/*.log`) matches the path relative to the scan root.
-- `--json` emits `{ "meta": { tool, version, path, files, directories, errors, generatedAt }, "tree": { name, size, files, directories, errors, children: [...] } }`. Every node appears in both the tree and its parent's `children`; files have empty `children`.
-- Unreadable paths are reported as warnings on stderr (first 10) while the scan continues; the report itself goes to stdout.
-- Exit codes: `0` success (including partial scans with warnings), `1` the target is missing or not a directory, `2` invalid usage.
+- `--depth <n>` limits how many levels of `children` are emitted. **Aggregates always cover the whole subtree**, so a depth-cut tree still reports correct totals. Default `-1` = every level; `0` = root only. This is the cheapest way to keep a payload small.
+- `--exclude` is repeatable. A bare name matches any path component; a pattern containing `/` matches relative to the scan root.
+- `--text` prints an indented tree for humans; `--depth` applies there too.
+
+JSON shape:
+
+```json
+{
+  "meta": { "tool", "version", "path", "size", "files", "directories", "errors", "generatedAt" },
+  "tree": {
+    "name": "Applications",
+    "size": 69664451262,          // whole subtree
+    "files": 573263,              // whole subtree
+    "directories": 87482,         // whole subtree
+    "errors": 0,
+    "ownFileSize": 27600,         // files directly inside this directory
+    "ownFileCount": 3,
+    "children": [ ... ]           // subdirectories only
+  }
+}
+```
+
+### `dukit top [path] [--limit <n>] [--files] [--min-size <size>] [--json]`
+
+Ranks the largest entries. Streams the scan with bounded heaps, so memory stays proportional to `--limit`, not to the volume — this is the right command for "what is big" questions.
+
+```bash
+dukit top /Applications                    # 20 largest directories (default)
+dukit top /Applications --files            # 20 largest individual files
+dukit top /Applications --limit 50 --json  # machine-readable, ~4 KB
+dukit top /Applications --min-size 1G      # only entries at least 1 GiB
+```
+
+- Default output is a human-readable ranked list; `--json` emits `{ meta, entries: [{ path, size }] }`.
+- `--limit` defaults to 20. `--min-size` accepts `B`, `K/KiB`, `M/MiB`, `G/GiB`, `T/TiB`.
+- The scan root itself is never ranked (it is the query, not a discovery).
+- Rankings may contain nested paths (a directory and its child can both appear). That is intentional: it answers "where is the space" globally. For a layered view use `scan --depth`.
 
 ### `dukit browse [path] [--exclude <glob>...]`
 
-Scans, then enters a line-based interactive browser (requires an interactive terminal; piped usage exits `2` with a hint to use `scan`).
+Scans, then enters a line-based interactive browser. Requires an interactive terminal; piped usage exits `2` with a hint to use `scan`.
 
-```bash
-dukit browse ~/Projects
 ```
-
-Interactive commands:
-- `[enter]` or `ls` — re-render the current directory
-- `cd <n>` — descend into entry `n` (directories only)
-- `up` — parent directory; `top` — back to the scan root
-- `sort size|name|count` — reorder the listing
-- `q` or `quit` — leave (end of input also quits cleanly)
+<enter> or ls   re-render the current directory
+<n>             descend into entry n (no prefix needed)
+cd <n>          same as <n>
+.. or up        parent directory
+top             back to the scan root
+s               cycle sort: size -> name -> count
+sort <key>      order by size, name, or count
+q               quit (end of input also quits)
+```
 
 ## Size Semantics (Important)
 
-- **Apparent sizes**: the sum of logical file sizes. The JDK exposes no portable allocated-block metric, so dukit deliberately reports apparent sizes to keep numbers identical across filesystems. Compare with `du --apparent-size`.
+- **Apparent sizes**: the sum of logical file sizes. The JDK exposes no portable allocated-block metric, so dukit reports apparent sizes to keep numbers identical across filesystems. Compare with `du --apparent-size`.
 - **Hardlinks**: content counts exactly once per scan (first occurrence); every hardlink still counts toward `files`.
-- **Symlinks**: never followed, never sized, not counted as files.
-- **Directories**: their own inode size is not added; a directory's size is purely its content.
-- **Errors**: unreadable paths are skipped with a warning, never silently ignored, and counted in `errors` of the JSON output and the subtree that contains them.
+- **Symlinks**: never followed, never sized, not counted as files. A symlinked *root* is resolved before scanning.
+- **Directories**: only their contents contribute; the directory inode's own size is not added.
+- **Errors**: unreadable paths are skipped with a warning on stderr, never silently ignored, and counted in `errors`.
 
-## Examples
+## Agent Recipes
 
 ```bash
-# What eats the most space under the user's home, three levels deep
-dukit scan ~ --depth 3
+# Step 1: which top-level directories are big? (small payload, fast to reason about)
+dukit scan /Applications --depth 1
 
-# Find the biggest build artifacts across a workspace, ignoring sources
-dukit scan . --exclude 'target' --exclude 'dist' --exclude '.git'
+# Step 2: drill into the biggest one, one more level
+dukit scan /Applications/Xcode-beta.app --depth 2
 
-# Snapshot disk usage and diff it later with jq
-dukit scan /var --json > /tmp/var-usage.json
-# ... (disk fills up) ...
-dukit scan /var --json > /tmp/var-usage-after.json
-diff <(jq -r '.. | select(.name) | "\(.name) \(.size)"' /tmp/var-usage.json) \
-     <(jq -r '.. | select(.name) | "\(.name) \(.size)"' /tmp/var-usage-after.json)
+# Or skip straight to the answer: the 20 biggest directories anywhere
+dukit top /Applications --limit 20 --json
+
+# Find the files worth deleting
+dukit top /Applications --files --limit 50 --min-size 500M --json
+
+# Snapshot and diff two scans over time
+dukit scan /var --depth 3 > before.json
+# ... time passes ...
+dukit scan /var --depth 3 > after.json
+diff <(jq -r '.tree | .. | objects | "\(.name) \(.size)"' before.json) \
+     <(jq -r '.tree | .. | objects | "\(.name) \(.size)"' after.json)
 ```
+
+## Exit Codes
+
+- `0` success (including partial scans with unreadable paths)
+- `1` target missing or not a directory
+- `2` invalid CLI usage, or `browse` without an interactive terminal
 
 ## Notes
 
 - dukit v1 is read-only; it never deletes or modifies anything.
-- The scan is sequential and single-pass; progress shows files, bytes, and the current path on interactive terminals only.
-- All output respects `NO_COLOR` and `--no-color`; piped output contains no ANSI escapes.
+- Output respects `NO_COLOR` and `--no-color`; piped output contains no ANSI escapes.
+- Progress shows files, bytes, and the current path on interactive terminals only.

@@ -22,6 +22,7 @@ class BrowserTest {
     @TempDir Path temporary;
 
     private Path root;
+    private StringWriter output;
 
     @BeforeEach
     void buildTree() throws IOException {
@@ -35,94 +36,90 @@ class BrowserTest {
     }
 
     @Test
-    void rendersCurrentDirectorySortedBySizeAndQuitsOnQ() throws IOException {
-        Browser browser = browser("q\n");
-        int code = browser.run();
+    void listsDirectoriesLargestFirst() throws IOException {
+        int code = browser("q\n").run();
 
         assertEquals(0, code);
-        String out = this.out.toString();
-        assertTrue(out.contains("tree"), "root is shown: " + out);
+        String out = output.toString();
+        assertTrue(out.contains(root.toString()), out);
         assertTrue(out.contains("alpha"), out);
         assertTrue(out.contains("beta"), out);
-        assertTrue(indexOf(out, "alpha") < indexOf(out, "beta"), "sorted by size descending: " + out);
+        assertTrue(out.indexOf("alpha") < out.indexOf("beta"), "largest first: " + out);
+        assertFalse(out.contains("top.txt"), "files are not listed as entries");
     }
 
     @Test
-    void cdEntersChildDirectoryAndUpReturns() throws IOException {
-        int code = browser("cd 1\nup\nq\n").run();
+    void bareNumberDescendsWithoutTheCdPrefix() throws IOException {
+        int code = browser("1\nq\n").run();
 
         assertEquals(0, code);
-        String out = this.out.toString();
-        assertTrue(out.contains("content.bin"), "cd 1 shows alpha's children: " + out);
-        assertTrue(out.contains("tree"), "up returns to the root listing: " + out);
+        String out = output.toString();
+        assertTrue(out.contains(root.resolve("alpha").toString()), "descended into alpha: " + out);
+        assertTrue(out.contains("310 B"), "own files are summarised (300 + 10): " + out);
+    }
+
+    @Test
+    void doubleDotReturnsToTheParent() throws IOException {
+        int code = browser("1\n..\nq\n").run();
+
+        assertEquals(0, code);
+        String out = output.toString();
+        int back = out.lastIndexOf(root.toString());
+        assertTrue(back > out.indexOf("alpha/second"), "returned to the root listing: " + out);
+    }
+
+    @Test
+    void cdAndUpStillWork() throws IOException {
+        int code = browser("cd 2\nup\nq\n").run();
+
+        assertEquals(0, code);
+        assertTrue(output.toString().contains(root.resolve("beta").toString()));
+    }
+
+    @Test
+    void sCyclesBetweenSortKeys() throws IOException {
+        int code = browser("s\nq\n").run();
+
+        assertEquals(0, code);
+        String out = output.toString();
+        assertTrue(out.contains("sort: name"), "s switches to name sort: " + out);
     }
 
     @Test
     void topReturnsToRootFromAnyDepth() throws IOException {
-        int code = browser("cd 1\ncd 1\ntop\nq\n").run();
+        int code = browser("1\ntop\nq\n").run();
 
         assertEquals(0, code);
-        assertTrue(out.toString().contains("alpha"), "top re-lists the root: " + out);
+        assertTrue(output.toString().contains("alpha"), output.toString());
     }
 
     @Test
-    void sortNameReordersTheListing() throws IOException {
-        int code = browser("sort name\nq\n").run();
+    void unknownCommandAndBadIndexStayInPlace() throws IOException {
+        int code = browser("fly to the moon\n99\nq\n").run();
 
         assertEquals(0, code);
-        String out = this.out.toString();
-        assertTrue(indexOf(out, "alpha") < indexOf(out, "beta"), "name sort is ascending: " + out);
-    }
-
-    @Test
-    void sortCountReordersByFileCount() throws IOException {
-        int code = browser("sort count\nq\n").run();
-
-        assertEquals(0, code);
-        String out = this.out.toString();
-        assertTrue(indexOf(out, "alpha") < indexOf(out, "beta"),
-                "alpha holds two files, beta one: " + out);
-    }
-
-    @Test
-    void unknownCommandAndFileTargetsStayInPlace() throws IOException {
-        int code = browser("fly to the moon\ncd 3\nq\n").run();
-
-        assertEquals(0, code);
-        String out = this.out.toString();
+        String out = output.toString();
         assertTrue(out.contains("unknown command"), out);
-        assertTrue(out.contains("not a directory"), "cd onto a file explains itself: " + out);
+        assertTrue(out.contains("no entry 99"), out);
     }
 
     @Test
     void endOfInputEndsWithoutError() throws IOException {
         assertEquals(0, browser("").run());
-        assertEquals(0, browser("cd 1\n").run(), "EOF right after a command also ends cleanly");
+        assertEquals(0, browser("1\n").run(), "EOF right after a command also ends cleanly");
     }
 
     @Test
-    void helpListsTheCommands() throws IOException {
+    void helpListsTheGestures() throws IOException {
         int code = browser("?\nq\n").run();
 
         assertEquals(0, code);
-        assertTrue(out.toString().contains("cd <n>"), out.toString());
+        assertTrue(output.toString().contains("descend into entry"), output.toString());
     }
 
-    private StringWriter out;
-
-    private Browser browser(String input) {
-        out = new StringWriter();
-        try {
-            ScanResult result = new DirectoryScanner(List.of()).scan(root, (files, bytes, dir) -> { });
-            return new Browser(result, new StringReader(input), new PrintWriter(out, true), OutputStyle.plain());
-        } catch (IOException failure) {
-            throw new IllegalStateException(failure);
-        }
-    }
-
-    private static int indexOf(String haystack, String needle) {
-        int at = haystack.indexOf(needle);
-        assertTrue(at >= 0, needle + " missing from output: " + haystack);
-        return at;
+    private Browser browser(String input) throws IOException {
+        output = new StringWriter();
+        ScanResult result = new DirectoryScanner(List.of()).scan(root, (files, bytes, dir) -> { });
+        return new Browser(result, new StringReader(input), new PrintWriter(output, true), OutputStyle.plain());
     }
 }

@@ -27,7 +27,7 @@ All tools in this suite provide native, machine-readable `SKILL.md` documents fo
 - [certkit](https://tools.lihu.me/certkit/): Zero-config SSL/TLS certificate Swiss Army knife. Auto-sniffs DNS/IP for SAN extensions, manages local development Root CA, performs single-parameter format conversion, and provides non-elevated Windows 11 trust injection.
 - [tokenkit](https://tools.lihu.me/tokenkit/): Modern encrypted universal token manager with embedded SQLite. Sub-10ms terminal shell injection (`tokenkit env`), AES-256-GCM + PBKDF2 encryption, child process injection (`tokenkit run`), profile isolation, and password-protected cross-machine migration bundles (`.tkbundle`).
 - [skillkit](https://tools.lihu.me/skillkit/): Personal skills repository and parallel multi-agent distribution CLI. Dual content architecture (`skills/` drafts + `skillkit.json` upstream metadata), Java 25 virtual-thread parallel fanout to 10+ AI coding agents, scoped Git push protection, and local customization safeguards with zero npm/npx overhead.
-- [dukit](https://tools.lihu.me/dukit/): Cross-platform disk usage analyzer. ncdu-inspired scanning with apparent sizes, hardlink deduplication, JSON export, and a line-based interactive browser that works in every terminal including Windows consoles.
+- [dukit](https://tools.lihu.me/dukit/): Cross-platform disk usage analyzer. ncdu-inspired scanning with apparent sizes, hardlink deduplication, a directories-only JSON tree by default, bounded top-N rankings that stream without building a tree, and a line-based interactive browser that works in every terminal including Windows consoles.
 
 ## Design Philosophy
 

@@ -4,7 +4,9 @@ import io.github.lihuu.clicommon.cli.CliExitCode;
 import io.github.lihuu.clicommon.cli.GlobalOptionsMixin;
 import io.github.lihuu.clicommon.style.OutputStyle;
 import io.github.lihuu.dukit.app.ApplicationInfo;
+import io.github.lihuu.dukit.core.model.ScanError;
 import io.github.lihuu.dukit.core.model.ScanResult;
+import io.github.lihuu.dukit.core.model.TopResult;
 import io.github.lihuu.dukit.core.scan.DirectoryScanner;
 import io.github.lihuu.dukit.core.scan.ProgressPrinter;
 import org.jetbrains.annotations.NotNull;
@@ -27,10 +29,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-@Command(name = "dukit", description = "Analyze disk usage across directories with scan reports and an interactive browser.",
+@Command(name = "dukit", description = "Analyze disk usage across directories: full directory trees as JSON, "
+        + "top-N rankings, and an interactive browser.",
         mixinStandardHelpOptions = true, versionProvider = CliCommand.VersionProvider.class,
-        subcommands = {ScanCommand.class, BrowseCommand.class})
+        subcommands = {ScanCommand.class, TopCommand.class, BrowseCommand.class})
 public final class CliCommand implements Callable<Integer> {
+    private static final int MAX_PRINTED_ERRORS = 10;
+
     @Mixin GlobalOptionsMixin globalOptions;
     @Spec CommandSpec spec;
 
@@ -58,17 +63,9 @@ public final class CliCommand implements Callable<Integer> {
         return OutputStyle.of(environment, interactive, globalOptions.noColor);
     }
 
-    /**
-     * Resolves the requested path against the working directory, verifies it is a readable
-     * directory and scans it. Shared by every command that needs a scan.
-     */
     ScanResult scanTree(@NotNull String path, List<String> excludes, boolean quiet) throws IOException {
-        Path target = workingDirectory.resolve(path).normalize().toAbsolutePath();
-        if (!Files.isDirectory(target)) {
-            throw new IOException("not a directory: " + target);
-        }
-        PrintWriter errWriter = spec.commandLine().getErr();
-        ProgressPrinter progress = new ProgressPrinter(errWriter, interactive && !quiet);
+        Path target = resolve(path);
+        ProgressPrinter progress = progressPrinter(quiet);
         ScanResult result;
         try {
             result = new DirectoryScanner(excludes == null ? List.of() : excludes).scan(target, progress);
@@ -78,24 +75,55 @@ public final class CliCommand implements Callable<Integer> {
         return result;
     }
 
-    private static final int MAX_PRINTED_ERRORS = 10;
+    TopResult topTree(@NotNull String path, List<String> excludes, int limit, boolean quiet) throws IOException {
+        Path target = resolve(path);
+        ProgressPrinter progress = progressPrinter(quiet);
+        try {
+            return new DirectoryScanner(excludes == null ? List.of() : excludes).top(target, limit, progress);
+        } finally {
+            progress.finish();
+        }
+    }
+
+    private @NotNull Path resolve(@NotNull String path) throws IOException {
+        Path target = workingDirectory.resolve(path).normalize().toAbsolutePath();
+        if (!Files.isDirectory(target)) {
+            throw new IOException("not a directory: " + target);
+        }
+        // A scan root that is itself a symlink (/tmp on macOS, for instance) must be
+        // resolved first: the walker never follows links, so it would otherwise see the
+        // root as a single skipped file.
+        return target.toRealPath();
+    }
+
+    private @NotNull ProgressPrinter progressPrinter(boolean quiet) {
+        return new ProgressPrinter(spec.commandLine().getErr(), interactive && !quiet);
+    }
 
     void reportScanErrors(@NotNull ScanResult result, boolean quiet) {
-        if (result.errors().isEmpty() || quiet) {
+        reportErrors(result.errors(), quiet);
+    }
+
+    void reportScanErrors(@NotNull TopResult result, boolean quiet) {
+        reportErrors(result.errors(), quiet);
+    }
+
+    private void reportErrors(@NotNull List<ScanError> errors, boolean quiet) {
+        if (errors.isEmpty() || quiet) {
             return;
         }
         PrintWriter errWriter = spec.commandLine().getErr();
         OutputStyle style = outputStyle();
-        for (int i = 0; i < Math.min(result.errors().size(), MAX_PRINTED_ERRORS); i++) {
-            errWriter.println(style.warning(result.errors().get(i).path() + ": " + result.errors().get(i).message()));
+        for (int i = 0; i < Math.min(errors.size(), MAX_PRINTED_ERRORS); i++) {
+            errWriter.println(style.warning(errors.get(i).path() + ": " + errors.get(i).message()));
         }
-        int remaining = result.errors().size() - MAX_PRINTED_ERRORS;
+        int remaining = errors.size() - MAX_PRINTED_ERRORS;
         if (remaining > 0) {
             errWriter.println(style.warning("… and " + remaining + " more unreadable paths"));
         }
     }
 
-    @Command
+    @Command(mixinStandardHelpOptions = true)
     abstract static class Action implements Callable<Integer> {
         @ParentCommand CliCommand root;
         @Spec CommandSpec spec;

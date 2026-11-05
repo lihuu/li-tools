@@ -341,8 +341,8 @@
     <!-- Commands Reference Section -->
     <div id="commands" class="max-w-5xl mx-auto mb-24">
       <div class="text-center mb-10">
-        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">两个命令。这就是全部。</h2>
-        <p class="text-slate-400 text-sm">其余一切都是选项,而不是子命令动物园。</p>
+        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">三个命令。这就是全部。</h2>
+        <p class="text-slate-400 text-sm">完整目录树、有界排行，或交互式浏览。其余一切都是选项。</p>
       </div>
 
       <div class="space-y-4">
@@ -351,12 +351,26 @@
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
             <div class="font-mono text-amber-300 text-sm font-semibold flex items-center gap-2">
               <span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-xs">scan</span>
-              <span>dukit scan [路径] [--depth &lt;n&gt;] [--exclude &lt;glob&gt;...] [--json]</span>
+              <span>dukit scan [路径] [--depth &lt;n&gt;] [--exclude &lt;glob&gt;...] [--text]</span>
             </div>
-            <span class="text-xs font-mono text-slate-500">按大小排序的树形报告</span>
+            <span class="text-xs font-mono text-slate-500">完整目录树，默认 JSON</span>
           </div>
           <p class="text-xs text-slate-400 leading-relaxed">
-            一次遍历目录树,按大小输出目录与文件。<code class="text-slate-200">--depth</code> 只裁剪显示层数——所有尺寸始终覆盖完整子树。<code class="text-slate-200">--exclude</code> 可重复:裸名称匹配任意层级的路径组件,含 <code class="text-slate-200">/</code> 的模式相对扫描根匹配。
+            一次遍历目录树,输出每个目录及其大小。树中<strong class="text-slate-200">只有目录</strong>——文件折叠进父目录的统计字段,因此体积只跟目录数相关,不再随文件数爆炸。<code class="text-slate-200">--depth</code> 裁剪层数,但聚合值始终覆盖完整子树:实测扫描 <code class="text-slate-200">/Applications</code>,全量 11 MB,<code class="text-slate-200">--depth 2</code> 只有 30 KB。<code class="text-slate-200">--text</code> 切换为人类可读树。
+          </p>
+        </div>
+
+        <!-- Command 2: top -->
+        <div class="glass-card p-5 rounded-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="font-mono text-amber-300 text-sm font-semibold flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-xs">top</span>
+              <span>dukit top [路径] [--limit &lt;n&gt;] [--files] [--min-size &lt;大小&gt;] [--json]</span>
+            </div>
+            <span class="text-xs font-mono text-slate-500">有界排行，流式计算</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            不建树就能回答"哪里最大"。两个有界堆只保留最大的条目,内存只跟 <code class="text-slate-200">--limit</code> 相关,与磁盘体量无关。<code class="text-slate-200">--files</code> 排行单个文件而非目录;<code class="text-slate-200">--min-size 1G</code> 过滤掉更小的项。20 条结果的 JSON 约 2 KB。
           </p>
         </div>
 
@@ -370,7 +384,7 @@
             <span class="text-xs font-mono text-slate-500">行式交互浏览</span>
           </div>
           <p class="text-xs text-slate-400 leading-relaxed">
-            先扫描,再列出当前目录中最大的条目。<code class="text-slate-200">cd &lt;n&gt;</code> 进入,<code class="text-slate-200">up</code>/<code class="text-slate-200">top</code> 返回,<code class="text-slate-200">sort size|name|count</code> 重排,<code class="text-slate-200">q</code> 退出。需要交互终端——管道调用会快速失败并提示改用 <code class="text-slate-200">scan</code>。
+            先扫描,再列出当前目录中最大的子目录。直接输入数字即进入(<code class="text-slate-200">1</code> 就是第一项,无需前缀),<code class="text-slate-200">..</code> 返回上一层,<code class="text-slate-200">s</code> 循环切换 大小 → 名称 → 文件数,<code class="text-slate-200">q</code> 退出。需要交互终端——管道调用会快速失败并提示改用 <code class="text-slate-200">scan</code>。
           </p>
         </div>
       </div>

@@ -341,8 +341,8 @@
     <!-- Commands Reference Section -->
     <div id="commands" class="max-w-5xl mx-auto mb-24">
       <div class="text-center mb-10">
-        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">Two Commands. That's the Point.</h2>
-        <p class="text-slate-400 text-sm">Everything else is a flag, not a subcommand zoo.</p>
+        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">Three Commands. That's the Point.</h2>
+        <p class="text-slate-400 text-sm">A full tree, a bounded ranking, or an interactive walk. Everything else is a flag.</p>
       </div>
 
       <div class="space-y-4">
@@ -351,12 +351,26 @@
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
             <div class="font-mono text-amber-300 text-sm font-semibold flex items-center gap-2">
               <span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-xs">scan</span>
-              <span>dukit scan [path] [--depth &lt;n&gt;] [--exclude &lt;glob&gt;...] [--json]</span>
+              <span>dukit scan [path] [--depth &lt;n&gt;] [--exclude &lt;glob&gt;...] [--text]</span>
             </div>
-            <span class="text-xs font-mono text-slate-500">Size-sorted tree report</span>
+            <span class="text-xs font-mono text-slate-500">Full directory tree, JSON by default</span>
           </div>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Walks the tree once and prints directories and files ordered by size. <code class="text-slate-200">--depth</code> cuts the display only — sizes always cover whole subtrees. <code class="text-slate-200">--exclude</code> takes repeatable globs: a bare name matches any path component, a pattern with <code class="text-slate-200">/</code> matches relative to the scan root.
+            Walks the tree once and emits every directory with its size. The tree holds <strong class="text-slate-200">directories only</strong> — files fold into their parent's counters, so output tracks directory count instead of file count. <code class="text-slate-200">--depth</code> trims levels while aggregates still cover whole subtrees: on a real <code class="text-slate-200">/Applications</code> scan, all levels are 11 MB and <code class="text-slate-200">--depth 2</code> is 30 KB. <code class="text-slate-200">--text</code> swaps JSON for a human tree.
+          </p>
+        </div>
+
+        <!-- Command 2: top -->
+        <div class="glass-card p-5 rounded-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="font-mono text-amber-300 text-sm font-semibold flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-xs">top</span>
+              <span>dukit top [path] [--limit &lt;n&gt;] [--files] [--min-size &lt;size&gt;] [--json]</span>
+            </div>
+            <span class="text-xs font-mono text-slate-500">Bounded ranking, streamed</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Answers "what is big" without building a tree. Two bounded heaps keep only the largest entries, so memory tracks <code class="text-slate-200">--limit</code>, not the volume. <code class="text-slate-200">--files</code> ranks individual files instead of directories; <code class="text-slate-200">--min-size 1G</code> ignores anything smaller. Roughly 2 KB of JSON for 20 entries.
           </p>
         </div>
 
@@ -370,7 +384,7 @@
             <span class="text-xs font-mono text-slate-500">Interactive line-based explorer</span>
           </div>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Scans first, then lists the biggest entries of the current directory. <code class="text-slate-200">cd &lt;n&gt;</code> descends, <code class="text-slate-200">up</code>/<code class="text-slate-200">top</code> climb back, <code class="text-slate-200">sort size|name|count</code> reorders, <code class="text-slate-200">q</code> quits. Requires an interactive terminal — piped invocations fail fast with a hint toward <code class="text-slate-200">scan</code>.
+            Scans first, then lists the biggest subdirectories. A bare number descends (<code class="text-slate-200">1</code> = first entry, no prefix), <code class="text-slate-200">..</code> goes back, <code class="text-slate-200">s</code> cycles size → name → count, <code class="text-slate-200">q</code> quits. Requires an interactive terminal — piped invocations fail fast with a hint toward <code class="text-slate-200">scan</code>.
           </p>
         </div>
       </div>
