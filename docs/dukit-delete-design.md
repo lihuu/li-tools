@@ -15,12 +15,13 @@
 | 必须先决策的问题 | 结论 |
 | --- | --- |
 | 是否走系统回收站 | **是。** v1 只走系统 Trash；不实现 `rm` 式永久删除。 |
-| 是否需要二次确认与 dry-run | **是。** TUI 使用独立的确认页，`y` 之前不产生任何文件系统修改；CLI 先打印计划，`--dry-run` 只预览，真正执行必须 `--yes` 或再次输入 `delete`。 |
-| 是否只允许删除扫描树内的路径 | **是。** TUI 只允许删除当前目录的直接子目录，且必须来自本次扫描树；CLI 必须给出 `--within` 边界，目标只能是该边界的相对后代，禁止绝对路径、`..`、符号链接和挂载点逃逸。 |
+| 是否需要二次确认与 dry-run | **是。** 删除只有一个入口：交互界面。全屏 TUI 使用独立确认页，行式浏览器要求再次输入 `delete`；确认之前不产生任何文件系统修改，确认页本身就是 dry-run。 |
+| 是否只允许删除扫描树内的路径 | **是。** 只允许删除当前目录的直接子项，且必须来自本次扫描树；不提供路径输入，因此不存在绝对路径、`..`、符号链接或挂载点逃逸的入口。 |
 
 其他已定结论：
 
-- **只删目录（TUI）**：扫描树只有目录节点，TUI 删除因此只作用于目录；CLI 同时支持文件与目录，以覆盖“删掉 top 里那个大文件”的场景。
+- **只删目录**：扫描树只有目录节点，删除因此只作用于目录。要删单个大文件，用系统文件管理器——dukit 不为此在树上增加文件节点。
+- **不提供 CLI 删除命令**：删除只在交互界面中发生，没有 `dukit delete` 子命令，也没有 `--yes` / `--dry-run` / `--json` 之类的脚本化删除开关。
 - **不删扫描根**：扫描根本身不能成为目标；TUI 只能删当前目录的子项。
 - **没有永久删除入口**：包括 `--permanent`、TUI 快捷键和脚本开关。后续若需要，必须单独立项评审。
 - **失败即关闭**：Trash 不可用、跨文件系统、网络卷、路径超限、权限不足时，不做任何修改并报告原因，不退回永久删除。
@@ -49,12 +50,6 @@
 
 - 全屏浏览器：选中目录后按 `d`，确认后移入系统 Trash。
 - 行式浏览器：`delete <n>`，确认后移入系统 Trash。
-- CLI：
-  ```text
-  dukit delete --within <root> [--dry-run | --yes] <relative-path>...
-  ```
-  - 支持文件和目录。
-  - 预览、确认、JSON 输出、退出码均有明确契约。
 - 三个平台的 Trash 适配器：
   - Linux：freedesktop.org Trash 规范，纯 JDK 实现。
   - macOS：`~/.Trash` 与卷级 `.Trashes/<uid>`，纯 JDK 实现。
@@ -72,7 +67,7 @@
 - 网络共享（SMB/NFS/AFP/WebDAV）上的删除。
 - Windows `\\?\` 长路径与超过 `MAX_PATH` 的路径；后续用 `IFileOperation` 另案处理。
 - macOS Finder 的 “Put Back” 保证。
-- 不提供 `--force` 或其他绕过确认的开关；`--yes` 是唯一的显式绕过，且仅用于脚本。
+- 不提供 CLI 删除子命令，因此也没有 `--yes`、`--dry-run`、`--json` 等脚本化删除开关。
 
 ---
 
@@ -108,27 +103,21 @@
 - TUI 中按 `d` 只进入确认页；在用户按 `y` 之前，不创建 Trash 目录、不写 `.trashinfo`、不移动任何东西。
 - 确认页必须显示：目标绝对路径、大小、文件数、目录数（TUI 有数据时）、Trash 去向，以及“清空 Trash 前不会释放空间”。
 - 行式浏览器要求再次输入完整的 `delete`（不是 `y`），避免回车惯性。
-- CLI：
-  - `--dry-run`：只做完整计划和校验，不修改文件系统，退出 0。
-  - `--yes`：跳过提示，直接执行；用于脚本。
-  - 既没有 `--yes` 也没有 `--dry-run` 时：交互终端打印计划并要求输入 `delete`；非交互终端直接以用法错误（exit 2）拒绝。
-  - `--dry-run` 与 `--yes` 互斥。
 
 **理由**：
 
 - 删除是唯一不可逆（在清空 Trash 前只是“半可逆”）的操作，预览必须是强制步骤，而不是可选开关。
-- CLI 的 `--dry-run` 与交互确认覆盖两类用户：脚本和人类。
-- 非交互环境没有人类确认，必须显式 `--yes`；默认拒绝比默认执行安全。
+- 没有脚本入口，就不存在“非交互环境如何确认”的问题；拒绝成为唯一的默认行为。
 
-**代价**：多一次按键/输入；自动化脚本必须显式写 `--yes`。
+**代价**：多一次按键/输入；无法把删除写进脚本。
 
 ### D3：严格限制在扫描树 / 显式边界内
 
 **决策**：
 
 - **TUI**：目标必须是本次 `ScanResult` 中“当前目录的直接子项”。不提供“输入任意路径删除”的入口。
-- **CLI**：`--within` 必填；目标参数必须是相对路径；必须严格位于 `--within` 之下；不能是 `--within` 本身。
-- 两条路径都拒绝：
+- 没有路径输入入口：目标只能来自扫描树中当前目录的子项。
+- 以下情况一律拒绝：
   - 绝对路径目标、盘符相对路径、UNC 路径；
   - 任何 `..` 组件；
   - 根目录、文件系统挂载点；
@@ -137,28 +126,31 @@
   - 目标子树中包含另一个挂载点的目录；
   - 目标包含或等于 Trash 根目录；
   - 一个目标包含另一个目标（重叠目标）。
-- CLI 的 `--within` 是安全边界，不要求先对整棵树做全量扫描；它会对每个目标做预览扫描。这样单文件删除不需要付出 `O(root)` 的代价。
 - TUI 的路径来自扫描树，且每次按 `d` 时重新 `lstat` 校验，不信任旧快照。
 
 **理由**：
 
-- 绝大多数误删来自“路径拼错/多一个 `..`/脚本变量为空”。相对路径 + 显式边界把这类错误挡在执行之前。
+- 绝大多数误删来自“路径拼错/多一个 `..`/脚本变量为空”。不提供路径输入，这类错误在入口处就不存在。
 - 扫描树内删除意味着用户看到的就是将要删的；不需要在确认页重新解释一棵陌生的树。
 - 拒绝符号链接和挂载点是对“递归移动目录”最重要的保护：移动一个目录不会跟随其中的符号链接，但目标本身或祖先被替换成链接时必须拒绝。
-- CLI 不强制全量扫描是有意的性能取舍：`dukit delete --within ~/tmp old.log` 不应该先扫描整个 `~/tmp`。
 
-### D4：TUI 只删目录，CLI 支持文件与目录
+### D4：删除只在交互界面中提供，且只删目录
 
 **决策**：
 
-- TUI 的 `d` 只对目录生效，因为扫描树没有文件节点。
-- CLI 的 `delete` 同时接受普通文件和目录。
-- 文件级删除在 TUI 中不作为 v1 目标；若以后要把文件加入树，需单独评估内存和渲染成本。
+- 删除入口只有两个，都在交互界面里：全屏 TUI 的 `d`，行式浏览器的 `delete <n>`。
+- 不提供 `dukit delete` 子命令，也没有 `--yes` / `--dry-run` / `--json` 等脚本化删除开关。
+- 两个入口都只对目录生效，因为扫描树没有文件节点。
+- 文件级删除不作为 v1 目标；若以后要把文件加入树，需单独评估内存和渲染成本。
 
 **理由**：
 
-- 树只有目录节点是 dukit 当前的核心内存设计；为了删除文件而在树上增加文件节点，会把内存从“目录数”推到“文件数”，与本项目已有优化冲突。
-- CLI 已经能覆盖“`top --files` 找到大文件后删除它”的流程，不需要改树模型。
+- 删除的价值来自“看到的就是将要删的”。脱离扫描树的视觉上下文，用命令行参数指定路径，安全收益消失而误删风险保留。
+- 脚本化删除最容易踩的坑（变量为空、路径拼错、循环变量失控）恰好是交互确认能挡住的。不提供入口，就不需要为这些场景设计 `--yes`、退出码和部分失败语义。
+- 需要脚本化清理的用户可以用系统自带的回收站工具；dukit 不打算成为 `trash-cli` 的替代品。
+- 树只有目录节点是 dukit 的核心内存设计；为了删除文件而在树上增加文件节点，会把内存从“目录数”推到“文件数”，与本项目已有优化冲突。
+
+**代价**：无法在脚本里调用删除。这是有意的取舍。
 
 ### D5：不实现永久删除
 
@@ -203,7 +195,7 @@
 **已知限制**：
 
 - 文件超过 Recycle Bin 配额、回收站被策略禁用、卷没有回收站时，Windows 可能永久删除而不是回收。`FOF_WANTNUKEWARNING` 要求系统在这种情况下给出警告；dukit 不关闭这个警告。
-- 因此 **Windows 上 `--yes` 不承诺“完全不出现系统对话框”**：当系统无法回收时，nuke warning 仍可能出现；在无桌面会话中它可能被系统忽略或以 aborted/未知结果返回。`--dry-run` 也无法预测配额/策略。需要严格非交互的 Windows 删除时，必须改用 `IFileOperation`，不属于 v1。
+- 因此 **Windows 上不承诺“完全不出现系统对话框”**：当系统无法回收时，nuke warning 仍可能出现。dukit 是交互式工具，这个警告正是要给人看的；无桌面会话下它可能被系统忽略或以 aborted/未知结果返回。
 - 网络共享没有 Recycle Bin；适配器必须拒绝 UNC 路径和 `DRIVE_REMOTE` 卷，不能把“无法回收”变成静默永久删除。
 - `SHFileOperationW` 不支持 `\\?\` 前缀，且长路径会失败；v1 在预览阶段拒绝超限路径，并给出明确错误。
 - 未来若要“硬保证只进回收站”，需要 `IFileOperation` + `FOFX_RECYCLEONDELETE`/`FOFX_EARLYFAILURE` 的 COM 实现；这是独立工作，不混入 v1。
@@ -224,8 +216,8 @@
 | --- | --- |
 | I1 | v1 的删除实现中不存在永久删除路径；Trash 失败不得回退。 |
 | I2 | TUI 目标必须是当前目录的直接子项，且在本次 `ScanResult` 的树中；扫描根永远不可删。 |
-| I3 | CLI 目标必须是 `--within` 的相对后代；绝对路径、盘符相对路径、UNC、`..` 一律拒绝。 |
-| I4 | 从扫描根/`--within` 到目标的每一级都必须是真实目录（最终项可以是普通文件），不能是符号链接；Windows 上也不能是 junction/reparse point（JDK 的 `isSymbolicLink()` 对 junction 返回 false，必须用 `isOther()` 或 reparse 属性判断）。 |
+| I3 | 不存在 CLI 删除入口；目标只能来自扫描树中当前目录的直接子项，不接受任何路径参数。 |
+| I4 | 从扫描根到目标的每一级都必须是真实目录，不能是符号链接；Windows 上也不能是 junction/reparse point（JDK 的 `isSymbolicLink()` 对 junction 返回 false，必须用 `isOther()` 或 reparse 属性判断）。 |
 | I5 | 目标不能是文件系统根、挂载点，或包含另一个挂载点的目录；Windows 上子树中的 reparse point 必须先验证 Shell 不会跟随，否则拒绝。 |
 | I6 | 目标不能等于或包含将要使用的 Trash 目录；否则移动会变成“把目录移进它自己”。 |
 | I7 | 目标不能是已知 Trash 根（`~/.Trash`、`.Trashes`、`$XDG_DATA_HOME/Trash`、`.Trash-$uid` 等），也不能位于将要使用的 Trash 目录内部。 |
@@ -237,8 +229,8 @@
 
 | 威胁 | 对策 | 残余风险 |
 | --- | --- | --- |
-| 用户输入 `../../etc` | CLI 拒绝绝对路径与 `..`；TUI 没有路径输入 | 无（路径解析层面） |
-| 扫描后目标被替换成符号链接 | 每次执行前逐级 `lstat`，`NOFOLLOW_LINKS`；最终项必须是目录/普通文件 | 检查与移动之间存在极短 TOCTOU 窗口；这是本地 CLI 的通用边界，OS 的 `rename` 本身是原子的 |
+| 用户输入 `../../etc` | 不存在路径输入；目标只能从扫描树中选择 | 无（没有该入口） |
+| 扫描后目标被替换成符号链接 | 每次执行前逐级 `lstat`，`NOFOLLOW_LINKS`；最终项必须是目录/普通文件 | 检查与移动之间存在极短 TOCTOU 窗口；这是本地工具的通用边界，OS 的 `rename` 本身是原子的 |
 | 目标祖先目录被替换成符号链接或 Windows junction | POSIX/Windows 都逐级检查；Windows 额外拒绝 `isOther()`/reparse point，不能只信 `isSymbolicLink()` | 同上 |
 | 现有扫描器把 Windows junction 当目录遍历 | 删除功能实现前先修复 `NioStatReader.kindOf`/扫描器的 reparse point 处理；删除 guard 再独立拒绝 | 这是现有扫描缺陷，删除功能会放大它；需要回归测试 |
 | 删除挂载点或包含挂载点的目录 | 比较目标与父目录的 `FileStore`/`unix:dev`；遍历子树检查嵌套挂载 | 非 POSIX 平台的挂载检测是 best effort，需要 native 测试 |
@@ -278,30 +270,11 @@ target = target.resolve(selected.name())
 6. 目标子树不含嵌套挂载点（见 6.4）。
 7. `TrashStore.prepare(target)` 成功，且返回的 Trash 路径不在目标内部。
 
-### 6.2 CLI 目标解析
+### 6.2 没有 CLI 目标解析
 
-```text
-root = workingDirectory.resolve(--within).normalize().toAbsolutePath()
-root = root.toRealPath()                     // 边界本身允许是链接，解析成真实目录
-relative = Path.of(argument)
-require !relative.isAbsolute()
-require relative.getRoot() == null           // Windows 上拒绝 C:foo / UNC
-require no component equals ".."
-target = root.resolve(relative).normalize()
-require target.startsWith(root) && !target.equals(root)
-```
+删除不接受路径参数，因此不存在“命令行目标解析”这一层。目标解析只有 6.1 的 TUI 路径：从 `ScanResult` 的树里取当前目录的直接子项，再逐级 `lstat` 校验。
 
-然后**先**执行与 TUI 相同的逐级 `lstat`、根/挂载点/reparse point、Trash 包含、重叠目标检查，**再**做目标子树的预览扫描。顺序不能反过来：否则一个 Windows junction 目标可能在拒绝之前就被扫描到边界之外。Windows 扫描器 junction 缺陷必须先修复（见 9.3）。
-
-额外规则：
-
-- 多个目标按参数顺序处理；先全部 `plan`，任一失败则一个都不执行。
-- 如果两个目标存在包含或相等关系（例如 `a` 与 `a/b`、`a` 与 `a`），拒绝整批，避免重复计数和“父目录已经进 Trash，子路径不存在”。Windows 上大小写不敏感，`A` 与 `a` 视为同一个目标。
-- 目标可以是普通文件或目录；其他类型（socket、FIFO、设备、符号链接）拒绝。
-- Windows 上拒绝路径组件中的 `:`（备用数据流/ADS），避免删除主文件之外的数据流。
-- `--within` 本身必须是存在的目录；不是目录时 exit 1。
-- 预览会扫描目标子树以计算表观大小和文件数；`--yes` 也不会跳过这次扫描。多目标分别统计，跨目标的硬链接可能重复计数；预览不是“释放空间”的承诺。
-- 目录目标的预览扫描若返回任何 `ScanError`（包括无法 stat 的文件），v1 拒绝该目标：无法证明挂载边界，和 TUI 的 I5 预检保持一致。文件目标 stat 失败同样拒绝。
+这去掉了一整类攻击面：绝对路径、盘符相对路径、UNC、`..`、通配符、重叠目标，以及“多个目标中部分成功”的语义。
 
 ### 6.3 根、挂载点、Trash 根
 
@@ -374,74 +347,19 @@ Type 'delete' to confirm:
 - 成功后更新树并重新渲染；失败时打印错误，树不变；如果目标已被移走但 receipt 不明确，按 10.4 处理；不确定时标记 stale。
 - `delete` 没有参数或编号越界：打印用法，不执行。
 
-### 7.3 CLI
+### 7.3 没有 CLI 入口
 
-```text
-dukit delete --within <root> [--dry-run | --yes] [--json] <relative-path>...
-```
+删除命令不存在，所以这一节只说明它为什么不存在：
 
-规则：
+- 没有 `dukit delete`，没有 `--within`、`--dry-run`、`--yes`、`--json`。
+- 没有“非交互环境如何确认”“多个目标部分成功”“退出码怎么定”这些需要单独设计的契约。
+- 脚本化清理请用系统自带的回收站工具。
 
-- `--within` 必填；缺失是用法错误（exit 2）。
-- 至少一个目标；目标列表为空是用法错误（exit 2）。
-- 目标参数必须相对；绝对路径、`..`、UNC 是用法错误（exit 2）。
-- 先规划所有目标；任一目标规划失败则整批不执行。
-- 执行时按参数顺序逐个移动；遇到第一个失败停止，已成功的保留，并报告哪些成功、哪个失败。部分成功时退出码为 1，不是 0。
-- 重叠/相等目标属于用法错误（exit 2）；目标不存在、解析后越界、符号链接、挂载点、Trash 不可用属于执行失败（exit 1）。
-- `--dry-run`：只打印计划，不修改文件系统；退出 0（计划本身失败则 1）。
-- `--yes`：跳过确认；在非交互环境必须显式提供。
-- 既无 `--yes` 也无 `--dry-run`：
-  - 交互终端：打印计划，要求输入 `delete`；取消则 exit 1。
-  - 非交互终端：打印“refusing to delete without --yes; use --dry-run to preview”并 exit 2。
-- `--dry-run` 与 `--yes` 同时出现：用法错误（exit 2）。
-- `--json` 需要 `--yes` 或 `--dry-run`；否则用法错误（exit 2），避免 JSON 输出与提示符混在一起。
-- `--quiet` 只抑制成功提示，不抑制计划/确认/错误。没有 `--yes` 的交互确认仍会显示计划。
-- Windows 特例：`--yes` 不会抑制系统级的 nuke warning；如果目标无法回收，可能出现系统对话框或返回 aborted/未知结果。`--dry-run` 只能验证路径/卷类型，不能预测 Recycle Bin 配额或策略，因此不是“保证可回收”的承诺。需要严格非交互/硬保证时等待后续 `IFileOperation` 实现。
+### 7.4 为什么没有 `--dry-run`
 
-文本输出示例：
+确认页就是 dry-run：它显示完整计划，`y` 之前没有任何副作用。再加一个“dry-run 模式”只会制造“按了 `d` 却没有确认页”的歧义。
 
-```text
-Move to Trash:
-  /Users/lihu/tmp/build-cache
-  3.4 GiB · 1,204 files
-  → /Users/lihu/.Trash/build-cache
-✔ moved to Trash: build-cache (3.4 GiB)
-Space is reclaimed only after the Trash is emptied.
-```
-
-JSON 契约：
-
-```json
-{
-  "meta": {
-    "tool": "dukit",
-    "version": "0.4.0",
-    "command": "delete",
-    "within": "/Users/lihu/tmp",
-    "dryRun": false,
-    "mode": "trash"
-  },
-  "results": [
-    {
-      "path": "/Users/lihu/tmp/build-cache",
-      "kind": "directory",
-      "size": 3650722201,
-      "files": 1204,
-      "status": "trashed",
-      "trashPath": "/Users/lihu/.Trash/build-cache"
-    }
-  ]
-}
-```
-
-- `status`：`would-trash`（dry-run）、`trashed`、`failed`、`skipped`（前面的目标失败导致未尝试）。
-- 失败项带 `error` 字符串；`trashPath` 在 Windows 上可能为 `null`（由系统决定）。
-- 规划阶段失败也输出 JSON：失败目标为 `failed`，其余为 `skipped`，退出 1。用法错误仍走 stderr/exit 2，不伪装成结果 JSON。
-- 退出码仍然是最终判定的来源；JSON 只是结果明细。
-
-### 7.4 为什么没有 TUI 的 `--dry-run`
-
-TUI 的确认页就是 dry-run：它显示完整计划，`y` 之前没有任何副作用。给 TUI 再加一个“dry-run 模式”只会制造“按了 d 却没有确认页”的歧义。CLI 需要 `--dry-run`，因为脚本没有交互确认页。
+CLI 入口被整体移除（见 D4），所以也不需要 `--dry-run`、`--yes` 或 `--json`。
 
 ---
 
@@ -543,18 +461,9 @@ y
   -> 状态行
 ```
 
-CLI：
 
-```text
---within + 相对路径
-  -> DeleteService.planPaths(within, paths)
-       -> 逐个解析/校验/预览扫描
-       -> TrashStore.prepare
-  -> --dry-run? 输出并退出 0
-  -> 确认 / --yes
-  -> 逐个 execute
-  -> 文本或 JSON 输出
-```
+---
+
 
 ---
 
@@ -700,7 +609,7 @@ CLI：
   - `GetDriveTypeW`：`int(void*)`（与前者同签名；metadata 是集合，重复声明无害）
   - `GetVolumePathNameW`：`int(void*, void*, int)`
 - `--enable-native-access=ALL-UNNAMED` 已在 `build-native.sh`；native 构建必须实际跑一次删除冒烟，而不是只验证启动。
-- 所有 FFM 调用放在 TUI/CLI 的主执行线程；不跨线程共享 `Arena`。
+- 所有 FFM 调用放在 TUI 的主执行线程；不跨线程共享 `Arena`。
 
 **Reparse point / junction**
 
@@ -772,13 +681,12 @@ CLI：
 - **DeleteGuard**
   - 目标等于根、根外、`..` 逃逸、绝对路径、盘符相对路径、UNC：拒绝。
   - 目标不存在、最终项是符号链接、中间项是符号链接：拒绝。
-  - 目标是文件（CLI 允许）、目录（TUI/CLI 允许）、FIFO/socket/设备：按契约处理。
+  - 目标是文件、FIFO/socket/设备：拒绝（只有目录可删）。
   - 目标与父目录不同 `FileStore`（模拟挂载点）：拒绝。
   - 目标等于 Trash 根、位于 Trash 内部、包含 Trash：分别拒绝。
   - 目标树含不可读取的子目录：拒绝（无法完成挂载预检）。
-  - 目录目标的预览扫描返回任何 `ScanError`：拒绝（CLI 预览与 TUI 使用同一 I5 规则）。
-  - 重叠目标（`a` 与 `a/b`，以及 Windows 上大小写等价的 `A`/`a`）：整批拒绝。
-- **TreeUpdater**
+  - 目录目标的预览扫描返回任何 `ScanError`：拒绝（I5）。
+  - **TreeUpdater**
   - 移除叶子、移除中间节点、移除根的唯一子节点；祖先 `size`/`fileCount`/`dirCount`/`errorCount` 精确扣减。
   - `ownFileSize`/`ownFileCount` 不变。
   - `ScanResult.errors` 过滤正确。
@@ -803,12 +711,6 @@ CLI：
   - 渲染器确认页宽度、截断、无 ANSI 时纯文本。
 - **Line Browser**
   - `delete 3` 计划、输入 `delete` 确认、取消、越界、成功后重渲染。
-- **CLI**
-  - `--within` 缺失 exit 2；绝对路径/`..` exit 2；`--dry-run` + `--yes` exit 2；`--json` 无 `--yes`/`--dry-run` exit 2。
-  - 非交互无 `--yes` exit 2；交互取消 exit 1。
-  - dry-run 不改变文件系统。
-  - 成功/失败的退出码、JSON 字段（`would-trash`/`trashed`/`failed`/`skipped`）、`--quiet` 行为。
-  - 规划阶段失败时 JSON 包含 `failed` + `skipped`，exit 1；用法错误不输出结果 JSON，exit 2。
 
 ### 11.2 平台集成测试
 
@@ -825,12 +727,13 @@ CLI：
 
 删除涉及 Windows FFM 和 macOS/Linux 的 `unistd` 行为，必须用 native 二进制验证：
 
-- Linux/macOS/Windows：构建 native 后创建临时树：
-  1. `dukit delete --within <tmp> --dry-run --json <target>`：exit 0，target 仍存在，JSON 中 status 为 `would-trash`。
-  2. `dukit delete --within <tmp> --yes --json <target>`：exit 0，target 消失。
-  3. 解析第 2 步 JSON 的 `trashPath`（Linux/macOS）并验证 Trash 文件存在；Windows 只验证原路径消失和 exit 0（Recycle Bin 位置由系统管理，`trashPath` 为 `null`）。
-  4. 清理测试产生的 Trash 文件（Linux/macOS 可按已知路径删除；Windows CI runner 可接受留在回收站）。
-- TUI 的 native 验证需要 PTY；v1 不把 PTY 自动化作为 CI 门槛，但发布前在三个平台手动跑一次全屏 `d` 流程，并把结果记录在发布 PR。
+- Linux/macOS/Windows：构建 native 后创建临时树，用 PTY 驱动全屏 TUI：
+  1. 打开 `dukit <tmp>`，选中目标目录，按 `d`：确认页出现，目标仍存在。
+  2. 按 `y`：目标消失，进程正常退出。
+  3. 验证 Trash 文件存在（Linux/macOS 可按已知路径检查）；Windows 只验证原路径消失（Recycle Bin 位置由系统管理）。
+  4. 清理测试产生的 Trash 文件。
+- 行式浏览器回退路径（终端无法进入 raw mode 时）手动验证一次 `delete <n>` 流程。
+- PTY 自动化不作为 CI 门槛；发布前在三个平台手动跑一次全屏 `d` 流程，并把结果记录在发布 PR。
 
 ### 11.4 未验证项必须明确
 
@@ -849,7 +752,7 @@ CLI：
 
 0. **前置缺陷修复**
    - 修复 Windows 扫描器把 junction/reparse point 当作目录遍历的问题（`NioStatReader.kindOf` 的顺序/属性判断），补 Windows 回归测试；这是删除功能的前置条件，独立于删除提交。
-   - 该修复必须早于 CLI 预览扫描和 TUI 的任何树遍历，否则 junction 会在 guard 拒绝之前被扫到边界之外。
+   - 该修复必须早于 TUI 的任何树遍历，否则 junction 会在 guard 拒绝之前被扫到边界之外。
 1. **核心纯逻辑**
    - `DeleteGuard`、`DeletePlan`、`DeleteTarget`、`DeleteResult`、`TreeUpdater`。
    - 先写失败测试：根/越界/符号链接/junction/挂载点/重叠目标/树扣减。
@@ -869,15 +772,12 @@ CLI：
    - 确认态导航键忽略；`q`/Ctrl-C 在确认态取消，取消后再 `q` 才退出。
 6. **行式浏览器**
    - `delete <n>`、确认、树替换、帮助文本。
-7. **CLI**
-   - `DeleteCommand`、参数校验、`--dry-run`/`--yes`/`--json`/`--quiet`。
-   - 注册到根命令。
-8. **Native 与发布**
+7. **Native 与发布**
    - `scripts/smoke-native.py` 增加 dry-run + 实际删除 + 原路径消失断言。
    - 三个平台 native 构建与手动 TUI 验证。
-9. **文档**
+8. **文档**
    - 更新 `site/dukit/SKILL.md`、`site/dukit/index.html`、`index_zh.html` 中“只读”的 FAQ。
-   - 在 README 的 dukit 说明中加入“交互式/CLI 移入 Trash”。
+   - 在 README 的 dukit 说明中加入“交互式移入 Trash”。
    - SemVer：功能新增，minor bump；由发布 PR 统一处理。
 
 提交节奏：沿用项目约定，行为变更先提交失败测试，再提交最小实现；缺陷修复保持 test/fix 两个 commit。本次设计 PR 不包含生产代码。
@@ -895,7 +795,7 @@ CLI：
 | `Desktop.moveToTrash` | 不采用 | Linux 不支持；AWT native image 在 macOS 有已知问题 |
 | macOS `NSFileManager.trashItem` via FFM | v1 不采用 | 纯 JDK 的 `~/.Trash`/`.Trashes` 已满足系统 Trash 目录；ObjC FFM 增加 native 风险，且 Put Back 仍不保证 |
 | Windows `IFileOperation` | 后续 | 更强的“只回收/失败”语义，但 COM+FFM 复杂度高；v1 用 `SHFileOperationW` 并记录限制 |
-| CLI 先全量扫描 `--within` | 不采用 | 单文件删除会被迫 `O(root)` 扫描；显式边界 + 目标预览已达到同等安全目标 |
+| CLI 删除子命令 | **不采用** | 删除的价值依赖扫描树的视觉上下文；脚本化删除最容易因变量为空/路径拼错误删，而这正是交互确认能挡住的 |
 | TUI 增加文件节点 | 后续 | 会把树内存从目录数推到文件数，与现有扫描优化冲突 |
 
 ---
@@ -905,17 +805,17 @@ CLI：
 请评审人逐项确认或提出修改：
 
 - [ ] **D1** 同意 v1 只走系统 Trash，不提供永久删除。
-- [ ] **D2** 同意 TUI 使用确认页、CLI 使用 `--dry-run`/`--yes`/输入 `delete` 的确认模型。
-- [ ] **D3** 同意 TUI 只删扫描树直接子项、CLI 必须 `--within` + 相对路径。
-- [ ] **D4** 同意 TUI 目录级、CLI 文件+目录的范围划分。
+- [ ] **D2** 同意删除只有交互入口：TUI 确认页、行式浏览器输入 `delete`，确认前无副作用。
+- [ ] **D3** 同意只删扫描树中当前目录的直接子项，不提供任何路径输入。
+- [ ] **D4** 同意删除只在交互界面提供、只删目录，不提供 CLI 删除子命令。
 - [ ] **D5** 同意 Windows v1 使用 `SHFileOperationW` 并接受 D9 的已知限制；还是要求先做 `IFileOperation`？
 - [ ] **D6** 同意 macOS v1 用纯 JDK 的 `~/.Trash`/`.Trashes`，不引入 ObjC FFM。
 - [ ] **D7** 同意失败关闭、绝不回退永久删除。
 - [ ] **D8** 同意删除后只更新内存树，不自动重扫；不确定结果标记 stale。
 - [ ] **D9** 同意 v1 不做恢复/清空 Trash。
-- [ ] **D10** 同意实现顺序：先修复 Windows junction 扫描缺陷，再核心 -> Linux -> macOS -> Windows -> TUI -> CLI -> native/文档。
+- [ ] **D10** 同意实现顺序：先修复 Windows junction 扫描缺陷，再核心 -> Linux -> macOS -> Windows -> TUI -> native/文档。
 - [ ] 确认 Windows junction/reparse point 的前置修复作为独立缺陷提交，并保留回归测试。
-- [ ] 确认 Linux/macOS 的网络 fstype 拒绝，以及 Windows nuke warning 在 `--yes` 下的行为，属于可接受的 v1 边界。
+- [ ] 确认 Linux/macOS 的网络 fstype 拒绝，以及 Windows nuke warning 的实际行为，属于可接受的 v1 边界。
 - [ ] 确认发布前必须完成三平台 native 冒烟和手动 TUI 验证。
 - [ ] 确认站点/SKILL 的“只读”表述在实现 PR 中同步修改。
 
