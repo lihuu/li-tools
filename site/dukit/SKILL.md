@@ -159,7 +159,7 @@ diff <(jq -r '.tree | .. | objects | "\(.name) \(.size)"' before.json) \
 
 ## Notes
 
-- dukit can move directories to the system Trash, but **only from the interactive browser**: `d` in the full-screen UI, `delete <n>` in the line-based one. There is no CLI delete command, no `--yes`/`--dry-run`, and nothing is ever deleted permanently.
+- dukit can move directories to the system Trash, but **only from the interactive browser**: `d` in the full-screen UI, `delete <n>` in the line-based one. There is no CLI delete command, no `--yes`/`--dry-run`, and dukit never requests a permanent delete. On Windows the target goes to the Recycle Bin; when the Recycle Bin is disabled or full, the shell may warn and then delete permanently, which dukit does not suppress.
 - Output respects `NO_COLOR` and `--no-color`; piped output contains no ANSI escapes.
 - Traversal is parallel and adaptive: wide directory levels fan out across workers, narrow ones stay inline, so small trees pay no penalty. Measured on a 59 GB / 660k-file tree: 3.2s versus ncdu's 8s.
 - Progress shows files, bytes, and the current path on interactive terminals only.
