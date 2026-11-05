@@ -7,7 +7,7 @@ description: Use when analyzing disk usage, finding the largest directories or f
 
 `dukit` is a cross-platform, zero-dependency CLI tool for analyzing disk usage, inspired by ncdu. It scans a directory tree once and answers three questions: what does the whole tree look like (JSON), what are the biggest directories or files (top), and how do I explore it interactively (browse).
 
-**The tree contains directories only.** Regular files are folded into their parent directory's counters (`ownFileSize`, `ownFileCount`) instead of becoming nodes. This keeps output proportional to the directory count rather than the file count — on a real `/Applications` scan that is 87k nodes instead of 660k. Use `top --files` when you need individual files.
+**The tree contains directories only.** Regular files are folded into their parent directory's counters (`ownFileSize`, `ownFileCount`) instead of becoming nodes. This keeps output proportional to the directory count rather than the file count — on a real `/Applications` scan that is 87k nodes instead of 660k. Use `top --files` for a ranked file report, or press `t` in the browser to reveal the current directory's largest direct files.
 
 ## Trigger Conditions
 
@@ -109,12 +109,17 @@ backspace / ←    return to the parent
 home / end       jump to the first or last entry
 page up / down   move a screenful
 s                cycle sort: size -> name -> count
+t                show/hide the current directory's largest direct files
 q or ctrl-c      quit
 ```
 
 The listing always starts sorted by size, largest first, with the first entry selected.
-Empty directories are still enterable — that is how you find out they are empty. A terminal
-that cannot be driven in raw mode falls back to a line-based browser automatically.
+Pressing `t` appends up to ten largest regular files that sit directly in the current
+directory, largest first; those rows are display-only (Enter does nothing on them). The scan
+retains this bounded preview only for the browser — `scan` JSON stays directories-only, so
+its payload does not grow. Empty directories are still enterable — that is how you find out
+they are empty. A terminal that cannot be driven in raw mode falls back to a line-based
+browser automatically.
 
 JLine supplies the platform work (raw mode, key decoding, terminal size) and its FFM
 provider drives the Windows console through the Foreign Function & Memory API, so the same

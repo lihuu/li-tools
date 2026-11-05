@@ -38,6 +38,8 @@ class KeyParserTest {
         assertEquals(Key.QUIT, parse('q'));
         assertEquals(Key.QUIT, parse(3));
         assertEquals(Key.SORT, parse('s'));
+        assertEquals(Key.TOGGLE_FILES, parse('t'));
+        assertEquals(Key.TOGGLE_FILES, parse('T'));
         assertEquals(Key.DOWN, parse('j'));
         assertEquals(Key.UP, parse('k'));
         assertEquals(Key.HOME, parse('g'));

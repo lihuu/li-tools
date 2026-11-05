@@ -16,6 +16,8 @@ import java.time.Instant;
  * <p>The tree contains directories only. Each node carries its whole-subtree totals and,
  * separately, the bytes and count of the regular files directly inside it, so a consumer
  * can reason about "this directory's own files" without the tree carrying a node per file.
+ * The interactive browser's bounded file preview ({@link DirEntry#topFiles()}) is
+ * deliberately not serialized: it exists for the screen, not for the report contract.
  */
 public final class JsonReporter {
     private final PrintWriter out;

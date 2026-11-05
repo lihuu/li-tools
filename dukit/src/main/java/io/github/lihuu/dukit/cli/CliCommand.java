@@ -14,6 +14,7 @@ import io.github.lihuu.dukit.core.trash.TrashStores;
 import io.github.lihuu.dukit.core.report.JsonReporter;
 import io.github.lihuu.dukit.core.scan.ProgressPrinter;
 import io.github.lihuu.dukit.core.tui.FullScreenBrowser;
+import io.github.lihuu.dukit.core.tui.TuiState;
 import org.jetbrains.annotations.NotNull;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -69,7 +70,8 @@ public final class CliCommand implements Callable<Integer> {
             spec.commandLine().usage(spec.commandLine().getOut(), CommandLine.Help.Ansi.OFF);
             return CliExitCode.OK;
         }
-        ScanResult result = scanTree(path == null ? "." : path, null, globalOptions.quiet);
+        ScanResult result = scanTree(path == null ? "." : path, null, globalOptions.quiet,
+                interactive ? TuiState.TOP_FILES : 0);
         reportScanErrors(result, globalOptions.quiet);
         if (interactive) {
             if (FullScreenBrowser.run(result, outputStyle().isAnsi(), deleteService())) {
@@ -105,11 +107,15 @@ public final class CliCommand implements Callable<Integer> {
     }
 
     ScanResult scanTree(@NotNull String path, List<String> excludes, boolean quiet) throws IOException {
+        return scanTree(path, excludes, quiet, 0);
+    }
+
+    ScanResult scanTree(@NotNull String path, List<String> excludes, boolean quiet, int topFiles) throws IOException {
         Path target = resolve(path);
         ProgressPrinter progress = progressPrinter(quiet);
         ScanResult result;
         try {
-            result = new DirectoryScanner(excludes == null ? List.of() : excludes).scan(target, progress);
+            result = new DirectoryScanner(excludes == null ? List.of() : excludes).scan(target, progress, topFiles);
         } finally {
             progress.finish();
         }

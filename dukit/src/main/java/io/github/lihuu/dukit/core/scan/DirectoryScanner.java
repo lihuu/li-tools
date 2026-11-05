@@ -1,6 +1,7 @@
 package io.github.lihuu.dukit.core.scan;
 
 import io.github.lihuu.dukit.core.model.DirEntry;
+import io.github.lihuu.dukit.core.model.FileEntry;
 import io.github.lihuu.dukit.core.model.ScanError;
 import io.github.lihuu.dukit.core.model.ScanResult;
 import io.github.lihuu.dukit.core.model.TopResult;
@@ -30,7 +31,9 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * <ul>
  *   <li>{@link #scan} builds a tree of <em>directories only</em>; regular files are folded
- *       into their parent's counters.</li>
+ *       into their parent's counters. A caller that needs to show individual files (the
+ *       interactive browser) passes a positive preview size, which retains that many largest
+ *       direct files per directory without adding nodes to the tree.</li>
  *   <li>{@link #top} builds no tree and keeps only the N largest directories and files in
  *       bounded heaps.</li>
  * </ul>
@@ -72,8 +75,18 @@ public final class DirectoryScanner {
         return scan(root, listener, 0);
     }
 
-    @NotNull ScanResult scan(@NotNull Path root, @NotNull ProgressListener listener, int topLimit) throws IOException {
-        Run run = execute(root, listener, true, topLimit);
+    /**
+     * Scans and, when {@code topFiles} is positive, retains that many largest regular files
+     * directly inside every directory for the interactive browser. The files never enter the
+     * directory tree's children or the JSON report.
+     *
+     * @param topFiles per-directory file preview size; {@code 0} keeps no files
+     */
+    public @NotNull ScanResult scan(@NotNull Path root, @NotNull ProgressListener listener, int topFiles) throws IOException {
+        if (topFiles < 0) {
+            throw new IllegalArgumentException("topFiles must not be negative: " + topFiles);
+        }
+        Run run = execute(root, listener, true, 0, topFiles);
         if (run.node == null) {
             throw new IOException("cannot scan " + run.root + ": " + run.reason());
         }
@@ -81,7 +94,7 @@ public final class DirectoryScanner {
     }
 
     public @NotNull TopResult top(@NotNull Path root, int limit, @NotNull ProgressListener listener) throws IOException {
-        Run run = execute(root, listener, false, limit);
+        Run run = execute(root, listener, false, limit, 0);
         if (run.node == null) {
             throw new IOException("cannot scan " + run.root + ": " + run.reason());
         }
@@ -90,7 +103,7 @@ public final class DirectoryScanner {
     }
 
     private @NotNull Run execute(@NotNull Path root, @NotNull ProgressListener listener,
-            boolean buildTree, int topLimit) throws IOException {
+            boolean buildTree, int topLimit, int topFiles) throws IOException {
         Path absolute = root.toAbsolutePath().normalize();
         List<PathMatcher> nameMatchers = new ArrayList<>();
         List<PathMatcher> relativeMatchers = new ArrayList<>();
@@ -106,7 +119,7 @@ public final class DirectoryScanner {
             }
         }
 
-        Run run = new Run(absolute, nameMatchers, relativeMatchers, listener, buildTree, topLimit);
+        Run run = new Run(absolute, nameMatchers, relativeMatchers, listener, buildTree, topLimit, topFiles);
         if (!Files.isDirectory(absolute)) {
             return run;
         }
@@ -128,6 +141,7 @@ public final class DirectoryScanner {
         private final List<PathMatcher> relativeMatchers;
         private final ProgressListener listener;
         private final boolean buildTree;
+        private final int topFiles;
         private final StatReader statReader = StatReader.create();
         private final HardlinkSet seenHardlinks = new HardlinkSet();
         private final Set<Object> seenFileKeys = ConcurrentHashMap.newKeySet();
@@ -140,12 +154,13 @@ public final class DirectoryScanner {
 
         Run(@NotNull Path root, @NotNull List<PathMatcher> nameMatchers,
                 @NotNull List<PathMatcher> relativeMatchers, @NotNull ProgressListener listener,
-                boolean buildTree, int topLimit) {
+                boolean buildTree, int topLimit, int topFiles) {
             this.root = root;
             this.nameMatchers = nameMatchers;
             this.relativeMatchers = relativeMatchers;
             this.listener = listener;
             this.buildTree = buildTree;
+            this.topFiles = topFiles;
             this.largestFiles = topLimit > 0 ? new TopCollector(topLimit) : null;
             this.largestDirectories = topLimit > 0 ? new TopCollector(topLimit) : null;
         }
@@ -207,7 +222,7 @@ public final class DirectoryScanner {
 
         @Override
         protected @Nullable Node compute() {
-            Node node = new Node();
+            Node node = new Node(run.topFiles);
             List<Path> subdirectories = new ArrayList<>();
             FileStat stat = new FileStat();
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir);
@@ -263,6 +278,9 @@ public final class DirectoryScanner {
             node.ownFileSize += size;
             node.ownFileCount++;
             node.size += size;
+            if (size > 0) {
+                node.offerFile(child, size);
+            }
             run.bytesSeen.addAndGet(size);
             if (run.largestFiles != null && size > 0) {
                 run.largestFiles.offer(child, size);
@@ -312,7 +330,12 @@ public final class DirectoryScanner {
     }
 
     private static final class Node {
+        private static final Comparator<FileEntry> FILE_ORDER =
+                Comparator.comparingLong(FileEntry::size).reversed().thenComparing(FileEntry::name);
+
         private final List<DirEntry> children = new ArrayList<>();
+        private final int fileLimit;
+        private @Nullable List<FileEntry> topFiles;
         private long size;
         private long ownFileSize;
         private long ownFileCount;
@@ -320,12 +343,46 @@ public final class DirectoryScanner {
         private long subtreeDirCount;
         private long errorCount;
 
+        private Node(int fileLimit) {
+            this.fileLimit = fileLimit;
+        }
+
+        /**
+         * Inserts one regular file into the bounded, size-descending preview. The tiny list is
+         * kept sorted in place: the limit is single digits, so an insertion costs less than
+         * allocating a collector per directory.
+         */
+        private void offerFile(@NotNull Path path, long size) {
+            if (fileLimit == 0 || size <= 0) {
+                return;
+            }
+            if (topFiles == null) {
+                topFiles = new ArrayList<>(Math.min(fileLimit, 8));
+            }
+            if (topFiles.size() == fileLimit && size < topFiles.get(topFiles.size() - 1).size()) {
+                return;
+            }
+            FileEntry candidate = new FileEntry(name(path), size);
+            int index = 0;
+            while (index < topFiles.size() && FILE_ORDER.compare(topFiles.get(index), candidate) <= 0) {
+                index++;
+            }
+            if (index == topFiles.size() && topFiles.size() == fileLimit) {
+                return;
+            }
+            topFiles.add(index, candidate);
+            if (topFiles.size() > fileLimit) {
+                topFiles.remove(topFiles.size() - 1);
+            }
+        }
+
         private @NotNull DirEntry toEntry(@NotNull Path dir) {
             children.sort(Comparator.comparingLong((DirEntry entry) -> entry.size())
                     .reversed()
                     .thenComparing(DirEntry::name));
             return new DirEntry(name(dir), size, ownFileCount + subtreeFileCount,
-                    subtreeDirCount, errorCount, ownFileSize, ownFileCount, children);
+                    subtreeDirCount, errorCount, ownFileSize, ownFileCount,
+                    topFiles == null ? List.of() : topFiles, children);
         }
 
         private static String name(@NotNull Path path) {

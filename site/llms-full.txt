@@ -126,7 +126,8 @@ A cross-platform disk usage analyzer inspired by ncdu: scan a directory tree onc
    - Symlinks are never followed; directory inodes add nothing to subtree sizes.
 3. **Full-Screen Interactive Browser**:
    - `dukit browse [path]`
-   - Alternate screen, arrow-key selection, Enter to descend, Backspace to return, `s` to cycle sort. Always sorted by size with the largest entry selected.
+   - Alternate screen, arrow-key selection, Enter to descend, Backspace to return, `s` to cycle sort, `t` to show the current directory's largest direct files. Always sorted by size with the largest entry selected.
+   - File rows are display-only. The browser asks the scanner for a bounded preview (top 10 per directory); ordinary `scan` JSON never carries file nodes, so its payload stays directories-only.
    - JLine supplies raw mode and key decoding; its FFM provider drives the Windows console through the Foreign Function & Memory API, so one implementation covers macOS, Linux and Windows — including inside the native binary.
    - Requires an interactive terminal; piped invocations fail fast with exit code 2 and a hint toward `scan`. A terminal that cannot enter raw mode falls back to a line-based browser.
 4. **Directories-Only JSON Tree**:
