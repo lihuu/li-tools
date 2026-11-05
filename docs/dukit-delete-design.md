@@ -859,14 +859,15 @@ y
 - [ ] **D2** 同意删除只有交互入口：TUI 确认页、行式浏览器输入 `delete`，确认前无副作用。
 - [ ] **D3** 同意只删扫描树中当前目录的直接子项，不提供任何路径输入。
 - [ ] **D4** 同意删除只在交互界面提供、只删目录，不提供 CLI 删除子命令。
-- [ ] **D5** 同意 Windows v1 使用 `SHFileOperationW` 并接受 D9 的已知限制；还是要求先做 `IFileOperation`？
-- [ ] **D6** 同意 macOS v1 用纯 JDK 的 `~/.Trash`/`.Trashes`，不引入 ObjC FFM。
+- [ ] **D5** 同意 v1 没有永久删除入口（包括 `--permanent` 与 TUI 快捷键）。
+- [ ] **D6** 同意所有平台适配器都不调用 shell、不拼接外部命令。
 - [ ] **D7** 同意失败关闭、绝不回退永久删除。
 - [ ] **D8** 同意删除后只更新内存树，不自动重扫；不确定结果标记 stale。
-- [ ] **D9** 同意 v1 不做恢复/清空 Trash。
-- [ ] **D10** 同意实现顺序：核心 -> Linux -> macOS -> Windows -> TUI -> native/文档（Windows junction 前置修复已完成，见 PR #30）。
+- [ ] **D9** 同意 Windows v1 使用 `SHFileOperationW` 并接受 D9 的已知限制；还是要求先做 `IFileOperation`？
+- [ ] **D10** 同意 v1 不做恢复/清空 Trash。
 - [ ] **D11** 同意 `--exclude` 扫描禁用删除；还是要求 v1 在计划阶段对目标做一次不计 excludes 的审计并在确认页展示完整大小？
 - [x] Windows junction/reparse point 的前置修复已作为独立缺陷提交（PR #30），并保留回归测试；删除 guard 仍独立检查。
+- [ ] 同意 macOS v1 用纯 JDK 的 `~/.Trash`/`.Trashes`，不引入 ObjC FFM。
 - [ ] 同意 §8.5 的 TUI 分层：`TuiState` 纯状态、runner 持有 `DeleteService` 并执行 I/O，`ScreenRenderer` 只渲染。
 - [ ] 同意 §9.3 的保守策略：目标子树只要含任何 reparse point，v1 一律拒绝删除；接受 OneDrive 占位目录等目标无法从 dukit 删除。
 - [ ] 确认 Linux `Path=` 对非 UTF-8 文件名的 round-trip 限制（§9.1）可接受，不在 v1 引入 raw-byte FFM。
@@ -874,6 +875,7 @@ y
 - [ ] 确认发布前必须完成三平台 native 冒烟和手动 TUI 验证；`scripts/smoke-native.py` 不承担删除流程验证（§11.3）。
 - [ ] 确认站点/SKILL 的“只读”表述在实现 PR 中同步修改。
 - [ ] 确认 Windows `SHFileOperationW` 的 COM 初始化按 §9.3 在实现前验证，不把未验证假设写进代码。
+- [ ] 同意 §12 的实现顺序：核心 -> Linux -> macOS -> Windows -> TUI -> native/文档（Windows junction 前置修复已完成，见 PR #30）。
 
 **评审结论**：`待评审` / `通过` / `需修改`
 
