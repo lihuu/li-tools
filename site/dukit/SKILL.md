@@ -123,7 +123,7 @@ full-screen UI runs on macOS, Linux, and Windows, including in the native binary
 ## Size Semantics (Important)
 
 - **Apparent sizes**: the sum of logical file sizes. The JDK exposes no portable allocated-block metric, so dukit reports apparent sizes to keep numbers identical across filesystems. Compare with `du --apparent-size`.
-- **Hardlinks**: content counts exactly once per scan (first occurrence); every hardlink still counts toward `files`.
+- **Hardlinks**: content counts exactly once per scan (first occurrence); every hardlink still counts toward `files`. **This requires a file key, which java.nio.file does not expose on Windows** — there each link's content is counted separately. macOS and Linux de-duplicate correctly.
 - **Symlinks**: never followed, never sized, not counted as files. A symlinked *root* is resolved before scanning.
 - **Directories**: only their contents contribute; the directory inode's own size is not added.
 - **Errors**: unreadable paths are skipped with a warning on stderr, never silently ignored, and counted in `errors`.

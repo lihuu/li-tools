@@ -321,7 +321,7 @@
           </div>
           <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">诚实的尺寸语义</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            表观大小保证跨平台一致;硬链接内容同一扫描只计一次;符号链接永不跟随;不可读路径跳过并警告,不中断扫描。
+            表观大小保证跨平台一致;符号链接永不跟随;不可读路径跳过并警告,不中断扫描。硬链接内容在 macOS 与 Linux 上同一扫描只计一次;Windows 的 java.nio.file 不暴露 fileKey,因此每个链接各计一次。
           </p>
         </div>
 

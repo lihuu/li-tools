@@ -122,7 +122,7 @@ A cross-platform disk usage analyzer inspired by ncdu: scan a directory tree onc
    - Unreadable paths are collected as warnings on stderr while the scan continues; the root being unreadable is the only fatal case.
 2. **Honest, Cross-Platform Size Semantics**:
    - Reports apparent sizes (logical file sizes, like `du --apparent-size`), the only metric the JDK exposes portably and the only one identical across APFS, ext4, and NTFS.
-   - Hardlinked content counts exactly once per scan (first occurrence wins); every hardlink still counts toward the file totals.
+   - Hardlinked content counts exactly once per scan (first occurrence wins); every hardlink still counts toward the file totals. This needs a file key, which java.nio.file does not expose on Windows (verified on JDK 25: null, and the unix: view is unsupported), so Windows counts each link separately.
    - Symlinks are never followed; directory inodes add nothing to subtree sizes.
 3. **Full-Screen Interactive Browser**:
    - `dukit browse [path]`

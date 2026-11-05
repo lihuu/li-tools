@@ -321,7 +321,7 @@
           </div>
           <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">Honest Size Semantics</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Apparent sizes for cross-platform parity, hardlinked content counted once per scan, symlinks never followed, unreadable paths skipped with a warning instead of aborting.
+            Apparent sizes for cross-platform parity, symlinks never followed, unreadable paths skipped with a warning instead of aborting. Hardlinked content counts once per scan on macOS and Linux; Windows exposes no file key through java.nio.file, so there each link counts separately.
           </p>
         </div>
 

@@ -14,13 +14,14 @@ class ProgressPrinterTest {
         StringWriter buffer = new StringWriter();
         ProgressPrinter progress = new ProgressPrinter(new PrintWriter(buffer, true), true);
 
-        progress.onUpdate(1024, 4096, Path.of("/some/dir"));
+        Path current = Path.of("some", "dir");
+        progress.onUpdate(1024, 4096, current);
         progress.finish();
 
         String printed = buffer.toString();
         assertTrue(printed.contains("1024 files"), printed);
         assertTrue(printed.contains("4.0 KiB"), printed);
-        assertTrue(printed.contains("/some/dir"), printed);
+        assertTrue(printed.contains(current.toString()), printed);
         assertTrue(printed.startsWith("\r"), "updates rewrite the line in place");
         assertTrue(printed.endsWith("\r"), "finish ends by clearing the line");
     }
@@ -49,12 +50,14 @@ class ProgressPrinterTest {
         StringWriter buffer = new StringWriter();
         ProgressPrinter progress = new ProgressPrinter(new PrintWriter(buffer, true), true);
 
-        progress.onUpdate(1024, 4096, Path.of("/a/very/long/directory/name/that/takes/space/aaaaaaaaaaaaaaaaaaaa"));
-        progress.onUpdate(2048, 8192, Path.of("/short"));
+        progress.onUpdate(1024, 4096, Path.of("a", "very", "long", "directory", "name", "that", "takes",
+                "space", "aaaaaaaaaaaaaaaaaaaa"));
+        Path shortPath = Path.of("short");
+        progress.onUpdate(2048, 8192, shortPath);
         progress.finish();
 
         String printed = buffer.toString();
-        int shortUpdate = printed.indexOf("/short");
+        int shortUpdate = printed.indexOf(shortPath.toString());
         assertTrue(shortUpdate >= 0, printed);
         String tail = printed.substring(shortUpdate, printed.indexOf("\r", shortUpdate));
         assertTrue(tail.endsWith("  "), "padding erases the remains of the previous line: " + tail);

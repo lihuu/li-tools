@@ -10,7 +10,9 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 
@@ -71,14 +73,27 @@ class DirectoryScannerTest {
     }
 
     @Test
-    void countsHardlinkedContentOncePerScan() throws IOException {
+    void hardlinkedContentFollowsThePlatformsFileKeySupport() throws IOException {
         Path root = tree("hardlinks");
-        Files.createLink(root.resolve("a/twin.bin"), root.resolve("a/big.bin"));
+        Path original = root.resolve("a/big.bin");
+        Files.createLink(root.resolve("a/twin.bin"), original);
 
         ScanResult result = new DirectoryScanner(List.of()).scan(root, (files, bytes, dir) -> { });
 
         assertEquals(5, result.root().fileCount(), "every hardlink is a file");
-        assertEquals(650, result.root().size(), "hardlinked content counts once");
+
+        // Windows exposes no file key through java.nio.file (verified on JDK 25: it is null
+        // and the unix: view is unsupported), so two links to one inode are indistinguishable
+        // from two files with equal content. Assert that reality rather than skipping the
+        // case, so the platform difference stays visible.
+        boolean fileKeysAvailable = Files.readAttributes(original, BasicFileAttributes.class,
+                LinkOption.NOFOLLOW_LINKS).fileKey() != null;
+        if (fileKeysAvailable) {
+            assertEquals(650, result.root().size(), "hardlinked content counts once");
+        } else {
+            assertEquals(950, result.root().size(),
+                    "without file keys the same content counts once per link");
+        }
     }
 
     @Test
