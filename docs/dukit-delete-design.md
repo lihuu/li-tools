@@ -354,6 +354,7 @@ y move to Trash   n cancel   space is not freed until Trash is emptied
 ### 7.2 行式浏览器
 
 - 帮助增加 `delete <n>`。
+- `delete <n>` 的编号必须与当前 `sort` 视图一致（和数字跳转使用同一份排序列表），不能直接用 `current.children()` 的原始顺序，否则会删错目标。
 - `delete 3` 打印与 TUI 等价的计划，然后要求输入完整单词 `delete`：
 
 ```text
@@ -755,6 +756,7 @@ y
   - 渲染器确认页宽度、截断、无 ANSI 时纯文本。
 - **Line Browser**
   - `delete 3` 计划、输入 `delete` 确认、取消、越界、成功后重渲染。
+  - 在 `sort name`/`sort count` 下，`delete <n>` 删除的是屏幕上第 n 项，不是原始 `children` 顺序。
 
 ### 11.2 平台集成测试
 
