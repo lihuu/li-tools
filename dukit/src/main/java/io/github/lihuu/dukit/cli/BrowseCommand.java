@@ -32,10 +32,10 @@ public final class BrowseCommand extends CliCommand.Action {
         ScanResult result = root.scanTree(path, excludes, options.quiet);
         root.reportScanErrors(result, options.quiet);
         boolean color = root.outputStyle().isAnsi();
-        if (!FullScreenBrowser.run(result, color)) {
+        if (!FullScreenBrowser.run(result, color, root.deleteService())) {
             // No usable terminal after all (dumb TERM, exotic terminal): the line-based
             // browser still works, it just needs Enter after every gesture.
-            new Browser(result, in(), out(), root.outputStyle()).run();
+            new Browser(result, in(), out(), root.outputStyle(), root.deleteService()).run();
         }
         return CliExitCode.OK;
     }

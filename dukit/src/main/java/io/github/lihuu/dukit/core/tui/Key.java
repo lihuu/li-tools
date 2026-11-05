@@ -15,6 +15,9 @@ public enum Key {
     PAGE_DOWN,
     SORT,
     TOGGLE_FILES,
+    DELETE,
+    CONFIRM,
+    CANCEL,
     QUIT,
     NONE
 }

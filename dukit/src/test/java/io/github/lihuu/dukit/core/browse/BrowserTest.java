@@ -120,6 +120,6 @@ class BrowserTest {
     private Browser browser(String input) throws IOException {
         output = new StringWriter();
         ScanResult result = new DirectoryScanner(List.of()).scan(root, (files, bytes, dir) -> { });
-        return new Browser(result, new StringReader(input), new PrintWriter(output, true), OutputStyle.plain());
+        return new Browser(result, new StringReader(input), new PrintWriter(output, true), OutputStyle.plain(), null);
     }
 }

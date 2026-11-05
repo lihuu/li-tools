@@ -9,6 +9,8 @@ import io.github.lihuu.dukit.core.model.ScanResult;
 import io.github.lihuu.dukit.core.model.TopResult;
 import io.github.lihuu.dukit.core.scan.DirectoryScanner;
 import io.github.lihuu.dukit.core.browse.Browser;
+import io.github.lihuu.dukit.core.delete.DeleteService;
+import io.github.lihuu.dukit.core.trash.TrashStores;
 import io.github.lihuu.dukit.core.report.JsonReporter;
 import io.github.lihuu.dukit.core.scan.ProgressPrinter;
 import io.github.lihuu.dukit.core.tui.FullScreenBrowser;
@@ -29,6 +31,7 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -69,11 +72,11 @@ public final class CliCommand implements Callable<Integer> {
         ScanResult result = scanTree(path == null ? "." : path, null, globalOptions.quiet);
         reportScanErrors(result, globalOptions.quiet);
         if (interactive) {
-            if (FullScreenBrowser.run(result, outputStyle().isAnsi())) {
+            if (FullScreenBrowser.run(result, outputStyle().isAnsi(), deleteService())) {
                 return CliExitCode.OK;
             }
             // Raw mode unavailable (exotic terminal): the line-based browser still works.
-            return new Browser(result, input(), out(), outputStyle()).run();
+            return new Browser(result, input(), out(), outputStyle(), deleteService()).run();
         }
         // Piped: a report is what a script can consume. Same shape as `scan`.
         new JsonReporter(out(), ApplicationInfo.load(), -1).write(result);
@@ -94,6 +97,11 @@ public final class CliCommand implements Callable<Integer> {
 
     OutputStyle outputStyle() {
         return OutputStyle.of(environment, interactive, globalOptions.noColor);
+    }
+
+    DeleteService deleteService() {
+        return new DeleteService(TrashStores.forCurrentPlatform(
+                Path.of(System.getProperty("user.home")), environment, Clock.systemDefaultZone()));
     }
 
     ScanResult scanTree(@NotNull String path, List<String> excludes, boolean quiet) throws IOException {
