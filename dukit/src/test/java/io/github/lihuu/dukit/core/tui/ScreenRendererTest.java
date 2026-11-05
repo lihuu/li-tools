@@ -19,6 +19,7 @@ class ScreenRendererTest {
     @TempDir Path temporary;
 
     private DirEntry root;
+    private ScanResult scan;
     private TuiState state;
 
     @BeforeEach
@@ -29,9 +30,9 @@ class ScreenRendererTest {
         Files.writeString(base.resolve("alpha/big.bin"), "x".repeat(300), StandardCharsets.US_ASCII);
         Files.writeString(base.resolve("alpha/nested/deep.bin"), "x".repeat(200), StandardCharsets.US_ASCII);
         Files.writeString(base.resolve("beta/mid.bin"), "x".repeat(100), StandardCharsets.US_ASCII);
-        ScanResult result = new DirectoryScanner(List.of()).scan(base, (files, bytes, dir) -> { });
-        root = result.root();
-        state = new TuiState(root);
+        scan = new DirectoryScanner(List.of()).scan(base, (files, bytes, dir) -> { });
+        root = scan.root();
+        state = new TuiState(scan);
     }
 
     @Test
@@ -39,7 +40,7 @@ class ScreenRendererTest {
         List<String> lines = new ScreenRenderer(false).render(state, 200, 10);
 
         assertEquals(10, lines.size(), "a frame must cover the whole screen");
-        assertTrue(lines.get(0).contains(root.path().toString()), lines.get(0));
+        assertTrue(lines.get(0).contains(scan.path().toString()), lines.get(0));
         assertTrue(lines.get(1).contains("directories"), lines.get(1));
         assertTrue(lines.get(9).contains("quit"), "the footer is the last row: " + lines.get(9));
     }
@@ -69,7 +70,7 @@ class ScreenRendererTest {
         Files.createDirectories(base.resolve("a-very-long-directory-name-that-will-not-fit-at-all"));
         ScanResult result = new DirectoryScanner(List.of()).scan(base, (files, bytes, dir) -> { });
 
-        List<String> lines = new ScreenRenderer(false).render(new TuiState(result.root()), 30, 8);
+        List<String> lines = new ScreenRenderer(false).render(new TuiState(result), 30, 8);
 
         String listing = lines.get(3);
         assertTrue(listing.contains("…"), "expected an ellipsis: " + listing);
@@ -102,7 +103,7 @@ class ScreenRendererTest {
         Files.createDirectories(base);
         ScanResult result = new DirectoryScanner(List.of()).scan(base, (files, bytes, dir) -> { });
 
-        List<String> lines = new ScreenRenderer(false).render(new TuiState(result.root()), 60, 8);
+        List<String> lines = new ScreenRenderer(false).render(new TuiState(result), 60, 8);
 
         assertTrue(lines.get(3).contains("no subdirectories"), lines.get(3));
     }

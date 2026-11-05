@@ -2,11 +2,14 @@ package io.github.lihuu.dukit.core.tui;
 
 import io.github.lihuu.dukit.core.browse.SortKey;
 import io.github.lihuu.dukit.core.model.DirEntry;
+import io.github.lihuu.dukit.core.model.ScanResult;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -18,13 +21,15 @@ import java.util.List;
  * the list bounds.
  */
 public final class TuiState {
+    private final Path rootPath;
     private final Deque<DirEntry> trail = new ArrayDeque<>();
     private SortKey sortKey = SortKey.SIZE;
     private int selected;
     private int scroll;
 
-    public TuiState(@NotNull DirEntry root) {
-        trail.push(root);
+    public TuiState(@NotNull ScanResult result) {
+        this.rootPath = result.path();
+        trail.push(result.root());
     }
 
     public @NotNull DirEntry current() {
@@ -55,6 +60,19 @@ public final class TuiState {
 
     public int depth() {
         return trail.size() - 1;
+    }
+
+    /**
+     * Absolute path of the directory currently shown, rebuilt from the navigation trail.
+     */
+    public @NotNull String currentPath() {
+        Path path = rootPath;
+        Iterator<DirEntry> ancestors = trail.descendingIterator();
+        ancestors.next();
+        while (ancestors.hasNext()) {
+            path = path.resolve(ancestors.next().name());
+        }
+        return path.toString();
     }
 
     /**

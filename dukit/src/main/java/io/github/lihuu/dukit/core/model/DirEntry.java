@@ -2,7 +2,6 @@ package io.github.lihuu.dukit.core.model;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -14,6 +13,10 @@ import java.util.List;
  * filesystems — while {@link io.github.lihuu.dukit.core.scan.TopCollector} still surfaces
  * the largest individual files when asked.
  *
+ * <p>Nodes carry no path. A scan's root path lives on {@link ScanResult}, and a browser
+ * reconstructs the current path from its navigation trail, which keeps one
+ * {@code Path}/{@code String}/{@code int[]} trio out of every node in a large tree.
+ *
  * <p>Sizes are apparent sizes: the sum of logical file sizes as reported by the platform.
  * This is the only size metric the JDK exposes portably (allocated block counts are not
  * available through java.nio.file), and it keeps numbers consistent across macOS, Linux and
@@ -21,7 +24,6 @@ import java.util.List;
  * sizes once per scan; every hardlink still counts toward {@code fileCount}.
  *
  * @param name          directory name; the root entry carries the scanned path's file name
- * @param path          absolute path of the directory
  * @param size          total size of the subtree, including the directory's own files
  * @param fileCount     regular files in the subtree, including hardlink twins
  * @param dirCount      subdirectories in the subtree, excluding this directory itself
@@ -32,7 +34,6 @@ import java.util.List;
  */
 public record DirEntry(
         @NotNull String name,
-        @NotNull Path path,
         long size,
         long fileCount,
         long dirCount,

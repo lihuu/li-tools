@@ -27,7 +27,7 @@ public final class TreeReporter {
 
     public void write(@NotNull ScanResult result) {
         DirEntry root = result.root();
-        out.println(style.bold(style.highlight(root.path().toString()) + "  " + HumanBytes.format(root.size())));
+        out.println(style.bold(style.highlight(result.path().toString()) + "  " + HumanBytes.format(root.size())));
         out.println(style.muted(summary(result)));
         if (depth > 0) {
             renderChildren(root, "", root.size(), 1);

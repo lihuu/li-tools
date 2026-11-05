@@ -42,7 +42,7 @@ public final class ScreenRenderer {
         List<String> lines = new ArrayList<>(rows);
 
         DirEntry current = state.current();
-        lines.add(style(BOLD, fit(current.path() + "  " + HumanBytes.format(current.size()), columns)));
+        lines.add(style(BOLD, fit(state.currentPath() + "  " + HumanBytes.format(current.size()), columns)));
         lines.add(style(DIM, fit(String.format(Locale.US, "%s in own files · %,d directories · %,d files",
                 HumanBytes.format(current.ownFileSize()), current.dirCount(), current.fileCount()), columns)));
         lines.add(style(DIM, "─".repeat(columns)));

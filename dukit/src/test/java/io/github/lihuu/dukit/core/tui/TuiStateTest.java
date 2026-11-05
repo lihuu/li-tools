@@ -20,6 +20,7 @@ class TuiStateTest {
     @TempDir Path temporary;
 
     private DirEntry root;
+    private ScanResult scan;
 
     @BeforeEach
     void buildTree() throws IOException {
@@ -30,13 +31,13 @@ class TuiStateTest {
         Files.writeString(base.resolve("alpha/big.bin"), "x".repeat(300), StandardCharsets.US_ASCII);
         Files.writeString(base.resolve("alpha/nested/deep.bin"), "x".repeat(200), StandardCharsets.US_ASCII);
         Files.writeString(base.resolve("beta/mid.bin"), "x".repeat(100), StandardCharsets.US_ASCII);
-        ScanResult result = new DirectoryScanner(List.of()).scan(base, (files, bytes, dir) -> { });
-        root = result.root();
+        scan = new DirectoryScanner(List.of()).scan(base, (files, bytes, dir) -> { });
+        root = scan.root();
     }
 
     @Test
     void startsAtTheRootWithTheLargestEntrySelected() {
-        TuiState state = new TuiState(root);
+        TuiState state = new TuiState(scan);
 
         assertEquals(root, state.current());
         assertEquals(List.of("alpha", "beta", "gamma"), state.entries().stream().map(DirEntry::name).toList());
@@ -46,7 +47,7 @@ class TuiStateTest {
 
     @Test
     void arrowsMoveTheCursorAndStopAtTheEdges() {
-        TuiState state = new TuiState(root);
+        TuiState state = new TuiState(scan);
 
         state.handle(Key.DOWN, 10);
         assertEquals(1, state.selected());
@@ -62,24 +63,28 @@ class TuiStateTest {
 
     @Test
     void enterDescendsAndBackReturns() {
-        TuiState state = new TuiState(root);
+        TuiState state = new TuiState(scan);
+        assertEquals(scan.path().toString(), state.currentPath());
 
         state.handle(Key.ENTER, 10);
         assertEquals("alpha", state.current().name());
+        assertEquals(scan.path().resolve("alpha").toString(), state.currentPath());
         assertEquals(0, state.selected());
 
         state.handle(Key.BACK, 10);
         assertEquals(root, state.current());
+        assertEquals(scan.path().toString(), state.currentPath());
         state.handle(Key.BACK, 10);
         assertEquals(root, state.current(), "back at the root is a no-op");
     }
 
     @Test
     void enterOnALeafStaysPut() {
-        TuiState state = new TuiState(root);
+        TuiState state = new TuiState(scan);
         state.handle(Key.ENTER, 10);
         state.handle(Key.ENTER, 10);
         assertEquals("nested", state.current().name());
+        assertEquals(scan.path().resolve("alpha").resolve("nested").toString(), state.currentPath());
 
         state.handle(Key.ENTER, 10);
         assertEquals("nested", state.current().name(),
@@ -88,7 +93,7 @@ class TuiStateTest {
 
     @Test
     void sortCyclesAndKeepsTheCursorInBounds() {
-        TuiState state = new TuiState(root);
+        TuiState state = new TuiState(scan);
         state.handle(Key.END, 10);
 
         state.handle(Key.SORT, 10);
@@ -103,7 +108,7 @@ class TuiStateTest {
 
     @Test
     void scrollingFollowsTheCursor() {
-        TuiState state = new TuiState(root);
+        TuiState state = new TuiState(scan);
 
         state.handle(Key.END, 1);
         assertEquals(2, state.selected());
@@ -116,7 +121,7 @@ class TuiStateTest {
 
     @Test
     void quitStopsTheLoop() {
-        TuiState state = new TuiState(root);
+        TuiState state = new TuiState(scan);
         assertFalse(state.handle(Key.QUIT, 10));
         assertTrue(state.handle(Key.NONE, 10));
     }

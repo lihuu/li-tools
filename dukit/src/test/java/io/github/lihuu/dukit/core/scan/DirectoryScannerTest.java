@@ -86,14 +86,38 @@ class DirectoryScannerTest {
         // and the unix: view is unsupported), so two links to one inode are indistinguishable
         // from two files with equal content. Assert that reality rather than skipping the
         // case, so the platform difference stays visible.
-        boolean fileKeysAvailable = Files.readAttributes(original, BasicFileAttributes.class,
-                LinkOption.NOFOLLOW_LINKS).fileKey() != null;
+        boolean fileKeysAvailable = fileKeysAvailable(original);
         if (fileKeysAvailable) {
             assertEquals(650, result.root().size(), "hardlinked content counts once");
         } else {
             assertEquals(950, result.root().size(),
                     "without file keys the same content counts once per link");
         }
+    }
+
+    @Test
+    void countsManyHardlinksToTheSameInodeOnce() throws IOException {
+        Path root = temporary.resolve("manylinks");
+        Files.createDirectories(root);
+        Path original = root.resolve("original.bin");
+        Files.writeString(original, "x".repeat(100), StandardCharsets.US_ASCII);
+        for (int index = 0; index < 40; index++) {
+            Files.createLink(root.resolve("link" + index + ".bin"), original);
+        }
+
+        ScanResult result = new DirectoryScanner(List.of()).scan(root, (files, bytes, dir) -> { });
+
+        assertEquals(41, result.root().fileCount(), "every hardlink is a file");
+        if (fileKeysAvailable(original)) {
+            assertEquals(100, result.root().size(), "shared content counts once");
+        } else {
+            assertEquals(4100, result.root().size(), "without file keys the content counts per link");
+        }
+    }
+
+    private static boolean fileKeysAvailable(Path path) throws IOException {
+        return Files.readAttributes(path, BasicFileAttributes.class,
+                LinkOption.NOFOLLOW_LINKS).fileKey() != null;
     }
 
     @Test

@@ -12,10 +12,8 @@ import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -78,7 +76,7 @@ public final class DirectoryScanner {
         if (run.node == null) {
             throw new IOException("cannot scan " + run.root + ": " + run.reason());
         }
-        return new ScanResult(run.node.toEntry(run.root), run.errors());
+        return new ScanResult(run.root, run.node.toEntry(run.root), run.errors());
     }
 
     public @NotNull TopResult top(@NotNull Path root, int limit, @NotNull ProgressListener listener) throws IOException {
@@ -129,6 +127,8 @@ public final class DirectoryScanner {
         private final List<PathMatcher> relativeMatchers;
         private final ProgressListener listener;
         private final boolean buildTree;
+        private final StatReader statReader = StatReader.create();
+        private final HardlinkSet seenHardlinks = new HardlinkSet();
         private final Set<Object> seenFileKeys = ConcurrentHashMap.newKeySet();
         private final ConcurrentLinkedQueue<ScanError> errors = new ConcurrentLinkedQueue<>();
         private final AtomicLong fileCount = new AtomicLong();
@@ -208,9 +208,11 @@ public final class DirectoryScanner {
         protected @Nullable Node compute() {
             Node node = new Node();
             List<Path> subdirectories = new ArrayList<>();
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+            FileStat stat = new FileStat();
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir);
+                 StatReader.Cursor cursor = run.statReader.open()) {
                 for (Path child : stream) {
-                    visit(node, subdirectories, child);
+                    visit(node, subdirectories, child, cursor, stat);
                 }
             } catch (IOException | DirectoryIteratorException failure) {
                 run.recordError(dir, failure instanceof DirectoryIteratorException iteratorFailure
@@ -222,30 +224,41 @@ public final class DirectoryScanner {
             return node;
         }
 
-        private void visit(@NotNull Node node, @NotNull List<Path> subdirectories, @NotNull Path child) {
+        private void visit(@NotNull Node node, @NotNull List<Path> subdirectories, @NotNull Path child,
+                @NotNull StatReader.Cursor cursor, @NotNull FileStat stat) {
             if (run.excluded(child)) {
                 return;
             }
-            BasicFileAttributes attributes;
             try {
-                attributes = Files.readAttributes(child, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+                cursor.read(child, stat);
             } catch (IOException failure) {
                 run.recordError(child, failure);
                 node.errorCount++;
                 return;
             }
-            if (attributes.isSymbolicLink()) {
-                return;
+            switch (stat.kind) {
+                case SYMBOLIC_LINK -> {
+                    return;
+                }
+                case DIRECTORY -> {
+                    subdirectories.add(child);
+                    return;
+                }
+                case OTHER -> {
+                    return;
+                }
+                case REGULAR_FILE -> {
+                }
             }
-            if (attributes.isDirectory()) {
-                subdirectories.add(child);
-                return;
+            boolean hardlinkTwin;
+            if (stat.linkCount >= 0) {
+                // A link count of one proves no other path can share the inode, so only
+                // genuinely shared content occupies the set.
+                hardlinkTwin = stat.linkCount > 1 && !run.seenHardlinks.add(stat.device, stat.inode);
+            } else {
+                hardlinkTwin = stat.fileKey != null && !run.seenFileKeys.add(stat.fileKey);
             }
-            if (!attributes.isRegularFile()) {
-                return;
-            }
-            boolean hardlinkTwin = attributes.fileKey() != null && !run.seenFileKeys.add(attributes.fileKey());
-            long size = hardlinkTwin ? 0 : attributes.size();
+            long size = hardlinkTwin ? 0 : stat.size;
             node.ownFileSize += size;
             node.ownFileCount++;
             node.size += size;
@@ -310,7 +323,7 @@ public final class DirectoryScanner {
             children.sort(Comparator.comparingLong((DirEntry entry) -> entry.size())
                     .reversed()
                     .thenComparing(DirEntry::name));
-            return new DirEntry(name(dir), dir, size, ownFileCount + subtreeFileCount,
+            return new DirEntry(name(dir), size, ownFileCount + subtreeFileCount,
                     subtreeDirCount, errorCount, ownFileSize, ownFileCount, children);
         }
 

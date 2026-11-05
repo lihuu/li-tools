@@ -10,10 +10,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
@@ -140,7 +142,7 @@ public final class Browser {
             return;
         }
         out.println();
-        out.println(style.bold(style.highlight(current.path().toString()) + "  " + HumanBytes.format(current.size())));
+        out.println(style.bold(style.highlight(currentPath() + "  " + HumanBytes.format(current.size()))));
         out.println(style.muted(String.format(Locale.US, "%,d directories, %,d files · %s in %,d files directly · sort: %s",
                 current.dirCount() + 1, current.fileCount(),
                 HumanBytes.format(current.ownFileSize()), current.ownFileCount(),
@@ -171,6 +173,16 @@ public final class Browser {
         out.println(style.muted("sort <key>     order by size, name or count"));
         out.println(style.muted("[enter]        re-render the current directory"));
         out.println(style.muted("q              quit (end of input also quits)"));
+    }
+
+    private @NotNull String currentPath() {
+        Path path = result.path();
+        Iterator<DirEntry> ancestors = trail.descendingIterator();
+        ancestors.next();
+        while (ancestors.hasNext()) {
+            path = path.resolve(ancestors.next().name());
+        }
+        return path.toString();
     }
 
     private List<DirEntry> sorted(@NotNull List<DirEntry> children) {
