@@ -340,16 +340,17 @@
           <span class="text-slate-500 group-hover:text-amber-400 transition transform group-hover:translate-x-1">→</span>
         </div>
         <p class="text-slate-400 text-sm leading-relaxed mb-6">
-          找出磁盘空间去哪了。类 ncdu 的目录扫描，行式交互浏览与 JSON 导出——macOS、Linux、Windows 同一组数字。
+          找出磁盘空间去哪了。类 ncdu 的极速目录扫描，全屏交互 TUI 浏览，安全移入系统回收站与流式 JSON 树导出——macOS、Linux、Windows 保持一致行为。
         </p>
         <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-amber-300 border border-amber-950/60 mb-5 flex items-center justify-between">
-          <span>$ dukit scan ~/Projects --json</span>
-          <span class="text-emerald-400 text-[10px] font-semibold">✔ 机器可读目录树</span>
+          <span>$ dukit scan ~/Projects</span>
+          <span class="text-emerald-400 text-[10px] font-semibold">✔ 默认精简 JSON 树</span>
         </div>
         <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">类 ncdu</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">行式浏览</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">JSON 导出</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">类 ncdu 极速</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">全屏 TUI 交互</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">真实磁盘占用</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">安全回收站</span>
         </div>
       </a>
     </div>
@@ -428,10 +429,10 @@
               </tr>
               <tr>
                 <td class="py-2.5 px-3 font-bold text-amber-400">dukit</td>
-                <td class="py-2.5 px-3">表观大小 (du 等价)</td>
-                <td class="py-2.5 px-3">Files.walkFileTree (POSIX)</td>
-                <td class="py-2.5 px-3">Files.walkFileTree (POSIX)</td>
-                <td class="py-2.5 px-3">Files.walkFileTree (NTFS)</td>
+                <td class="py-2.5 px-3">真实磁盘占用 (st_blocks)</td>
+                <td class="py-2.5 px-3">FFM 原生 stat + ~/.Trash</td>
+                <td class="py-2.5 px-3">FFM 原生 stat + freedesktop</td>
+                <td class="py-2.5 px-3">JLine FFM TUI + 回收站</td>
               </tr>
             </tbody>
           </table>

@@ -26,6 +26,7 @@
 | **[`certkit`](certkit/)** | 现代 SSL/TLS 证书瑞士军刀，告别反人类的 OpenSSL 参数 | 约定大于配置、一键受信任本地 Root CA、智能域名/IP SAN 嗅探、单参数互转、三端系统受信 | `Active` |
 | **[`tokenkit`](tokenkit/)** | 现代通用敏感 Token/API Key 加密管理器，终结明文密钥泄露 | 内嵌强加密 SQLite、AES-256-GCM + PBKDF2、<10ms 终端极速环境变量注入 (`tokenkit env`)、跨系统安全加密迁移包 | `Active` |
 | **[`skillkit`](skillkit/)** | 本地 Agent skills 管理 | 本地内容与上游元数据订阅、并行安装/更新、个人仓库拉取/发布、公共或指定 Agent 分发 | `Active` |
+| **[`dukit`](dukit/)** | 现代跨平台磁盘占用分析利器，终结“磁盘空间去哪了”的迷茫 | 类 ncdu 极速分析、默认真实磁盘占用 (FFM `st_blocks`)、全屏交互 TUI 浏览、安全回收站删除 (`d`)、直属大文件预览 (`t`)、纯流式无反射 JSON 导出 | `Active` |
 
 ---
 
@@ -59,7 +60,8 @@ li-tools/
 │   ├── gpgkit/index.html       # gpgkit 专属落地页
 │   ├── certkit/index.html      # certkit 专属落地页
 │   ├── tokenkit/index.html     # tokenkit 专属落地页
-│   └── skillkit/index.html     # skillkit 专属落地页
+│   ├── skillkit/index.html     # skillkit 专属落地页
+│   └── dukit/index.html        # dukit 专属落地页
 ├── gpgkit/                     # GPG 密钥生命周期管理工具 (纯 JDK 原生标准库，零第三方运行时依赖)
 │   ├── SPEC.md                 # 接口与行为规格契约
 │   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
@@ -73,6 +75,10 @@ li-tools/
 │   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
 │   └── src/
 ├── skillkit/                   # 个人 skills 仓库与 agent 并行安装管理
+│   ├── SPEC.md                 # 接口与行为规格契约
+│   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
+│   └── src/
+├── dukit/                      # 跨平台磁盘占用分析利器（纯 JDK 并行遍历与 FFM 原生块读取）
 │   ├── SPEC.md                 # 接口与行为规格契约
 │   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
 │   └── src/
@@ -103,13 +109,14 @@ li-tools/
 brew tap lihuu/tap
 
 # 安装全部工具
-brew install gpgkit certkit tokenkit skillkit
+brew install gpgkit certkit tokenkit skillkit dukit
 
 # 或者不预先 Tap，直接按需单行安装：
 brew install lihuu/tap/gpgkit
 brew install lihuu/tap/certkit
 brew install lihuu/tap/tokenkit
 brew install lihuu/tap/skillkit
+brew install lihuu/tap/dukit
 ```
 
 ### 2. Scoop 官方桶 (Windows 11)
@@ -118,7 +125,7 @@ brew install lihuu/tap/skillkit
 scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket
 
 # 安装全部工具
-scoop install gpgkit certkit tokenkit skillkit
+scoop install gpgkit certkit tokenkit skillkit dukit
 ```
 
 ### 3. 一行 Shell / PowerShell 脚本安装 (macOS, Linux & Windows 11)

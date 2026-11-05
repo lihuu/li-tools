@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>dukit — Cross-Platform Disk Usage Analyzer CLI</title>
-  <meta name="description" content="Find what is eating your disk. ncdu-inspired directory scanning with a line-based interactive browser and JSON export, compiled to a single native binary for macOS, Linux and Windows.">
-  <meta name="keywords" content="disk usage, disk analyzer, du, ncdu, ncdu alternative, disk space, directory size, disk usage analyzer, java 25, graalvm native image, windows disk usage, cross-platform">
+  <meta name="description" content="Find what is eating your disk. ncdu-inspired directory scanning with a full-screen interactive TUI browser, safe Trash deletion and directories-only JSON export, compiled to a single native binary for macOS, Linux and Windows 11.">
+  <meta name="keywords" content="disk usage, disk analyzer, du, ncdu, ncdu alternative, disk space, directory size, disk usage analyzer, java 25, graalvm native image, windows disk usage, cross-platform, tui">
   <meta name="author" content="lihuu">
   <link rel="canonical" href="https://tools.lihu.me/dukit/">
   <link rel="alternate" hreflang="en" href="https://tools.lihu.me/dukit/">
@@ -20,7 +20,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://tools.lihu.me/dukit/">
   <meta property="og:title" content="dukit — Cross-Platform Disk Usage Analyzer CLI">
-  <meta property="og:description" content="Scan directory trees, export JSON, browse line by line. One static binary, identical numbers on macOS, Linux and Windows.">
+  <meta property="og:description" content="Scan directory trees, browse in full-screen TUI, move subtrees safely to Trash, and export lightweight JSON trees. One static binary across macOS, Linux and Windows 11.">
   <meta property="og:image" content="https://tools.lihu.me/assets/og-image.svg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -31,7 +31,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="dukit — Cross-Platform Disk Usage Analyzer CLI">
-  <meta name="twitter:description" content="ncdu-inspired disk usage analysis with a line-based interactive browser. Zero runtime dependencies.">
+  <meta name="twitter:description" content="ncdu-inspired disk usage analysis with full-screen interactive TUI and accurate st_blocks occupied space. Zero runtime dependencies.">
   <meta name="twitter:image" content="https://tools.lihu.me/assets/og-image.svg">
   <meta name="twitter:image:alt" content="dukit — Cross-Platform Disk Usage Analyzer">
 
@@ -49,7 +49,7 @@
         "programmingLanguage": "Java 25",
         "runtimePlatform": "GraalVM Native Image",
         "operatingSystem": "macOS, Linux, Windows 11",
-        "description": "Cross-platform disk usage analyzer with scan reports, JSON export and a line-based interactive browser, compiled to a single native binary.",
+        "description": "Cross-platform disk usage analyzer with scan reports, lightweight JSON tree export, bounded streaming rankings, and full-screen interactive TUI browsing, compiled to a single native binary.",
         "url": "https://tools.lihu.me/dukit/",
         "image": "https://tools.lihu.me/assets/og-image.svg",
         "datePublished": "2026-11-05",
@@ -91,31 +91,31 @@
             "name": "What is dukit?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "dukit is a cross-platform disk usage analyzer inspired by ncdu. It scans a directory tree once, prints a size-sorted report, exports machine-readable JSON, and offers a line-based interactive browser for drilling into the biggest directories. It ships as a single native binary for macOS, Linux and Windows."
+              "text": "dukit is a cross-platform disk usage analyzer inspired by ncdu. It scans a directory tree once, prints a size-sorted report, exports machine-readable streaming JSON trees, ranks entries via bounded streaming heaps, and offers a full-screen interactive TUI browser for drilling into the biggest directories. It ships as a single native binary for macOS, Linux and Windows 11."
             }
           },
           {
             "@type": "Question",
-            "name": "Why does dukit report apparent sizes instead of allocated blocks?",
+            "name": "Does dukit report actual occupied space or apparent size?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "The Java standard library exposes no portable allocated-block metric (st_blocks is not reachable through java.nio.file), and per-platform FFI would break the zero-dependency guarantee. dukit therefore reports logical file sizes, which keeps numbers identical across APFS, ext4 and NTFS. Hardlinked content is still counted once per scan, symlinks are never followed, and directory inodes are excluded."
+              "text": "dukit reports actual occupied disk space (st_blocks) by default: it reads allocated blocks through the Foreign Function & Memory (FFM) API on macOS and Linux, matching du and Finder exactly. Use --apparent-size to switch to logical file sizes. Both numbers are always present in JSON output. Hardlinked content is counted once per scan, symlinks are never followed, and directory inodes add nothing."
             }
           },
           {
             "@type": "Question",
-            "name": "How do dukit numbers compare to du or ncdu?",
+            "name": "Can dukit safely delete directories?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "dukit reports apparent sizes (like du --apparent-size), counts each hardlinked file's content exactly once per scan, does not follow symlinks and does not add the directory inode's own size. Unreadable paths are reported on stderr while the scan continues."
+              "text": "Yes, but exclusively from within the interactive browser. Pressing d opens a modal confirmation dialog detailing full path, space occupied, and child counts. Pressing y moves the directory safely to the system Trash (~/.Trash on macOS, freedesktop Trash on Linux, Recycle Bin on Windows); pressing n or Esc cancels. dukit never executes permanent hard deletion."
             }
           },
           {
             "@type": "Question",
-            "name": "Does the interactive browser work on Windows?",
+            "name": "Does the full-screen browser work on Windows and over SSH?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes. dukit browse is a line-based REPL (cd <n>, up, top, sort, q) rather than a full-screen curses UI, so it works in every terminal including the classic Windows console, Windows Terminal, and over SSH."
+              "text": "Yes. dukit's browser is powered by JLine's FFM native terminal driver into the alternate screen buffer, supporting arrow keys, Enter, Backspace, s (sort), t (preview direct files), and d (trash). It works reliably in classic Windows consoles, Windows Terminal, tmux panes, and remote SSH sessions."
             }
           }
         ]
@@ -238,26 +238,30 @@
           <div class="text-slate-300">└──    4.1 GiB   22.3%  prototypes/</div>
         </div>
 
-        <!-- Step 2: Browse -->
+        <!-- Step 2: Full-screen interactive TUI -->
         <div class="flex items-center gap-2 text-slate-500 mb-2">
           <span class="text-amber-400">~</span>
           <span class="text-slate-400">$</span>
           <span class="text-white">dukit ~/Projects</span>
         </div>
         <div class="text-slate-400 mb-4 pl-4 border-l-2 border-orange-500/30">
-          <div class="text-slate-300">  1    14.2 GiB   77.2%  service/</div>
-          <div class="text-slate-300">  2     4.1 GiB   22.3%  prototypes/</div>
-          <div class="text-slate-500">cd 1 · up · top · sort size|name|count · q quit</div>
+          <div class="text-slate-200 font-bold mb-1">dukit 0.4.0 — /Users/li/Projects [18.4 GiB · 45,892 files]</div>
+          <div class="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded my-1 font-semibold">▶  14.2 GiB [████████████████░░░░]  77.2%  service-backend/</div>
+          <div class="text-slate-300 px-2 py-0.5">   4.1 GiB [█████░░░░░░░░░░░░░░░]  22.3%  prototypes/</div>
+          <div class="text-slate-400 px-2 py-0.5"> 120.4 MiB [░░░░░░░░░░░░░░░░░░░░]   0.6%  docs/</div>
+          <div class="text-slate-500 text-xs mt-2 border-t border-slate-800 pt-1.5 flex flex-wrap gap-2">
+            <span>↑↓ move</span> • <span>Enter descend</span> • <span>Backspace return</span> • <span>s sort</span> • <span>t files</span> • <span>d trash</span> • <span>q quit</span>
+          </div>
         </div>
 
         <!-- Step 3: JSON export -->
         <div class="flex items-center gap-2 text-slate-500 mb-2">
           <span class="text-amber-400">~</span>
           <span class="text-slate-400">$</span>
-          <span class="text-white">dukit scan ~/Projects --json &gt; usage.json</span>
+          <span class="text-white">dukit scan ~/Projects &gt; usage.json</span>
         </div>
         <div class="text-slate-400 pl-4 border-l-2 border-emerald-500/30">
-          <div class="text-emerald-400">✔ Machine-readable tree for CI, agents and dashboards</div>
+          <div class="text-emerald-400">✔ Directories-only JSON tree by default, ready for CI & AI agents</div>
         </div>
       </div>
     </div>
@@ -284,11 +288,11 @@
         <!-- Feature 2 -->
         <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
           <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
-            🧹
+            ⚡
           </div>
-          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">Pure JDK Scanner</h3>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">Adaptive Parallel Scan</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            The scanning engine is <code class="text-amber-300">Files.newDirectoryStream</code> plus <code class="text-amber-300">BasicFileAttributes</code> and nothing else. One dependency in the whole tool — JLine's terminal layer, which is what makes the full-screen UI work on Windows too.
+            ForkJoinPool traversal with adaptive thresholding: wide directory levels fan out across workers while small trees stay inline. 59 GB & 660k files scan in <span class="text-amber-300">3.2s versus ncdu's 8s</span>.
           </p>
         </div>
 
@@ -297,9 +301,9 @@
           <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
             🧭
           </div>
-          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">ncdu-Style Browsing</h3>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">Full-Screen TUI Browser</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            A line-based REPL instead of a curses UI: <code class="text-amber-300">cd &lt;n&gt;</code>, <code class="text-amber-300">up</code>, <code class="text-amber-300">top</code>, <code class="text-amber-300">sort</code>. Works in every terminal, including the classic Windows console and SSH.
+            Alternate screen buffer with arrow keys, <code class="text-amber-300">Enter</code> to descend, <code class="text-amber-300">Backspace</code> to return, and <code class="text-amber-300">s</code> to cycle sort. Driven by JLine FFM native terminal integration across macOS, Linux, and Windows 11.
           </p>
         </div>
 
@@ -308,9 +312,9 @@
           <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
             📤
           </div>
-          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">JSON Export</h3>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">Directories-Only JSON Tree</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            <code class="text-amber-300">--json</code> emits the full subtree with per-directory aggregates, written by a zero-reflection streaming writer — agents and CI can consume it directly.
+            The tree contains directories only; regular files fold into parent counters. Payload scales with directory counts, not file counts (11 MB for 660k files), perfect for AI agents and CI pipelines.
           </p>
         </div>
 
@@ -321,18 +325,18 @@
           </div>
           <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">Honest Size Semantics</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Reports the space actually occupied (<code class="text-amber-300">st_blocks</code> via FFM), so numbers match <code class="text-amber-300">du</code> and Finder. <code class="text-amber-300">--apparent-size</code> switches to logical sizes when you need them. Sparse files make the two differ enormously. Symlinks never followed; unreadable paths warn instead of aborting.
+            Reports space actually occupied (<code class="text-amber-300">st_blocks</code> via FFM), matching <code class="text-amber-300">du</code> and Finder. <code class="text-amber-300">--apparent-size</code> switches to logical sizes. Hardlinks counted once per scan; symlinks never followed.
           </p>
         </div>
 
         <!-- Feature 6 -->
         <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
           <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
-            ⚡
+            🛡️
           </div>
-          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">Parallel by Default</h3>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">Safe Trash & File Preview</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Directories fork into worker threads once a level is wide enough to pay for it, and stay inline below that, so small trees cost nothing extra. On a 59 GB, 660k-file tree: <span class="text-amber-300">3.2s versus ncdu's 8s</span>.
+            Press <code class="text-amber-300">d</code> to review modal confirmation and move subtrees safely to the OS Trash (never hard delete). Press <code class="text-amber-300">t</code> to preview the directory's top 10 direct files.
           </p>
         </div>
       </div>
@@ -351,12 +355,12 @@
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
             <div class="font-mono text-amber-300 text-sm font-semibold flex items-center gap-2">
               <span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-xs">scan</span>
-              <span>dukit scan [path] [--depth &lt;n&gt;] [--exclude &lt;glob&gt;...] [--text]</span>
+              <span>dukit scan [path] [--depth &lt;n&gt;] [--apparent-size] [--exclude &lt;glob&gt;...] [--text]</span>
             </div>
             <span class="text-xs font-mono text-slate-500">Full directory tree, JSON by default</span>
           </div>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Walks the tree once and emits every directory with its size. The tree holds <strong class="text-slate-200">directories only</strong> — files fold into their parent's counters, so output tracks directory count instead of file count. <code class="text-slate-200">--depth</code> trims levels while aggregates still cover whole subtrees: on a real <code class="text-slate-200">/Applications</code> scan, all levels are 11 MB and <code class="text-slate-200">--depth 2</code> is 30 KB. <code class="text-slate-200">--text</code> swaps JSON for a human tree.
+            Walks the tree once and emits every directory with its actual occupied size. The tree holds <strong class="text-slate-200">directories only</strong> — files fold into their parent's counters, so output tracks directory count instead of file count. <code class="text-slate-200">--depth</code> trims levels while aggregates still cover whole subtrees: on a real <code class="text-slate-200">/Applications</code> scan, all levels are 11 MB and <code class="text-slate-200">--depth 2</code> is 30 KB. <code class="text-slate-200">--apparent-size</code> reports logical size, and <code class="text-slate-200">--text</code> swaps JSON for a human tree.
           </p>
         </div>
 
@@ -374,7 +378,7 @@
           </p>
         </div>
 
-        <!-- Command 2 -->
+        <!-- Command 3: browse -->
         <div class="glass-card p-5 rounded-xl">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
             <div class="font-mono text-amber-300 text-sm font-semibold flex items-center gap-2">
@@ -384,7 +388,7 @@
             <span class="text-xs font-mono text-slate-500">Interactive full-screen explorer</span>
           </div>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Scans first, then takes over the terminal: alternate screen, arrow-key selection, <span class="text-slate-200">enter</span> to descend, <span class="text-slate-200">backspace</span> to return, <span class="text-slate-200">s</span> to cycle size → name → count, <span class="text-slate-200">t</span> to reveal the current directory's largest direct files. Always starts sorted by size with the biggest entry selected. The bounded file preview exists only for the browser — JSON stays directories-only. Requires an interactive terminal — piped invocations fail fast with a hint toward <code class="text-slate-200">scan</code>.
+            Scans first, then takes over the terminal: alternate screen, arrow-key selection, <span class="text-slate-200">enter</span> to descend, <span class="text-slate-200">backspace</span> to return, <span class="text-slate-200">s</span> to cycle sort, <span class="text-slate-200">t</span> to reveal direct top files, and <span class="text-slate-200">d</span> to move subtrees safely to Trash after modal confirmation (never permanent delete). Always starts sorted by size with the largest entry selected. Piped invocations cleanly fall back to streaming JSON trees.
           </p>
         </div>
       </div>
@@ -453,30 +457,30 @@
       <h2 class="text-2xl font-bold tracking-tight text-white mb-8 text-center">Frequently Asked Questions</h2>
       <div class="space-y-4">
         <div class="glass-card p-6 rounded-xl">
+          <h3 class="font-bold text-base text-white mb-2">Does dukit report actual occupied space or apparent size?</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            dukit reports actual occupied space (<code class="text-amber-300">diskSize</code>) by default, matching <code class="text-amber-300">du</code> and Finder. It reads native <code class="text-amber-300">st_blocks</code> via Java 25 Foreign Function &amp; Memory (FFM) API on macOS and Linux. Apparent size is still available via <code class="text-amber-300">--apparent-size</code>, and both numbers appear in JSON. On sparse files and APFS clones, the two can differ by orders of magnitude. On Windows where block counts are not exposed, it gracefully falls back to logical size.
+          </p>
+        </div>
+
+        <div class="glass-card p-6 rounded-xl">
           <h3 class="font-bold text-base text-white mb-2">How do dukit's numbers compare to du or ncdu?</h3>
           <p class="text-sm text-slate-400 leading-relaxed">
-            dukit reports apparent sizes — the sum of logical file sizes, like <code class="text-amber-300">du --apparent-size</code>. Hardlinked content counts exactly once per scan, symlinks are never followed, and directory inodes add nothing. Unreadable paths are collected as warnings while the scan continues, so a locked directory never hides the rest of the picture.
+            Default numbers match <code class="text-amber-300">du -s</code> exactly. Hardlinked content sharing the same inode/fileKey counts exactly once per scan (all hardlinks still contribute to file counts), symlinks are never followed recursively, and directory inodes add nothing. Unreadable paths are collected as warnings on stderr while the scan continues uninterrupted.
           </p>
         </div>
 
         <div class="glass-card p-6 rounded-xl">
-          <h3 class="font-bold text-base text-white mb-2">Why apparent sizes instead of allocated blocks?</h3>
+          <h3 class="font-bold text-base text-white mb-2">Can dukit safely delete directories?</h3>
           <p class="text-sm text-slate-400 leading-relaxed">
-            It does not — dukit now reports occupied space by default, matching <code class="text-amber-300">du</code> and Finder. It reads <code class="text-amber-300">st_blocks</code> through the Foreign Function &amp; Memory API on macOS and Linux, with the layout pinned by tests. Apparent size is still available with <code class="text-amber-300">--apparent-size</code>, and both numbers appear in JSON. Windows exposes no block count, so there the two coincide.
+            Directories, yes — but exclusively from within the interactive browser. Press <code class="text-amber-300">d</code> on a directory, review the modal confirmation page, then press <code class="text-amber-300">y</code>. It moves to the system Trash (macOS <code class="text-amber-300">~/.Trash</code>, freedesktop Trash on Linux, Recycle Bin on Windows). dukit never asks for a permanent delete and provides no CLI delete command: deletion is only safe when you can see the tree it came from.
           </p>
         </div>
 
         <div class="glass-card p-6 rounded-xl">
-          <h3 class="font-bold text-base text-white mb-2">Can dukit delete files like ncdu?</h3>
+          <h3 class="font-bold text-base text-white mb-2">Does the full-screen browser work over SSH and on Windows?</h3>
           <p class="text-sm text-slate-400 leading-relaxed">
-            Directories, yes — but only from the interactive browser. Press <code class="text-amber-300">d</code> on a directory, review the confirmation page, then <code class="text-amber-300">y</code>. It moves to the system Trash (macOS <code class="text-amber-300">~/.Trash</code>, freedesktop Trash on Linux, Recycle Bin on Windows). dukit never asks for a permanent delete; on Windows the shell may still fall back to permanent deletion when the Recycle Bin is disabled or full, after its own warning. There is deliberately no CLI delete command: deletion is only safe when you can see the tree it came from.
-          </p>
-        </div>
-
-        <div class="glass-card p-6 rounded-xl">
-          <h3 class="font-bold text-base text-white mb-2">Does the browser work over SSH and on Windows?</h3>
-          <p class="text-sm text-slate-400 leading-relaxed">
-            Yes. <code class="text-amber-300">dukit browse</code> is a line-based REPL rather than a full-screen curses UI, so it needs nothing but a working stdin: classic Windows console, Windows Terminal, tmux panes and SSH sessions all behave identically.
+            Yes. <code class="text-amber-300">dukit browse</code> uses JLine's FFM native terminal driver to control the alternate screen buffer with responsive arrow keys, Enter, Backspace, and modal confirmation overlays. It works identically in the classic Windows console, Windows Terminal, tmux panes, and remote SSH sessions.
           </p>
         </div>
       </div>
