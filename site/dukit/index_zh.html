@@ -469,7 +469,7 @@
         <div class="glass-card p-6 rounded-xl">
           <h3 class="font-bold text-base text-white mb-2">dukit 能像 ncdu 一样删除文件吗?</h3>
           <p class="text-sm text-slate-400 leading-relaxed">
-            目录可以删——但只能在交互界面里。选中目录按 <code class="text-amber-300">d</code>,看过确认页再按 <code class="text-amber-300">y</code>,目录会移入系统回收站(macOS 的 <code class="text-amber-300">~/.Trash</code>、Linux 的 freedesktop Trash),绝不永久删除。这里刻意不提供 CLI 删除命令:只有当你能看见它来自哪棵树时,删除才是安全的。
+            目录可以删——但只能在交互界面里。选中目录按 <code class="text-amber-300">d</code>,看过确认页再按 <code class="text-amber-300">y</code>,目录会移入系统回收站(macOS 的 <code class="text-amber-300">~/.Trash</code>、Linux 的 freedesktop Trash、Windows 的回收站)。dukit 绝不请求永久删除;Windows 上若回收站被禁用或已满,Shell 可能在自己警告后永久删除。这里刻意不提供 CLI 删除命令:只有当你能看见它来自哪棵树时,删除才是安全的。
           </p>
         </div>
 

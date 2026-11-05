@@ -5,9 +5,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 
 /**
  * Refuses a delete target before anything is touched.
@@ -32,14 +35,16 @@ public final class DeleteGuard {
             throw new DeleteException(DeleteException.Reason.NOT_IN_TREE,
                     "target is outside the scanned tree: " + absolute);
         }
-        if (!Files.exists(absolute, LinkOption.NOFOLLOW_LINKS)) {
-            throw new DeleteException(DeleteException.Reason.NOT_FOUND, "target no longer exists: " + absolute);
-        }
-        if (Files.isSymbolicLink(absolute)) {
+        BasicFileAttributes attributes = attributesOf(absolute);
+        if (attributes.isSymbolicLink()) {
             throw new DeleteException(DeleteException.Reason.SYMBOLIC_LINK,
                     "refusing to delete a symbolic link: " + absolute);
         }
-        if (!Files.isDirectory(absolute, LinkOption.NOFOLLOW_LINKS)) {
+        if (attributes.isOther()) {
+            throw new DeleteException(DeleteException.Reason.REPARSE_POINT,
+                    "refusing to delete a reparse point: " + absolute);
+        }
+        if (!attributes.isDirectory()) {
             throw new DeleteException(DeleteException.Reason.NOT_A_DIRECTORY,
                     "only directories can be deleted: " + absolute);
         }
@@ -92,15 +97,35 @@ public final class DeleteGuard {
     private static void requireNoLinkAncestor(@NotNull Path scanRoot, @NotNull Path target) throws DeleteException {
         Path current = target.getParent();
         while (current != null && !current.equals(scanRoot)) {
-            if (Files.isSymbolicLink(current)) {
+            BasicFileAttributes attributes = attributesOf(current);
+            if (attributes.isSymbolicLink()) {
                 throw new DeleteException(DeleteException.Reason.SYMBOLIC_LINK,
                         "an ancestor is a symbolic link: " + current);
+            }
+            if (attributes.isOther()) {
+                throw new DeleteException(DeleteException.Reason.REPARSE_POINT,
+                        "an ancestor is a reparse point: " + current);
             }
             current = current.getParent();
         }
         if (current == null) {
             throw new DeleteException(DeleteException.Reason.NOT_IN_TREE,
                     "target is not below the scan root: " + target);
+        }
+    }
+
+    private static @NotNull BasicFileAttributes attributesOf(@NotNull Path path) throws DeleteException {
+        try {
+            return Files.readAttributes(path, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+        } catch (NoSuchFileException missing) {
+            throw new DeleteException(DeleteException.Reason.NOT_FOUND,
+                    "target no longer exists: " + path, missing);
+        } catch (AccessDeniedException denied) {
+            throw new DeleteException(DeleteException.Reason.UNREADABLE,
+                    "cannot inspect target: " + path, denied);
+        } catch (IOException failure) {
+            throw new DeleteException(DeleteException.Reason.UNREADABLE,
+                    "cannot inspect target: " + path, failure);
         }
     }
 

@@ -3,7 +3,15 @@
     "downcalls": [
       {
         "returnType": "int",
+        "parameterTypes": ["void*"]
+      },
+      {
+        "returnType": "int",
         "parameterTypes": ["void*", "void*"]
+      },
+      {
+        "returnType": "int",
+        "parameterTypes": ["void*", "void*", "int"]
       },
       {
         "returnType": "int",

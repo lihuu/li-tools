@@ -469,7 +469,7 @@
         <div class="glass-card p-6 rounded-xl">
           <h3 class="font-bold text-base text-white mb-2">Can dukit delete files like ncdu?</h3>
           <p class="text-sm text-slate-400 leading-relaxed">
-            Directories, yes — but only from the interactive browser. Press <code class="text-amber-300">d</code> on a directory, review the confirmation page, then <code class="text-amber-300">y</code>. It moves to the system Trash (macOS <code class="text-amber-300">~/.Trash</code>, freedesktop Trash on Linux), never a permanent delete. There is deliberately no CLI delete command: deletion is only safe when you can see the tree it came from.
+            Directories, yes — but only from the interactive browser. Press <code class="text-amber-300">d</code> on a directory, review the confirmation page, then <code class="text-amber-300">y</code>. It moves to the system Trash (macOS <code class="text-amber-300">~/.Trash</code>, freedesktop Trash on Linux, Recycle Bin on Windows). dukit never asks for a permanent delete; on Windows the shell may still fall back to permanent deletion when the Recycle Bin is disabled or full, after its own warning. There is deliberately no CLI delete command: deletion is only safe when you can see the tree it came from.
           </p>
         </div>
 
