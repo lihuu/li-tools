@@ -35,10 +35,6 @@ public final class Browser {
     private final Deque<DirEntry> trail = new ArrayDeque<>();
     private SortKey sortKey = SortKey.SIZE;
 
-    private enum SortKey {
-        SIZE, NAME, COUNT
-    }
-
     public Browser(@NotNull ScanResult result, @NotNull Reader input, @NotNull PrintWriter out, @NotNull OutputStyle style) {
         this.result = result;
         this.in = input instanceof BufferedReader buffered ? buffered : new BufferedReader(input);
@@ -179,13 +175,7 @@ public final class Browser {
 
     private List<DirEntry> sorted(@NotNull List<DirEntry> children) {
         List<DirEntry> ordered = new ArrayList<>(children);
-        switch (sortKey) {
-            case NAME -> ordered.sort(Comparator.comparing(DirEntry::name));
-            case COUNT -> ordered.sort(Comparator.comparingLong(DirEntry::fileCount).reversed()
-                    .thenComparing(DirEntry::name));
-            case SIZE -> ordered.sort(Comparator.comparingLong(DirEntry::size).reversed()
-                    .thenComparing(DirEntry::name));
-        }
+        ordered.sort(sortKey.comparator());
         return ordered;
     }
 

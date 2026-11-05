@@ -73,6 +73,7 @@ fi
 
 "$NATIVE_IMAGE" \
     --no-fallback \
+    --enable-native-access=ALL-UNNAMED \
     -H:+ReportExceptionStackTraces \
     -J-Xmx4g \
     "$@" \

@@ -286,9 +286,9 @@
           <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
             🧹
           </div>
-          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">纯 JDK,零第三方依赖</h3>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">纯 JDK 扫描引擎</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            一遍 <code class="text-amber-300">Files.walkFileTree</code>,没有任何第三方库。没有反射、无需配置——整个引擎一个下午就能读完。
+            扫描引擎只有 <code class="text-amber-300">Files.newDirectoryStream</code> 与 <code class="text-amber-300">BasicFileAttributes</code>,没有别的。整个工具只有一项依赖——JLine 的终端层,它也是全屏界面能在 Windows 上跑起来的原因。
           </p>
         </div>
 
@@ -384,7 +384,7 @@
             <span class="text-xs font-mono text-slate-500">行式交互浏览</span>
           </div>
           <p class="text-xs text-slate-400 leading-relaxed">
-            先扫描,再列出当前目录中最大的子目录。直接输入数字即进入(<code class="text-slate-200">1</code> 就是第一项,无需前缀),<code class="text-slate-200">..</code> 返回上一层,<code class="text-slate-200">s</code> 循环切换 大小 → 名称 → 文件数,<code class="text-slate-200">q</code> 退出。需要交互终端——管道调用会快速失败并提示改用 <code class="text-slate-200">scan</code>。
+            先扫描,然后接管终端:备用屏幕、方向键选择、<span class="text-slate-200">Enter</span> 进入、<span class="text-slate-200">Backspace</span> 返回、<span class="text-slate-200">s</span> 循环切换 大小 → 名称 → 文件数。始终按大小降序、默认选中最大项。需要交互终端——管道调用会快速失败并提示改用 <code class="text-slate-200">scan</code>。
           </p>
         </div>
       </div>

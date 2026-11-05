@@ -87,18 +87,26 @@ dukit top /Applications --min-size 1G      # only entries at least 1 GiB
 
 ### `dukit browse [path] [--exclude <glob>...]`
 
-Scans, then enters a line-based interactive browser. Requires an interactive terminal; piped usage exits `2` with a hint to use `scan`.
+Scans, then opens a full-screen browser on the terminal's alternate screen (like ncdu or
+lazygit). Requires an interactive terminal; piped usage exits `2` with a hint to use `scan`.
 
 ```
-<enter> or ls   re-render the current directory
-<n>             descend into entry n (no prefix needed)
-cd <n>          same as <n>
-.. or up        parent directory
-top             back to the scan root
-s               cycle sort: size -> name -> count
-sort <key>      order by size, name, or count
-q               quit (end of input also quits)
+↑ / ↓ or k / j   move the selection
+enter / → / l    descend into the selected directory
+backspace / ←    return to the parent
+home / end       jump to the first or last entry
+page up / down   move a screenful
+s                cycle sort: size -> name -> count
+q or ctrl-c      quit
 ```
+
+The listing always starts sorted by size, largest first, with the first entry selected.
+Empty directories are still enterable — that is how you find out they are empty. A terminal
+that cannot be driven in raw mode falls back to a line-based browser automatically.
+
+JLine supplies the platform work (raw mode, key decoding, terminal size) and its FFM
+provider drives the Windows console through the Foreign Function & Memory API, so the same
+full-screen UI runs on macOS, Linux, and Windows, including in the native binary.
 
 ## Size Semantics (Important)
 

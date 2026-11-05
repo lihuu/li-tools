@@ -121,10 +121,11 @@ A cross-platform disk usage analyzer inspired by ncdu: scan a directory tree onc
    - Reports apparent sizes (logical file sizes, like `du --apparent-size`), the only metric the JDK exposes portably and the only one identical across APFS, ext4, and NTFS.
    - Hardlinked content counts exactly once per scan (first occurrence wins); every hardlink still counts toward the file totals.
    - Symlinks are never followed; directory inodes add nothing to subtree sizes.
-3. **Line-Based Interactive Browser**:
+3. **Full-Screen Interactive Browser**:
    - `dukit browse [path]`
-   - A REPL instead of a curses UI: `cd <n>`, `up`, `top`, `sort size|name|count`, `q` — works in every terminal including the classic Windows console, tmux, and SSH.
-   - Requires an interactive terminal; piped invocations fail fast with exit code 2 and a hint toward `scan`.
+   - Alternate screen, arrow-key selection, Enter to descend, Backspace to return, `s` to cycle sort. Always sorted by size with the largest entry selected.
+   - JLine supplies raw mode and key decoding; its FFM provider drives the Windows console through the Foreign Function & Memory API, so one implementation covers macOS, Linux and Windows — including inside the native binary.
+   - Requires an interactive terminal; piped invocations fail fast with exit code 2 and a hint toward `scan`. A terminal that cannot enter raw mode falls back to a line-based browser.
 4. **Directories-Only JSON Tree**:
    - `dukit scan [path]`
    - Emits `{ meta: { tool, version, path, size, files, directories, errors, generatedAt }, tree: { name, size, files, directories, errors, ownFileSize, ownFileCount, children } }` via a zero-reflection streaming writer.
