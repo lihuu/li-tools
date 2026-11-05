@@ -18,6 +18,7 @@ public class TrashException extends Exception {
         CROSS_DEVICE,
         PATH_TOO_LONG,
         MOUNT_POINT,
+        REPARSE_POINT,
         TARGET_IS_TRASH,
         TARGET_CONTAINS_TRASH,
         NOT_FOUND,

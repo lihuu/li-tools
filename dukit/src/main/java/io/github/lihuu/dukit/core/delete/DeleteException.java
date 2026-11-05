@@ -12,6 +12,7 @@ public class DeleteException extends Exception {
         ROOT,
         NOT_A_DIRECTORY,
         SYMBOLIC_LINK,
+        REPARSE_POINT,
         MOUNT_POINT,
         IS_TRASH,
         CONTAINS_TRASH,

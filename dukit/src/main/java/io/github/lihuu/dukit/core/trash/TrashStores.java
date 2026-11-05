@@ -24,8 +24,9 @@ public final class TrashStores {
         if (os.startsWith("Linux")) {
             return new LinuxTrashStore(home, environment, clock);
         }
-        // Windows needs SHFileOperationW through FFM and is not implemented yet; refusing is
-        // the only safe answer until it is.
+        if (os.startsWith("Windows")) {
+            return new WindowsTrashStore();
+        }
         return new UnsupportedTrashStore();
     }
 }
