@@ -71,7 +71,9 @@ class WindowsTrashStoreTest {
 
     @Test
     void refusesPathsAtMaxPath() {
-        Path longPath = Path.of(temporary.toAbsolutePath() + "\\" + "x".repeat(MAX_PATH));
+        String root = temporary.toAbsolutePath().toString();
+        Path longPath = Path.of(root + "\\" + "x".repeat(MAX_PATH - root.length() - 1));
+        assertEquals(MAX_PATH, longPath.toString().length());
 
         TrashException failure = assertThrows(TrashException.class, () -> store.prepare(longPath));
         assertEquals(TrashException.Reason.PATH_TOO_LONG, failure.reason());
@@ -171,6 +173,8 @@ class WindowsTrashStoreTest {
                 "set DUKIT_WINDOWS_TRASH_TEST=1 to exercise the real Recycle Bin");
         Path target = Files.createDirectory(temporary.resolve("dukit-recycle-" + System.nanoTime()));
         Files.writeString(target.resolve("payload.txt"), "dukit");
+        Path readOnly = Files.writeString(target.resolve("read-only.txt"), "dukit");
+        Files.setAttribute(readOnly, "dos:readonly", true);
 
         TrashStore.TrashTarget prepared = store.prepare(target);
         assertNull(prepared.destination(), "the Recycle Bin chooses the final name");
