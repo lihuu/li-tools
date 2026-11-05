@@ -45,6 +45,7 @@ public final class TreeUpdater {
         List<DirEntry> children = new ArrayList<>(entry.children().size());
         boolean found = false;
         long removedSize = 0;
+        long removedDiskSize = 0;
         long removedFiles = 0;
         long removedDirectories = 0;
         long removedErrors = 0;
@@ -55,11 +56,13 @@ public final class TreeUpdater {
                 DirEntry rebuilt = index + 1 == segments.size() ? null : removeFrom(child, segments, index + 1);
                 if (rebuilt == null) {
                     removedSize = child.size();
+                    removedDiskSize = child.diskSize();
                     removedFiles = child.fileCount();
                     removedDirectories = 1 + child.dirCount();
                     removedErrors = child.errorCount();
                 } else {
                     removedSize = child.size() - rebuilt.size();
+                    removedDiskSize = child.diskSize() - rebuilt.diskSize();
                     removedFiles = child.fileCount() - rebuilt.fileCount();
                     removedDirectories = child.dirCount() - rebuilt.dirCount();
                     removedErrors = child.errorCount() - rebuilt.errorCount();
@@ -76,6 +79,7 @@ public final class TreeUpdater {
         }
         return new DirEntry(
                 entry.name(),
+                entry.diskSize() - removedDiskSize,
                 entry.size() - removedSize,
                 entry.fileCount() - removedFiles,
                 entry.dirCount() - removedDirectories,

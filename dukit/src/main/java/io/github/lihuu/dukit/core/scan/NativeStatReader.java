@@ -112,6 +112,7 @@ final class NativeStatReader implements StatReader {
                 default -> FileStat.Kind.OTHER;
             };
             stat.size = layout.size(statBuffer);
+            stat.blocks = layout.blocks(statBuffer);
             stat.linkCount = layout.linkCount(statBuffer);
             stat.device = layout.device(statBuffer);
             stat.inode = layout.inode(statBuffer);
@@ -155,6 +156,11 @@ final class NativeStatReader implements StatReader {
             long size(@NotNull MemorySegment stat) {
                 return stat.get(ValueLayout.JAVA_LONG, 96);
             }
+
+            @Override
+            long blocks(@NotNull MemorySegment stat) {
+                return stat.get(ValueLayout.JAVA_LONG, 104);
+            }
         },
         LINUX_X86_64(144) {
             @Override
@@ -180,6 +186,11 @@ final class NativeStatReader implements StatReader {
             @Override
             long size(@NotNull MemorySegment stat) {
                 return stat.get(ValueLayout.JAVA_LONG, 48);
+            }
+
+            @Override
+            long blocks(@NotNull MemorySegment stat) {
+                return stat.get(ValueLayout.JAVA_LONG, 64);
             }
         },
         LINUX_AARCH64(128) {
@@ -207,6 +218,11 @@ final class NativeStatReader implements StatReader {
             long size(@NotNull MemorySegment stat) {
                 return stat.get(ValueLayout.JAVA_LONG, 48);
             }
+
+            @Override
+            long blocks(@NotNull MemorySegment stat) {
+                return stat.get(ValueLayout.JAVA_LONG, 64);
+            }
         };
 
         private final int statSize;
@@ -228,5 +244,7 @@ final class NativeStatReader implements StatReader {
         abstract long inode(@NotNull MemorySegment stat);
 
         abstract long size(@NotNull MemorySegment stat);
+
+        abstract long blocks(@NotNull MemorySegment stat);
     }
 }

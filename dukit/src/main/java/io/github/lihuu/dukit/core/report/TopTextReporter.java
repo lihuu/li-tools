@@ -24,16 +24,16 @@ public final class TopTextReporter {
 
     public void write(@NotNull TopResult result, @NotNull String kind, long minSize) {
         List<TopEntry> entries = ("files".equals(kind) ? result.largestFiles() : result.largestDirectories())
-                .stream().filter(entry -> entry.size() >= minSize).toList();
+                .stream().filter(entry -> entry.diskSize() >= minSize).toList();
         if (entries.isEmpty()) {
             out.println(style.muted("nothing matched"));
             return;
         }
         for (int i = 0; i < entries.size(); i++) {
             TopEntry entry = entries.get(i);
-            double percent = result.totalSize() > 0 ? 100.0 * entry.size() / result.totalSize() : 0.0;
+            double percent = result.totalSize() > 0 ? 100.0 * entry.diskSize() / result.totalSize() : 0.0;
             out.println(String.format(Locale.US, "%3d  %9s  %5.1f%%  %s",
-                    i + 1, HumanBytes.format(entry.size()), percent, entry.path()));
+                    i + 1, HumanBytes.format(entry.diskSize()), percent, entry.path()));
         }
         out.println(style.muted(String.format(Locale.US, "%d %s · %s total · %,d files",
                 entries.size(), kind, HumanBytes.format(result.totalSize()), result.fileCount())));

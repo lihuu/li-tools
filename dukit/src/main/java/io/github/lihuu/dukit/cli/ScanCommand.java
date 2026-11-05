@@ -28,6 +28,10 @@ public final class ScanCommand extends CliCommand.Action {
             description = "Directory levels to emit; sizes always cover whole subtrees (default: -1 = all levels, 0 = root only)")
     int depth;
 
+    @Option(names = "--apparent-size",
+            description = "Report logical file sizes instead of the space actually occupied")
+    boolean apparentSize;
+
     @Option(names = "--exclude", description = "Glob pattern to skip; a bare name matches any path component, a pattern with '/' matches the path relative to the scan root")
     List<String> excludes;
 
@@ -37,7 +41,7 @@ public final class ScanCommand extends CliCommand.Action {
         ScanResult result = root.scanTree(path, excludes, options.quiet);
         root.reportScanErrors(result, options.quiet);
         if (text) {
-            new TreeReporter(out(), root.outputStyle(), depth).write(result);
+            new TreeReporter(out(), root.outputStyle(), depth, apparentSize).write(result);
         } else {
             new JsonReporter(out(), ApplicationInfo.load(), depth).write(result);
         }

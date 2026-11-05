@@ -32,7 +32,7 @@ public final class DeleteService {
         DeleteGuard.validate(scan.path(), target);
         TrashStore.TrashTarget trashTarget = trash.prepare(target);
         DeleteGuard.validateTrashRelation(target, trashTarget);
-        return new DeletePlan(target, entry.name(), entry.size(), entry.fileCount(), entry.dirCount(), trashTarget);
+        return new DeletePlan(target, entry.name(), entry.diskSize(), entry.fileCount(), entry.dirCount(), trashTarget);
     }
 
     /**

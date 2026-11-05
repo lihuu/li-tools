@@ -38,6 +38,7 @@ final class NioStatReader implements StatReader {
     static void fill(@NotNull FileStat stat, @NotNull BasicFileAttributes attributes) {
         stat.kind = kindOf(attributes);
         stat.size = attributes.size();
+        stat.blocks = -1;
         stat.linkCount = -1;
         stat.device = 0;
         stat.inode = 0;

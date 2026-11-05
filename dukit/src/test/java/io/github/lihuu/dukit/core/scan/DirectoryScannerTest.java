@@ -201,10 +201,10 @@ class DirectoryScannerTest {
         TopResult parallelTop = new DirectoryScanner(List.of(), 8).top(root, 10, (files, bytes, dir) -> { });
         assertEquals(serialTop.totalSize(), parallelTop.totalSize());
         assertEquals(serialTop.fileCount(), parallelTop.fileCount());
-        assertEquals(serialTop.largestDirectories().stream().map(TopEntry::size).toList(),
-                parallelTop.largestDirectories().stream().map(TopEntry::size).toList());
-        assertEquals(serialTop.largestFiles().stream().map(TopEntry::size).toList(),
-                parallelTop.largestFiles().stream().map(TopEntry::size).toList());
+        assertEquals(serialTop.largestDirectories().stream().map(TopEntry::path).toList(),
+                parallelTop.largestDirectories().stream().map(TopEntry::path).toList());
+        assertEquals(serialTop.largestFiles().stream().map(TopEntry::path).toList(),
+                parallelTop.largestFiles().stream().map(TopEntry::path).toList());
     }
 
     private static String shape(DirEntry entry) {
@@ -259,11 +259,11 @@ class DirectoryScannerTest {
         Path root = tree("topdirs");
         TopResult result = new DirectoryScanner(List.of()).top(root, 2, (files, bytes, dir) -> { });
 
-        assertEquals(650, result.totalSize());
         assertEquals(4, result.fileCount());
+        assertTrue(result.totalSize() > 0, "total is the occupied size of the whole scan");
         List<Path> paths = result.largestDirectories().stream().map(TopEntry::path).toList();
         assertEquals(List.of(root.resolve("a"), root.resolve("a/sub")), paths,
-                "a (600) then a/sub (200); the scan root is the query, not a result");
+                "the scan root is the query, not a result");
     }
 
     @Test
@@ -274,8 +274,8 @@ class DirectoryScannerTest {
         List<TopEntry> files = result.largestFiles();
         assertEquals(2, files.size(), "the heap is bounded by the limit");
         assertEquals(root.resolve("a/big.bin"), files.get(0).path());
-        assertEquals(300, files.get(0).size());
-        assertEquals(root.resolve("a/sub/deep.txt"), files.get(1).path());
+        assertEquals(300, files.get(0).size(), "apparent size is still carried");
+        assertTrue(files.get(0).diskSize() >= 4096, "occupied size is block-rounded");
     }
 
     @Test
@@ -311,14 +311,16 @@ class DirectoryScannerTest {
     void topKeepsOnlyTheLargestEntriesRegardlessOfVisitOrder() throws IOException {
         Path root = temporary.resolve("order");
         Files.createDirectories(root);
-        for (int size = 1; size <= 200; size++) {
-            Files.writeString(root.resolve("f" + size + ".bin"), "x".repeat(size), StandardCharsets.US_ASCII);
+        // Sizes must differ by at least one block: rounding makes small files identical.
+        for (int index = 1; index <= 40; index++) {
+            Files.writeString(root.resolve("f" + index + ".bin"), "x".repeat(index * 4096), StandardCharsets.US_ASCII);
         }
         TopResult result = new DirectoryScanner(List.of()).top(root, 3, (files, bytes, dir) -> { });
 
         List<TopEntry> files = result.largestFiles();
         assertEquals(3, files.size());
-        assertEquals(List.of(200L, 199L, 198L), files.stream().map(TopEntry::size).toList());
+        assertEquals(List.of(40L, 39L, 38L),
+                files.stream().map(entry -> entry.size() / 4096).toList());
     }
 
     @Test

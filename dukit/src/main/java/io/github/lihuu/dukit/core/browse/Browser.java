@@ -221,7 +221,7 @@ public final class Browser {
             return;
         }
         out.println();
-        out.println(style.bold(style.highlight(currentPath() + "  " + HumanBytes.format(current.size()))));
+        out.println(style.bold(style.highlight(currentPath() + "  " + HumanBytes.format(current.diskSize()))));
         out.println(style.muted(String.format(Locale.US, "%,d directories, %,d files · %s in %,d files directly · sort: %s",
                 current.dirCount() + 1, current.fileCount(),
                 HumanBytes.format(current.ownFileSize()), current.ownFileCount(),
@@ -235,7 +235,7 @@ public final class Browser {
                     : "";
             String marker = child.errorCount() > 0 ? style.warning(" !") : "";
             out.println(String.format(Locale.US, "  %3d  %9s  %5.1f%%  %s/%s%s",
-                    i + 1, HumanBytes.format(child.size()), percent(child, current), child.name(), ownFiles, marker));
+                    i + 1, HumanBytes.format(child.diskSize()), percent(child, current), child.name(), ownFiles, marker));
         }
         if (children.isEmpty()) {
             out.println(style.muted("  (no subdirectories)"));
@@ -271,6 +271,6 @@ public final class Browser {
     }
 
     private static double percent(@NotNull DirEntry child, @NotNull DirEntry parent) {
-        return parent.size() > 0 ? 100.0 * child.size() / parent.size() : 0.0;
+        return parent.diskSize() > 0 ? 100.0 * child.diskSize() / parent.diskSize() : 0.0;
     }
 }

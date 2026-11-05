@@ -12,5 +12,9 @@ import org.jetbrains.annotations.NotNull;
 public sealed interface TreeEntry permits DirEntry, FileEntry {
     @NotNull String name();
 
+    /** Apparent (logical) size in bytes. */
     long size();
+
+    /** Space actually occupied; equals {@link #size()} where the platform reports no blocks. */
+    long diskSize();
 }

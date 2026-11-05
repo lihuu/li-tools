@@ -39,10 +39,11 @@ public final class TopJsonReporter {
         json.endObject();
         json.name("entries").beginArray();
         List<TopEntry> entries = ("files".equals(kind) ? result.largestFiles() : result.largestDirectories())
-                .stream().filter(entry -> entry.size() >= minSize).toList();
+                .stream().filter(entry -> entry.diskSize() >= minSize).toList();
         for (TopEntry entry : entries) {
             json.beginObject();
             json.name("path").value(entry.path().toString());
+            json.name("diskSize").value(entry.diskSize());
             json.name("size").value(entry.size());
             json.endObject();
         }

@@ -18,6 +18,8 @@ final class FileStat {
 
     Kind kind = Kind.OTHER;
     long size;
+    /** Allocated blocks in 512-byte units; {@code -1} when the platform does not expose it. */
+    long blocks = -1;
     long linkCount = -1;
     long device;
     long inode;
