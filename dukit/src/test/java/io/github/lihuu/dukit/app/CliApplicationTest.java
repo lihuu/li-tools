@@ -57,7 +57,10 @@ class CliApplicationTest {
         Result result = run("scan", root.toString(), "--text");
 
         assertEquals(0, result.code(), result.err());
-        assertTrue(result.out().contains(root.toString()), "root path is shown");
+        // Compare against the resolved path: on Windows the temp directory may be handed to
+        // the test as an 8.3 short name (C:\Users\RUNNER~1\...) while the report shows the
+        // path toRealPath() expands it to.
+        assertTrue(result.out().contains(root.toRealPath().toString()), "root path is shown: " + result.out());
         assertTrue(result.out().contains("650 B"), result.out());
         assertTrue(result.out().contains("a/"), result.out());
         assertFalse(result.out().contains("\"tree\""), "text mode must not emit JSON");
