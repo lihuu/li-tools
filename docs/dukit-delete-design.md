@@ -780,7 +780,7 @@ y
   3. 验证 Trash 文件存在（Linux/macOS 可按已知路径检查）；Windows 只验证原路径消失（Recycle Bin 位置由系统管理）。
   4. 清理测试产生的 Trash 文件。
 - 行式浏览器回退路径（终端无法进入 raw mode 时）手动验证一次 `delete <n>` 流程。
-- **不能用管道驱动 `scripts/smoke-native.py` 验证删除**：现有 `interactive` 判定是 `System.console() != null`，管道输入会让 `browse` 以退出码 2 拒绝；而 D4 又不提供 CLI 删除入口。`smoke-native.py` 只增加非破坏性断言：`browse` 非交互拒绝、`--help`/子命令列表中不存在删除入口、删除文档存在。真正的删除流程用 POSIX PTY 或 Windows 手动 TUI 验证。
+- **不能用管道驱动 `scripts/smoke-native.py` 验证删除**：现有 `interactive` 判定是 `System.console() != null`，管道输入会让 `browse` 以退出码 2 拒绝；而 D4 又不提供 CLI 删除入口。`smoke-native.py` 只增加非破坏性断言：`browse` 非交互拒绝、`--help`/子命令列表中不存在删除入口。真正的删除流程用 POSIX PTY 或 Windows 手动 TUI 验证。
 - PTY 自动化不作为 CI 门槛；发布前在三个平台手动跑一次全屏 `d` 流程，并把结果记录在发布 PR。
 
 ### 11.4 未验证项必须明确
