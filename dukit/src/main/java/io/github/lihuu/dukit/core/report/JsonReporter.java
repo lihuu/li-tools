@@ -34,12 +34,12 @@ public final class JsonReporter {
 
     public void write(@NotNull ScanResult result) {
         DirEntry root = result.root();
-        JsonWriter json = new JsonWriter();
+        JsonWriter json = new JsonWriter(out);
         json.beginObject();
         json.name("meta").beginObject();
         json.name("tool").value(info.name());
         json.name("version").value(info.version());
-        json.name("path").value(root.path().toString());
+        json.name("path").value(result.path().toString());
         json.name("size").value(root.size());
         json.name("files").value(root.fileCount());
         json.name("directories").value(root.dirCount());
@@ -49,7 +49,8 @@ public final class JsonReporter {
         json.name("tree");
         writeNode(json, root, 0);
         json.endObject();
-        out.println(json);
+        json.flush();
+        out.println();
     }
 
     private void writeNode(@NotNull JsonWriter json, @NotNull DirEntry entry, int level) {

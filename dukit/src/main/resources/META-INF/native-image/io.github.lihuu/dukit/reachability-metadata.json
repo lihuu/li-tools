@@ -3,6 +3,10 @@
     "downcalls": [
       {
         "returnType": "int",
+        "parameterTypes": ["void*", "void*"]
+      },
+      {
+        "returnType": "int",
         "parameterTypes": ["void*", "struct(short, short)"]
       },
       {

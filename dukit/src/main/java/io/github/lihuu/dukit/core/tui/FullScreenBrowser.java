@@ -59,7 +59,7 @@ public final class FullScreenBrowser {
             writer.print(ENTER_ALTERNATE_SCREEN + HIDE_CURSOR);
             writer.flush();
 
-            TuiState state = new TuiState(result.root());
+            TuiState state = new TuiState(result);
             ScreenRenderer renderer = new ScreenRenderer(color);
             KeyParser parser = new KeyParser(inputOf(terminal));
 

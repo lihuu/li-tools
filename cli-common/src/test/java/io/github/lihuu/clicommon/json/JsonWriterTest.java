@@ -1,6 +1,10 @@
 package io.github.lihuu.clicommon.json;
 
 import org.junit.jupiter.api.Test;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class JsonWriterTest {
@@ -67,6 +71,23 @@ class JsonWriterTest {
                 .endObject();
 
         assertEquals("{\"message\": \"已就绪 ✔\"}", writer.toString());
+    }
+
+    @Test
+    void shouldStreamToAWriterInChunks() {
+        StringWriter buffer = new StringWriter();
+        JsonWriter writer = new JsonWriter(new PrintWriter(buffer));
+        writer.beginObject()
+                .name("name").value("token")
+                .name("items").beginArray()
+                .value("a")
+                .value("b")
+                .endArray()
+                .endObject()
+                .flush();
+
+        assertEquals("{\"name\": \"token\",\"items\": [\"a\",\"b\"]}", buffer.toString());
+        assertThrows(IllegalStateException.class, writer::toString);
     }
 
     @Test
