@@ -1,7 +1,8 @@
 # dukit 删除功能设计（Trash / Delete Design）
 
 - **日期**：2026-11-05
-- **状态**：草案，待评审（本文件所在 PR 只交付设计，不包含删除实现）
+- **版本**：v2（技术自审修订；v1 由 PR #29 合入）
+- **状态**：待评审（技术自审完成，见 §14.1；本文件所在 PR 只交付设计，不包含删除实现）
 - **关联任务**：Workbench `t_mw33p43oc82af1bf6f91211c`
 - **关联模块**：`dukit`
 - **评审门槛**：评审通过前不得合并删除相关生产代码；实现完成后，站点与文档中的“只读”表述必须同步修改。
@@ -21,6 +22,7 @@
 其他已定结论：
 
 - **只删目录**：扫描树只有目录节点，删除因此只作用于目录。要删单个大文件，用系统文件管理器——dukit 不为此在树上增加文件节点。
+- **`--exclude` 扫描禁用删除**：排除项仍会被移入 Trash 却不在预览里；v1 直接禁用删除，要求重新扫描不带排除项的目录（D11）。
 - **不提供 CLI 删除命令**：删除只在交互界面中发生，没有 `dukit delete` 子命令，也没有 `--yes` / `--dry-run` / `--json` 之类的脚本化删除开关。
 - **不删扫描根**：扫描根本身不能成为目标；TUI 只能删当前目录的子项。
 - **没有永久删除入口**：包括 `--permanent`、TUI 快捷键和脚本开关。后续若需要，必须单独立项评审。
@@ -63,6 +65,7 @@
 - 恢复、清空 Trash、Trash 浏览、自动清理。
 - 多选删除、通配符、正则、从 `top` 结果直接删除。
 - 删除扫描根。
+- 使用 `--exclude` 的扫描上的删除（D11；入口直接拒绝）。
 - 符号链接本身或链接目标的删除。
 - 网络共享（SMB/NFS/AFP/WebDAV）上的删除。
 - Windows `\\?\` 长路径与超过 `MAX_PATH` 的路径；后续用 `IFileOperation` 另案处理。
@@ -206,6 +209,16 @@
 
 **理由**：恢复需要读取平台元数据、处理重名和原路径冲突；清空需要遍历 Trash 并处理权限，都是新的破坏性操作。交给系统文件管理器。
 
+### D11：使用 `--exclude` 的扫描不允许删除
+
+**决策**：只要本次扫描带了 `--exclude`，删除入口就拒绝执行，状态行说明“扫描使用了排除项，删除已禁用；请重新扫描不带 --exclude 的目录”。确认页不出现。
+
+**理由**：
+
+- 被排除的内容仍然存在于目标目录里，会被一起移入 Trash，但它不在扫描树、大小和文件数里。确认页会低报实际移动的内容，违背“看到的就是将要删的”。
+- 判断“目标子树里是否真的有排除项”需要把 exclude matcher 传进核心、在计划阶段重新匹配整棵子树；这比 v1 直接禁用更复杂，而且仍然要处理“排除项正好是目标祖先”的情况。
+- 先禁用是 fail-closed；需要删除时，用户可以对目标单独扫描一次不带排除项的目录。后续若要放宽，必须先在计划阶段对目标做一次不计 excludes 的审计，并把结果显示在确认页。
+
 ---
 
 ## 5. 安全不变量
@@ -218,12 +231,13 @@
 | I2 | TUI 目标必须是当前目录的直接子项，且在本次 `ScanResult` 的树中；扫描根永远不可删。 |
 | I3 | 不存在 CLI 删除入口；目标只能来自扫描树中当前目录的直接子项，不接受任何路径参数。 |
 | I4 | 从扫描根到目标的每一级都必须是真实目录，不能是符号链接；Windows 上也不能是 junction/reparse point（JDK 的 `isSymbolicLink()` 对 junction 返回 false，必须用 `isOther()` 或 reparse 属性判断）。 |
-| I5 | 目标不能是文件系统根、挂载点，或包含另一个挂载点的目录；Windows 上子树中的 reparse point 必须先验证 Shell 不会跟随，否则拒绝。 |
+| I5 | 目标不能是文件系统根、挂载点，或包含另一个挂载点的目录；Windows 上目标子树中的任何 reparse point 一律拒绝，不依赖 Shell 行为验证。 |
 | I6 | 目标不能等于或包含将要使用的 Trash 目录；否则移动会变成“把目录移进它自己”。 |
 | I7 | 目标不能是已知 Trash 根（`~/.Trash`、`.Trashes`、`$XDG_DATA_HOME/Trash`、`.Trash-$uid` 等），也不能位于将要使用的 Trash 目录内部。 |
 | I8 | 确认页出现之前不做任何文件系统修改；`n`/Esc/`q`/Ctrl-C 取消后也不留任何 Trash 文件或 info 文件。 |
 | I9 | 移动必须在同一文件系统内完成；使用 `ATOMIC_MOVE`，跨设备时以 `AtomicMoveNotSupportedException` 失败，绝不回退为复制后删除。 |
 | I10 | 删除成功后树聚合值必须与“移除该节点”一致；结果不确定时不得继续删除，并将会话标记为 stale。 |
+| I11 | 本次扫描使用了 `--exclude` 时，删除入口拒绝执行；目标审计不完整时不得展示确认页。 |
 
 ### 5.1 威胁与对策
 
@@ -232,7 +246,7 @@
 | 用户输入 `../../etc` | 不存在路径输入；目标只能从扫描树中选择 | 无（没有该入口） |
 | 扫描后目标被替换成符号链接 | 每次执行前逐级 `lstat`，`NOFOLLOW_LINKS`；最终项必须是目录/普通文件 | 检查与移动之间存在极短 TOCTOU 窗口；这是本地工具的通用边界，OS 的 `rename` 本身是原子的 |
 | 目标祖先目录被替换成符号链接或 Windows junction | POSIX/Windows 都逐级检查；Windows 额外拒绝 `isOther()`/reparse point，不能只信 `isSymbolicLink()` | 同上 |
-| 现有扫描器把 Windows junction 当目录遍历 | 删除功能实现前先修复 `NioStatReader.kindOf`/扫描器的 reparse point 处理；删除 guard 再独立拒绝 | 这是现有扫描缺陷，删除功能会放大它；需要回归测试 |
+| 现有扫描器把 Windows junction 当目录遍历 | 已由 PR #30 修复：`NioStatReader.kindOf` 先判 `isSymbolicLink()`/`isOther()`，再判 `isDirectory()`；删除 guard 仍独立检查 reparse point，不复用扫描器分类 | 修复带 `NioStatReaderTest`/`DirectoryScannerTest` 回归；删除 guard 的独立检查仍需覆盖 |
 | 删除挂载点或包含挂载点的目录 | 比较目标与父目录的 `FileStore`/`unix:dev`；遍历子树检查嵌套挂载 | 非 POSIX 平台的挂载检测是 best effort，需要 native 测试 |
 | Trash 目录是符号链接 | 检查 `NOFOLLOW_LINKS`、所有者、权限；拒绝链接 | 本地攻击者可在检查后替换；交互式工具可接受 |
 | 多用户机器上写入别人的 Trash | Linux 使用 `$uid` 子目录并校验所有者/权限；macOS 使用 `.Trashes/$uid` | 需要正确的 uid/权限检查，测试覆盖 |
@@ -258,6 +272,7 @@ target = target.resolve(selected.name())
 
 校验顺序：
 
+0. 本次扫描使用了 `--exclude` 时直接拒绝（D11），不进入后续校验。
 1. `selected` 在 `entries()` 范围内，目标非空。
 2. `target.normalize()` 严格位于 `scan.path()` 之下，且不等于 `scan.path()`。
 3. `target.getParent().equals(currentDirectory)`——必须是直接子项，不是更深的后代。
@@ -283,13 +298,14 @@ target = target.resolve(selected.name())
 - Trash 根：`~/.Trash`、`~/.local/share/Trash`、`$XDG_DATA_HOME/Trash`、卷级 `.Trashes`、`.Trash-$uid` 等不能作为目标。
 - 目标位于 Trash 内部：拒绝，避免把 Trash 里的项目再次“回收”成重名副本。
 - Trash 去向在目标内部：目标包含 Trash 路径时拒绝。典型例子是删除整个 `$HOME`，而 home trash 就在 `$HOME/.local/share/Trash` 里。这种路径不能“移进自己的 Trash”。
-- 目标子树中的嵌套挂载点：移动父目录时可能把挂载点卷进去；v1 在 POSIX 上遍历子树，发现不同 `unix:dev`/`FileStore` 就拒绝。Linux 还应解析 `/proc/self/mountinfo` 识别同设备的 bind mount；仅比较设备号不足以发现所有挂载点。Windows 上检查目标自身是否为 reparse point；子树中的 reparse point 必须先做 native 验证（Shell 是否跟随），无法证明不跟随时拒绝整棵目录。
+- 目标子树中的嵌套挂载点：移动父目录时可能把挂载点卷进去；v1 在 POSIX 上遍历子树，发现不同 `unix:dev`/`FileStore` 就拒绝。Linux 还应解析 `/proc/self/mountinfo` 识别同设备的 bind mount；仅比较设备号不足以发现所有挂载点。Windows 上一律拒绝：目标自身或子树中存在任何 reparse point（junction、symlink、OneDrive 占位目录等）就拒绝整棵目录，不依赖 Shell 行为验证（§9.3）。
 - 网络卷：Linux 用 mountinfo/fstype，macOS 用 `FileStore.type()`/`statfs`；已知网络文件系统在 `prepare` 阶段就抛 `NETWORK_VOLUME`，不会走到“在同卷创建 Trash”的步骤。
 
 ### 6.4 挂载点遍历的边界
 
-- 预览扫描本身不跟随符号链接；挂载点检查是独立的目录遍历，比较设备号并解析 Linux `/proc/self/mountinfo`，不读取文件内容。Windows 上同时检查 reparse point/junction；无法证明 Shell 不跟随就拒绝。
+- 预览扫描本身不跟随符号链接；挂载点检查是独立的目录遍历，比较设备号并解析 Linux `/proc/self/mountinfo`，不读取文件内容。Windows 上同时检查 reparse point/junction；发现任何 reparse point 就拒绝，不把判断留给 Shell。
 - 该遍历在 `plan` 阶段（确认页出现之前）执行一次；对超大目录会增加一次 `O(目录数)` 的遍历，但换来“不会把另一个卷移进 Trash”的保证。
+- `DeletePlan` 记录 plan 时目标的 `BasicFileAttributes.fileKey()`（优先）以及 `unix:dev`/`unix:ino`（可用时）；`execute` 在同一路径重新读取并比较。不同就报 `TARGET_CHANGED`、`NOT_STARTED`，不移动。这样同名目录在确认期间被删除并重建时，不会误删新目标。取不到身份信息时按失败关闭处理，而不是跳过比较。
 - `execute` 的再次校验重新检查路径、类型、目标自身是否挂载；不重复整棵子树的挂载遍历。确认与移动之间新增嵌套挂载点属于已声明的 TOCTOU 残余；POSIX `rename` 可能以 `EBUSY` 拒绝，Windows Shell 的行为由 native 测试确认。
 - 遍历失败（权限不足、目录消失）时拒绝删除，而不是跳过。删除一个无法完整检查的目录不符合 I5。
 
@@ -300,7 +316,8 @@ JDK NIO 没有提供 `openat`/`unlinkat` 风格的目录句柄 API；本设计�
 - 校验与移动之间只有很短的时间窗口；
 - 移动本身由 OS 原子 `rename`/Shell API 完成；
 - 目标是本地用户自己的文件；攻击者若已能改写父目录，本机上的风险远大于此窗口；
-- 不跟随符号链接、不跟随挂载点，显著降低了“误删到别处”的概率。
+- 不跟随符号链接、不跟随挂载点，显著降低了“误删到别处”的概率；
+- plan/execute 的 `fileKey`/`dev`+`ino` 比较能挡住“同名目录被替换”，但检查与 `rename` 之间仍有极短窗口。
 
 如果评审要求更强保证，需要在 POSIX 上用 FFM `renameat2(RENAME_NOREPLACE)`/`openat` 重做整个移动链路；这会把 v1 从“纯 JDK + Windows Shell”扩展到三平台 FFM，建议另案处理。
 
@@ -313,8 +330,10 @@ JDK NIO 没有提供 `openat`/`unlinkat` 风格的目录句柄 API；本设计�
 - 底部帮助增加 `d delete`。
 - 按 `d`：
   1. 校验当前选中项目；失败则在状态行显示原因，不进入确认页。
-  2. 调用 `TrashStore.prepare` 取得 Trash 去向；失败同样只显示原因。
-  3. 用确认页替换底部帮助。
+  2. 若本次扫描使用了 `--exclude`（D11），直接拒绝：“扫描使用了排除项，删除已禁用；请重新扫描不带 --exclude 的目录”。
+  3. 状态行显示 `checking <target>…`，同步执行挂载点/可读性预检；v1 不提供取消。超大目标可能停顿数秒，这是为了在确认页之前给出确定的 Trash 去向和失败原因。
+  4. 调用 `TrashStore.prepare` 取得 Trash 去向；失败同样只显示原因。
+  5. 用确认页替换底部帮助。
 - 确认页示例（宽度不足时截断路径，不截断关键动词）：
 
 ```text
@@ -327,6 +346,7 @@ y move to Trash   n cancel   space is not freed until Trash is emptied
 - `y`：执行移动。成功后在状态行显示 `✔ moved to Trash: build-cache`，从树中移除该节点，光标停在原索引位置（列表缩短时 clamp 到末尾）。
 - `n` 或 `Esc`：取消，状态行显示 `cancelled`，树不变。
 - 确认页激活时，其他导航键忽略；`q`/Ctrl-C（`Key.QUIT`）视为取消，不删除，返回到列表并显示 `cancelled`。这样 raw mode 下始终保留中断手势；取消后再按 `q` 才退出。
+- `Esc` 作为取消依赖 `KeyParser` 的 250ms 序列超时：正常箭头键 `ESC [ A` 不会被误判，但极端情况下被拆到 250ms 之后到达的转义序列会先触发取消。这个边界与现有按键解析器一致，v1 不为此引入阻塞式读取。
 - 删除失败：状态行显示 `✖ <原因>`；树不更新。若结果不确定（见 10.4），标记 stale，后续 `d` 直接拒绝并提示重启。
 - Trash 不可用：`d` 不进入确认页，状态行显示“此文件系统没有可用的 Trash；未做任何更改”。
 - 目录有扫描错误（`errorCount > 0`）：v1 **不进入确认页**。挂载点预检必须能遍历目标树；无法读取的子目录意味着无法证明没有嵌套挂载点，因此 fail closed，状态行说明“目标包含无法读取的条目，未做任何更改”。不要用“移动不需要读取内容”来绕过这一点——安全不变量 I5 要求完整预检。若未来要放宽，必须先证明每个失败项都是非目录，且不掩盖嵌套挂载。
@@ -344,6 +364,7 @@ Type 'delete' to confirm:
 ```
 
 - 只有去除首尾空白后精确等于 `delete` 才执行；`yes`、`y`、空行、EOF 都视为取消。
+- 本次扫描使用了 `--exclude` 时，`delete` 不打印计划：直接提示“扫描使用了排除项，删除已禁用”，不执行。这样与 TUI 的 D11 行为一致。
 - 成功后更新树并重新渲染；失败时打印错误，树不变；如果目标已被移走但 receipt 不明确，按 10.4 处理；不确定时标记 stale。
 - `delete` 没有参数或编号越界：打印用法，不执行。
 
@@ -386,7 +407,7 @@ BrowseCommand / CliCommand / Browser / FullScreenBrowser
 core/delete/
   DeleteService     规划、再次校验、执行、结果归类
   DeleteGuard       路径/根/挂载点/Trash 包含关系校验
-  DeletePlan        目标、预览值、Trash 去向、dryRun
+  DeletePlan        目标、目标身份（fileKey/dev+ino）、预览值、Trash 去向（确认页即 dry-run，不设独立字段）
   DeleteTarget      单个目标的只读预览
   DeleteResult      单个目标的执行结果
   DeleteException   带原因枚举和“结果是否不确定”标记
@@ -404,9 +425,10 @@ core/trash/
 ```
 
 - `core/delete` 和 `core/trash` 不依赖 Picocli。
+- `DeleteException.Reason` 至少包含：`SCAN_EXCLUDED`、`NO_SELECTION`、`NOT_DIRECT_CHILD`、`OUTSIDE_SCAN_ROOT`、`ROOT`、`SYMLINK_OR_REPARSE`、`MOUNT_POINT`、`TRASH_OVERLAP`、`TARGET_CHANGED`、`STALE`、`IO_ERROR`。UI 只按 reason 映射用户文案，不解析异常消息。
 - `TrashStore` 是真实的系统边界，允许在测试中注入假实现；其他项目类不 mock。
 - 挂载点、设备号、fstype、卷根通过一个窄的 `VolumeResolver`（或等价注入）读取；测试注入固定表，生产实现读 `/proc/self/mountinfo`/`FileStore`/`statfs`。这是系统边界的测试缝，不是业务抽象。
-- `DeleteService` 通过构造器接收 `TrashStore`。平台选择在 `cli`/`app` 装配层完成，核心不读 `os.name`。
+- `DeleteService` 通过构造器接收 `TrashStore` 和 `boolean scanUsedExcludes`。为 true 时 `planEntry` 立即拒绝（D11），不进入确认页；装配层从 `BrowseCommand`/`CliCommand` 的 exclude 参数计算该值，核心不重新解析命令行。平台选择也在 `cli`/`app` 装配层完成，核心不读 `os.name`。
 - `TreeUpdater` 只接受 `ScanResult` 和绝对目标路径，返回新的 `ScanResult`；它不碰文件系统，纯函数，易测。
 - `DeletePlan` 一旦生成，`execute` 仍会再次校验目标；规划结果不是“通行证”。
 
@@ -424,6 +446,7 @@ public interface TrashStore {
 - `TrashException.Reason` 至少包含：
   `UNSUPPORTED_PLATFORM`、`NO_TRASH`、`NETWORK_VOLUME`、`CROSS_DEVICE`、`PATH_TOO_LONG`、`MOUNT_POINT`、`TARGET_IS_TRASH`、`TARGET_CONTAINS_TRASH`、`NOT_FOUND`、`TARGET_CHANGED`、`PERMISSION_DENIED`、`ABORTED`、`IO_ERROR`。
 - `TrashException.Outcome`：`NOT_STARTED` 或 `UNKNOWN`。`UNKNOWN` 用于 Windows Shell 返回非零/aborted 等可能已经发生部分修改的情况；POSIX `rename` 失败通常是 `NOT_STARTED`。
+- Windows 适配器对返回值分类：明确的调用前拒绝（UNC/远程卷、路径超限、无效路径、根目录）报 `NOT_STARTED`；访问拒绝、aborted、未知码一律报 `UNKNOWN`，不要假设“错误码非零 = 没动过”。
 
 ### 8.3 平台选择
 
@@ -457,13 +480,21 @@ y
        -> TrashStore.move(target)
        -> 验证目标消失
        -> TreeUpdater.remove(scan, target)
-  -> TuiState.replaceResult(updated)
+  -> TuiState.applyDeleted(updated)
   -> 状态行
 ```
 
+### 8.5 TUI 状态机与装配
 
----
+现有 `FullScreenBrowser.run(ScanResult, boolean)` 在内部创建 `TuiState`，`TuiState.handle` 只返回“是否退出”；删除功能需要在不把 I/O 塞进 `TuiState` 的前提下增加确认态：
 
+- `TuiState` 仍是纯状态：新增 `Mode { BROWSE, CONFIRM_DELETE }`、`DeletePlan pendingDelete`、`selectedPath()`、`beginDelete(plan)`、`cancelDelete()`、`applyDeleted(updated)`。
+- `TuiState.handle` 的返回值改为 `Outcome { HANDLED, QUIT, DELETE_REQUESTED, DELETE_CONFIRMED }`。`DELETE_REQUESTED` 由 `FullScreenBrowser` 调 `DeleteService.planEntry(...)`，成功后再 `beginDelete(plan)` 进入确认态；`DELETE_CONFIRMED` 由 runner 调 `DeleteService.execute(plan)`。`TuiState` 不持有 `DeleteService`，不做文件系统 I/O。
+- 确认态下导航键返回 `HANDLED` 且不改变选择；确认态收到 `QUIT`（`q`/Ctrl-C）时取消确认、回到 `BROWSE` 并返回 `HANDLED`，不把 `QUIT` 传给 runner——取消后再次按 `q` 才真正退出。
+- `FullScreenBrowser.run` 增加 `DeleteService` 参数；`BrowseCommand` 和 `CliCommand`（裸调用）在装配层创建同一个 `DeleteService`，同时传给全屏 `FullScreenBrowser` 和回退的 `Browser`。两条入口不得各自 new 一个平台适配器。
+- `ScreenRenderer.render` 只根据 `state.mode()`/`state.pendingDelete()` 渲染确认页，不能自己调 `TrashStore.prepare` 或修改状态。
+- `TuiState` 增加 `@Nullable String statusMessage` 和 `setStatus(...)`，由 runner 在 plan/execute 成功或失败后写入；`ScreenRenderer` 在 footer/确认页下方渲染它。状态文本不参与删除决策。
+- 行式 `Browser` 持有可替换的 `ScanResult` 和同一个 `DeleteService`；`delete <n>` 只调用 service，并在成功后用 `TreeUpdater` 的结果替换当前 result、按名称重建 trail。
 
 ---
 
@@ -477,7 +508,7 @@ y
 
 - `$XDG_DATA_HOME/Trash`；`XDG_DATA_HOME` 必须是绝对路径，否则回退 `$HOME/.local/share`。
 - 目标与 home trash 在同一设备时，使用 home trash。
-- 目录结构：`files/`、`info/`；在 `move` 阶段（确认之后）不存在时创建，权限 `0700`。
+- 目录结构：`Trash/`、`Trash/files/`、`Trash/info/`；在 `move` 阶段（确认之后）不存在时创建，权限均为 `0700`。
 - 若 home trash 是符号链接，或不属于当前用户，失败。
 
 **网络卷拒绝**
@@ -493,7 +524,7 @@ y
 - 若 `$topdir/.Trash` 存在：
   - 必须是目录、不是符号链接、带 sticky bit、对当前用户可写；
   - 使用/创建 `$topdir/.Trash/$uid`（`0700`，校验所有者）。
-  - 若 `.Trash` 通过检查但 `$uid` 目录创建失败，按规范回退到 `$topdir/.Trash-$uid`；若 `.Trash` 本身检查失败，不得使用它，直接尝试 `.Trash-$uid`。
+  - 若 `.Trash` 通过检查但 `$uid` 目录创建失败，按规范回退到 `$topdir/.Trash-$uid`；若 `.Trash` 本身检查失败（不是目录、符号链接、缺 sticky、当前用户不可写），不得使用它，即使 `$uid` 子目录已存在，直接尝试 `.Trash-$uid`。
 - 否则使用/创建 `$topdir/.Trash-$uid`（`0700`，校验所有者）。
 - 两者都不可用时：**失败**。不把文件复制到 home trash；跨设备复制会慢、会占用 home 空间，且可能在中途失败。
 - 目标等于或包含将要使用的 Trash 目录时，失败。
@@ -523,6 +554,7 @@ y
 - UTF-8 百分号编码；保留 `/` 和 URL unreserved 字符；编码 `%`、控制字符、空格、非 ASCII 字节。
 - `DeletionDate` 使用本地时间、秒精度，格式 `yyyy-MM-dd'T'HH:mm:ss`（规范示例不带时区偏移）。
 - 必须有 round-trip 测试：空格、`%`、换行、非 ASCII 文件名。
+- **已知限制**：Java `Path` 的字符串表示受 `sun.jnu.encoding` 约束，无法表达任意非 UTF-8 文件名字节。`rename` 本身按真实字节移动，Trash 中的名称正确；但 `Path=` 里的原路径只对有效 UTF-8 名称保证 round-trip。v1 不为这个边角引入 raw-byte FFM 重写，测试也不覆盖非法 UTF-8 字节序列。
 
 **规范中 SHOULD 但 v1 不做**
 
@@ -534,7 +566,7 @@ y
 
 - 先用 `Files.getFileStore(target).type()`（或 `statfs` 的 `f_fstypename`）拒绝 `smbfs`、`nfs`、`afpfs`、`webdav`、`osxfuse` 等网络文件系统，抛 `NETWORK_VOLUME`；不得在 SMB/NFS 卷上创建 `.Trashes`。最终选中的 Trash 目录本身也要做同样的检查；任何一端是网络文件系统都拒绝。
 - `$HOME` 必须是绝对路径。
-- 目标与 home 在同一设备（`unix:dev`）时，使用 `$HOME/.Trash`；不存在时在 `move` 阶段创建（`0700`），并校验它不是符号链接、属于当前用户。
+- 目标与 home 在同一设备（`unix:dev`）时，使用 `$HOME/.Trash`；不存在时在 `move` 阶段创建（`0700`），并校验它不是符号链接、属于当前用户；已有目录不是 `0700` 或属主不符时拒绝。
 - 其他卷：向上找到同设备的最高目录作为卷根；使用 `$volume/.Trashes/$uid`。
   - `.Trashes` 必须不是符号链接；存在时校验 sticky bit（若文件系统暴露 POSIX mode），不存在时在 `move` 阶段尝试创建并设置 sticky（`01777`，若平台支持），`$uid` 目录不存在时创建（`0700`），校验所有者与权限；已有 `$uid` 目录不是 `0700` 时拒绝。
   - 卷根不可写、`.Trashes` 不可用、无法设置/校验 sticky、创建失败：**失败**，不退回复制到 home trash。
@@ -598,8 +630,10 @@ y
   - `FOF_NO_CONNECTED_ELEMENTS`：不要因为 HTML 关联文件而删掉目标之外的内容。
 - 不使用 `FOF_NO_UI`：MSDN 只把它定义为 `FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_NOCONFIRMMKDIR` 的简写；它是否会抑制 nuke warning 未验证，因此不采用这种“看起来更安静”的组合。
 - 每次调用只处理一个目标，避免批处理中的部分成功无法与目标对应。
+- **COM 初始化待验证**：MSDN 的 `SHFileOperationW` 页面没有明确要求调用方初始化 COM，但 Shell 实现可能依赖当前线程的 apartment。实现前在 Windows 11 上跑一次“未初始化 COM”的冒烟；若失败或不稳定，就在同一线程调用 `ole32!CoInitializeEx(NULL, COINIT_APARTMENTTHREADED)`，返回后 `CoUninitialize`，并把 downcall 加入 native 元数据。不得跨线程共享 `Arena`，也不要把 COM 初始化藏在平台适配器的静态初始化里。
+- **nuke warning 可见性待验证**：`FOF_WANTNUKEWARNING` 弹出的是系统对话框，`hwnd = NULL` 时它可能不在前台，而 TUI 正占用 alternate screen。native 冒烟必须确认用户能看到警告并取消；若看不到，用 `GetConsoleWindow` 作为 owner，或在调用前临时退出 alternate screen、返回后重绘。不得为了“无对话框”关闭 `FOF_WANTNUKEWARNING`。
 - 返回值：`0` 且 `fAnyOperationsAborted == FALSE` 才算成功；否则映射常见错误码（取消、拒绝访问、路径无效、路径过长、文件太大等），未知码显示十六进制。
-- 结果不确定：Shell 返回非零或 aborted 时，`TrashException.Outcome.UNKNOWN`；`DeleteService` 随后验证目标是否仍然存在。
+- 结果分类按 §8.2：明确的调用前拒绝报 `NOT_STARTED`；可能已经改动文件系统的错误和 aborted 报 `UNKNOWN`。`DeleteService` 随后验证目标是否仍然存在。
 
 **Native Image / 符号查找**
 
@@ -613,9 +647,9 @@ y
 
 **Reparse point / junction**
 
-- JDK 25 的 `WindowsFileAttributes.isSymbolicLink()` 只在 reparse tag 为 `IO_REPARSE_TAG_SYMLINK` 时返回 true；junction 的 tag 是 `IO_REPARSE_TAG_MOUNT_POINT`，因此 `isSymbolicLink()` 为 false，而 `isDirectory()` 仍为 true，`isOther()` 为 true。**现有 `NioStatReader.kindOf` 先判断 `isDirectory()`，在 Windows 上会把 junction 当作普通目录继续遍历；这是删除功能的前置缺陷，必须先修复并加回归测试。**
-- 删除 guard 的祖先/目标检查必须独立于扫描器：任何一级 `isOther()` 为真都拒绝，不能只检查 `isSymbolicLink()`。
-- 目标子树含 reparse point 时，`SHFileOperationW` 的行为需要 native 测试：如果发现它会进入 junction 或删除链接目标，v1 在预览阶段拒绝整棵目录，并记录这一限制。该保守策略也会拒绝 OneDrive 占位目录等 reparse point 目标/祖先；用户可改用 Explorer。
+- JDK 25 的 `WindowsFileAttributes.isSymbolicLink()` 只在 reparse tag 为 `IO_REPARSE_TAG_SYMLINK` 时返回 true；junction 的 tag 是 `IO_REPARSE_TAG_MOUNT_POINT`，因此 `isSymbolicLink()` 为 false，而 `isDirectory()` 仍为 true，`isOther()` 为 true。该扫描缺陷已由 PR #30 修复：`NioStatReader.kindOf` 现在按 `isSymbolicLink()` → `isOther()` → `isDirectory()` 分类，junction 不再被遍历。
+- 删除 guard 的祖先/目标检查必须独立于扫描器：任何一级 `isOther()` 为真都拒绝，不能只检查 `isSymbolicLink()`；不能因为扫描器已修复就跳过这一步。
+- **v1 策略：一律拒绝目标子树内含任何 reparse point（junction、symlink、OneDrive 占位目录等）的删除。** 不把“`SHFileOperationW` 是否跟随”留成运行时猜测；native 测试只用于记录实际行为，不改变这条 fail-closed 策略。这个限制会拒绝一些用户想删的目录，但用户仍可用 Explorer 处理。
 - 该测试属于发布前必须完成的平台验收项，不能用 JVM 测试代替。
 
 ### 9.4 未知平台
@@ -648,8 +682,8 @@ y
 
 ### 10.2 TUI trail 重建
 
-- `TuiState` 增加 `selectedPath()`，返回 `currentPath` 下的选中项目绝对路径；没有选中项时返回空，删除入口拒绝并显示原因。
-- 删除成功后调用 `replaceResult(updated)`：
+- `TuiState` 增加 `selectedPath()`，返回 `currentPath` 下的选中项目绝对路径；没有选中项时返回空，删除入口拒绝并显示原因。必须用 `entries()` 的当前排序视图取 `selected()`，不能直接用 `current().children()`——按名称/计数排序时两者顺序不同，否则会删错目标。
+- 删除成功后调用 `applyDeleted(updated)`：
   - 记录旧 trail 的目录名称序列和当前选中索引；
   - 从新根按名称重新找到每一级；
   - 如果当前目录仍存在，恢复 trail；否则回到根；
@@ -681,12 +715,21 @@ y
 - **DeleteGuard**
   - 目标等于根、根外、`..` 逃逸、绝对路径、盘符相对路径、UNC：拒绝。
   - 目标不存在、最终项是符号链接、中间项是符号链接：拒绝。
+  - Windows 上祖先/目标/子树含 junction 或 `isOther()` reparse point：拒绝（用 `@TempDir` + 平台条件测试；非 Windows 只覆盖符号链接）。
   - 目标是文件、FIFO/socket/设备：拒绝（只有目录可删）。
   - 目标与父目录不同 `FileStore`（模拟挂载点）：拒绝。
   - 目标等于 Trash 根、位于 Trash 内部、包含 Trash：分别拒绝。
   - 目标树含不可读取的子目录：拒绝（无法完成挂载预检）。
   - 目录目标的预览扫描返回任何 `ScanError`：拒绝（I5）。
-  - **TreeUpdater**
+- **DeleteService**（注入假 `TrashStore`）
+  - `scanUsedExcludes=true`：`planEntry` 拒绝且不调用 `TrashStore.prepare`（D11）。
+  - `prepare` 失败时目标、树、文件系统都不变。
+  - plan 后把目标删除并重建为同名目录：`execute` 报 `TARGET_CHANGED`，不调用 `TrashStore.move`，不误删新目录。
+  - `move` 成功：树更新、计划清除、状态行结果正确。
+  - `move` 抛 `NOT_STARTED`：树不变、不 stale、允许重试。
+  - `move` 抛 `UNKNOWN` 且目标仍存在：标记 stale，后续删除被拒绝。
+  - `move` 抛 `UNKNOWN` 但目标已不存在：按成功处理并更新树。
+- **TreeUpdater**
   - 移除叶子、移除中间节点、移除根的唯一子节点；祖先 `size`/`fileCount`/`dirCount`/`errorCount` 精确扣减。
   - `ownFileSize`/`ownFileCount` 不变。
   - `ScanResult.errors` 过滤正确。
@@ -705,9 +748,10 @@ y
   - 错误码映射；`fAnyOperationsAborted` 处理。
   - 路径长度/UNC/远程卷拒绝。
 - **TUI**
-  - `d` 进入确认，`y` 产生删除请求，`n`/Esc/`q`/Ctrl-C 取消。
-  - 确认状态下导航键被忽略；中断手势只取消、不删除，取消后再次 `q` 才退出。
-  - 删除后 trail/选中项/滚动位置正确。
+  - `d` 返回 `DELETE_REQUESTED`，不直接执行 I/O；`beginDelete(plan)` 后进入确认态。
+  - 确认态按 `y` 返回 `DELETE_CONFIRMED`；`n`/Esc/`q`/Ctrl-C 返回取消并回到浏览态。
+  - 确认态下导航键被忽略；中断手势只取消、不删除，取消后再次 `q` 才退出。
+  - 删除后 trail/选中项/滚动位置正确；`applyDeleted` 按名称重建 trail。
   - 渲染器确认页宽度、截断、无 ANSI 时纯文本。
 - **Line Browser**
   - `delete 3` 计划、输入 `delete` 确认、取消、越界、成功后重渲染。
@@ -720,8 +764,9 @@ y
 - **macOS**：`MacOsTrashStore` 注入 `@TempDir` 作为 home；验证 `~/.Trash` 移动。卷级路径用注入的 `VolumeResolver`（卷根/设备/fstype）测试；真实外接卷验证放入人工/发布清单。
 - **Windows**：
   - 默认 JVM 测试用假 `TrashStore` 或只读校验；真实 Recycle Bin 测试用环境变量 opt-in，避免每次 `mvn test` 都往开发者回收站放文件。
-  - 发布前在 Windows 11 上跑真实文件、目录、只读文件、被占用文件、超长路径、UNC/映射网络盘、junction 的矩阵。
+  - 发布前在 Windows 11 上跑真实文件、目录、只读文件、被占用文件、超长路径、UNC/映射网络盘、junction 的矩阵；junction 目标/祖先/子树必须全部被拒绝，不进入 Shell。
   - 单独跑一次“Recycle Bin 配额不足/被策略禁用/超大文件”的场景，确认 `FOF_WANTNUKEWARNING` 的实际行为（对话框、aborted 或永久删除）；该结果写入发布说明，不能用 JVM 测试替代。
+  - 单独跑一次“不初始化 COM”的 `SHFileOperationW` 调用；若失败，按 §9.3 加 `CoInitializeEx`/`CoUninitialize` 并复测。
 
 ### 11.3 Native 验证
 
@@ -733,15 +778,18 @@ y
   3. 验证 Trash 文件存在（Linux/macOS 可按已知路径检查）；Windows 只验证原路径消失（Recycle Bin 位置由系统管理）。
   4. 清理测试产生的 Trash 文件。
 - 行式浏览器回退路径（终端无法进入 raw mode 时）手动验证一次 `delete <n>` 流程。
+- **不能用管道驱动 `scripts/smoke-native.py` 验证删除**：现有 `interactive` 判定是 `System.console() != null`，管道输入会让 `browse` 以退出码 2 拒绝；而 D4 又不提供 CLI 删除入口。`smoke-native.py` 只增加非破坏性断言：`browse` 非交互拒绝、`--help`/子命令列表中不存在删除入口、删除文档存在。真正的删除流程用 POSIX PTY 或 Windows 手动 TUI 验证。
 - PTY 自动化不作为 CI 门槛；发布前在三个平台手动跑一次全屏 `d` 流程，并把结果记录在发布 PR。
 
 ### 11.4 未验证项必须明确
 
 - Windows Recycle Bin 在超大文件/禁用回收站策略下的行为。
-- Windows junction/reparse point 是否被 Shell 跟随。
+- Windows `SHFileOperationW` 在不初始化 COM 时的行为；以及目标子树含 reparse point 时 Shell 的实际遍历行为（策略已固定为拒绝，测试只记录事实）。
+- Windows nuke warning 在 alternate screen/raw mode 下是否对用户可见、可取消。
 - macOS 外接卷 `.Trashes` 权限与 Finder 显示。
 - Linux 非标准挂载（bind mount、FUSE、网络文件系统）上的 Trash 可用性。
 - Linux 卷级 Trash 的 `Path=` 是否被 gvfs/Nautilus 正确恢复（glib 事实标准 vs 规范歧义）。
+- Linux `Path=` 对非 UTF-8 文件名字节的 round-trip（见 9.1 已知限制）。
 - Finder Put Back 不承诺。
 
 这些不能靠 JVM 测试或“看起来正确”的代码推断；发布说明必须列出实际验证过的平台与场景。
@@ -750,9 +798,9 @@ y
 
 ## 12. 实现计划（评审通过后）
 
-0. **前置缺陷修复**
-   - 修复 Windows 扫描器把 junction/reparse point 当作目录遍历的问题（`NioStatReader.kindOf` 的顺序/属性判断），补 Windows 回归测试；这是删除功能的前置条件，独立于删除提交。
-   - 该修复必须早于 TUI 的任何树遍历，否则 junction 会在 guard 拒绝之前被扫到边界之外。
+0. **前置缺陷修复（已完成，PR #30）**
+   - Windows 扫描器把 junction/reparse point 当作目录遍历的问题已由 PR #30 修复（`NioStatReader.kindOf` 先判 `isOther()`），并带 `NioStatReaderTest`/`DirectoryScannerTest` 回归。
+   - 删除 guard 仍要独立拒绝 reparse point；不能把扫描器的分类当作删除时的安全证明。
 1. **核心纯逻辑**
    - `DeleteGuard`、`DeletePlan`、`DeleteTarget`、`DeleteResult`、`TreeUpdater`。
    - 先写失败测试：根/越界/符号链接/junction/挂载点/重叠目标/树扣减。
@@ -767,13 +815,14 @@ y
    - Windows JVM 测试 + opt-in 真实回收站测试。
 5. **TUI**
    - `Key` 增加 `DELETE`/`CONFIRM`/`CANCEL`；`KeyParser` 映射 `d`/`y`/`n`，并把独立的 `Esc`（无后续序列字节）映射为 `CANCEL`。
+   - `TuiState` 增加 `Mode`/`Outcome`/`pendingDelete`，保持纯状态；runner 负责 `DeleteService` 的 plan/execute（§8.5）。
    - `ScreenRenderer` 确认页/状态行/stale。
-   - `TuiState.selectedPath()` / `replaceResult()`。
+   - `TuiState.selectedPath()` / `applyDeleted()`。
    - 确认态导航键忽略；`q`/Ctrl-C 在确认态取消，取消后再 `q` 才退出。
 6. **行式浏览器**
    - `delete <n>`、确认、树替换、帮助文本。
 7. **Native 与发布**
-   - `scripts/smoke-native.py` 增加 dry-run + 实际删除 + 原路径消失断言。
+   - `scripts/smoke-native.py` 只增加非破坏性断言（见 11.3）；删除流程用 PTY/手动 TUI 验证，不能把删除塞进管道脚本。
    - 三个平台 native 构建与手动 TUI 验证。
 8. **文档**
    - 更新 `site/dukit/SKILL.md`、`site/dukit/index.html`、`index_zh.html` 中“只读”的 FAQ。
@@ -813,17 +862,40 @@ y
 - [ ] **D7** 同意失败关闭、绝不回退永久删除。
 - [ ] **D8** 同意删除后只更新内存树，不自动重扫；不确定结果标记 stale。
 - [ ] **D9** 同意 v1 不做恢复/清空 Trash。
-- [ ] **D10** 同意实现顺序：先修复 Windows junction 扫描缺陷，再核心 -> Linux -> macOS -> Windows -> TUI -> native/文档。
-- [ ] 确认 Windows junction/reparse point 的前置修复作为独立缺陷提交，并保留回归测试。
+- [ ] **D10** 同意实现顺序：核心 -> Linux -> macOS -> Windows -> TUI -> native/文档（Windows junction 前置修复已完成，见 PR #30）。
+- [ ] **D11** 同意 `--exclude` 扫描禁用删除；还是要求 v1 在计划阶段对目标做一次不计 excludes 的审计并在确认页展示完整大小？
+- [x] Windows junction/reparse point 的前置修复已作为独立缺陷提交（PR #30），并保留回归测试；删除 guard 仍独立检查。
+- [ ] 同意 §8.5 的 TUI 分层：`TuiState` 纯状态、runner 持有 `DeleteService` 并执行 I/O，`ScreenRenderer` 只渲染。
+- [ ] 同意 §9.3 的保守策略：目标子树只要含任何 reparse point，v1 一律拒绝删除；接受 OneDrive 占位目录等目标无法从 dukit 删除。
+- [ ] 确认 Linux `Path=` 对非 UTF-8 文件名的 round-trip 限制（§9.1）可接受，不在 v1 引入 raw-byte FFM。
 - [ ] 确认 Linux/macOS 的网络 fstype 拒绝，以及 Windows nuke warning 的实际行为，属于可接受的 v1 边界。
-- [ ] 确认发布前必须完成三平台 native 冒烟和手动 TUI 验证。
+- [ ] 确认发布前必须完成三平台 native 冒烟和手动 TUI 验证；`scripts/smoke-native.py` 不承担删除流程验证（§11.3）。
 - [ ] 确认站点/SKILL 的“只读”表述在实现 PR 中同步修改。
+- [ ] 确认 Windows `SHFileOperationW` 的 COM 初始化按 §9.3 在实现前验证，不把未验证假设写进代码。
 
 **评审结论**：`待评审` / `通过` / `需修改`
 
 **评审人**：____________________  
 **日期**：____________________  
 **备注**：________________________________________________________________
+
+### 14.1 技术自审记录（2026-11-05）
+
+自审范围：本文与当前 `main` 代码、freedesktop Trash Specification 1.0、Win32 Shell 文档的一致性。已修正：
+
+1. **Windows junction 前置缺陷已过时**：PR #30 已修复 `NioStatReader.kindOf` 的分类顺序并补回归；文档改为“已完成”，同时保留“删除 guard 必须独立检查”的要求（§5.1、§9.3、§12 第 0 步、§14）。
+2. **TUI 缺少可落地的分层**：现有 `FullScreenBrowser.run(ScanResult, boolean)` 在内部创建 `TuiState`，`handle` 只返回 boolean；补充 §8.5，明确 `TuiState` 纯状态、runner 执行 `DeleteService`、两个入口共享同一个 service。
+3. **Windows reparse point 策略含糊**：原文把“是否拒绝子树”取决于 native 测试结果；v2 固定为 fail-closed，一律拒绝目标子树含 reparse point（§9.3）。
+4. **Native 验收方式自相矛盾**：`browse` 在 `System.console() == null` 时退出 2，管道无法驱动删除；改为 PTY/手动验收，`smoke-native.py` 只做非破坏性断言（§11.3、§12 第 7 步）。
+5. **Linux `Path=` 编码限制缺失**：补充非 UTF-8 文件名无法通过 Java `Path` 保证 round-trip 的已知限制（§9.1、§11.4）。
+6. **`DeletePlan.dryRun` 与“确认页即 dry-run”矛盾**：移除该字段（§8.1）。
+7. **Windows 错误结果分类与 COM 风险**：补充 `NOT_STARTED`/`UNKNOWN` 的分类规则（§8.2、§9.3），并把 COM 初始化列为实现前必须验证的项（§9.3、§11.4）。
+8. **`--exclude` 与“所见即所删”冲突**：被排除内容会一起进 Trash，但不在预览/树里；v1 直接禁用这类扫描的删除（D11、I11），不假装预览完整。
+9. **确认前预检可能阻塞 TUI**：挂载点预检在 `d` 后同步遍历目标子树；补充 `checking <target>…` 状态行，并明确 v1 不提供取消（§7.1）。超大目录的停顿是已知 UX 代价，不是正确性问题。
+10. **确认期间目标可被同名替换**：补充 `DeletePlan` 记录 `fileKey`/`dev`+`ino`，`execute` 比对后才移动（§6.5、§10.1、§11.1）；剩余窗口仍在 TOCTOU 说明中声明。
+11. **Windows nuke warning 可能被全屏界面遮住**：补充待验证项，要求 native 冒烟确认警告可见、可取消；备选 `GetConsoleWindow` owner 或临时退出 alternate screen（§9.3、§11.4）。
+
+**结论**：技术自审只消除了文档与代码/规范之间的不一致，不代替评审批准。§14 的 D1–D11 仍需评审人确认；确认前不进入实现。
 
 ---
 
