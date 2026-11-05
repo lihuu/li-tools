@@ -82,6 +82,7 @@ public final class TreeUpdater {
                 entry.errorCount() - removedErrors,
                 entry.ownFileSize(),
                 entry.ownFileCount(),
+                entry.topFiles(),
                 children);
     }
 

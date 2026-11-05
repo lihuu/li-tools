@@ -3,6 +3,7 @@ package io.github.lihuu.dukit.core.tui;
 import io.github.lihuu.dukit.core.browse.SortKey;
 import io.github.lihuu.dukit.core.delete.DeletePlan;
 import io.github.lihuu.dukit.core.model.DirEntry;
+import io.github.lihuu.dukit.core.model.TreeEntry;
 import io.github.lihuu.dukit.core.model.FileEntry;
 import io.github.lihuu.dukit.core.model.ScanResult;
 import io.github.lihuu.dukit.core.model.TreeEntry;
@@ -87,8 +88,8 @@ public final class TuiState {
     /**
      * The entry the cursor is on, or {@code null} when the directory is empty.
      */
-    public @Nullable DirEntry selectedEntry() {
-        List<DirEntry> entries = entries();
+    public @Nullable TreeEntry selectedEntry() {
+        List<TreeEntry> entries = entries();
         if (selected < 0 || selected >= entries.size()) {
             return null;
         }
