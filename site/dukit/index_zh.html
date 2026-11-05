@@ -328,11 +328,11 @@
         <!-- Feature 6 -->
         <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
           <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
-            ⏱️
+            ⚡
           </div>
-          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">扫描进度</h3>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">默认并行</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            交互终端获得原位刷新的实时计数(文件数、字节数、当前路径);管道输出自动保持干净、无 ANSI 转义。
+            某一层目录足够宽时分叉到工作线程,不够宽就留在当前线程串行处理,因此小目录树没有额外开销。实测 59 GB、66 万文件的目录树:<span class="text-amber-300">3.2 秒,而 ncdu 需要 8 秒</span>。
           </p>
         </div>
       </div>

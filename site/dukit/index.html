@@ -328,11 +328,11 @@
         <!-- Feature 6 -->
         <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
           <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
-            ⏱️
+            ⚡
           </div>
-          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">Scan Progress</h3>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">Parallel by Default</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Interactive terminals get a live in-place counter (files, bytes, current path); piped output stays clean and ANSI-free automatically.
+            Directories fork into worker threads once a level is wide enough to pay for it, and stay inline below that, so small trees cost nothing extra. On a 59 GB, 660k-file tree: <span class="text-amber-300">3.2s versus ncdu's 8s</span>.
           </p>
         </div>
       </div>

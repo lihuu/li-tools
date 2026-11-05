@@ -28,7 +28,7 @@ public final class TopCollector {
         this.heap = new PriorityQueue<>(Math.max(1, capacity), Comparator.comparingLong(TopEntry::size));
     }
 
-    public void offer(@NotNull Path path, long size) {
+    public synchronized void offer(@NotNull Path path, long size) {
         if (capacity == 0) {
             return;
         }
@@ -46,7 +46,7 @@ public final class TopCollector {
     /**
      * Returns the collected entries sorted largest first.
      */
-    public @NotNull List<TopEntry> result() {
+    public synchronized @NotNull List<TopEntry> result() {
         List<TopEntry> sorted = new ArrayList<>(heap);
         sorted.sort(Comparator.comparingLong(TopEntry::size).reversed().thenComparing(entry -> entry.path().toString()));
         return List.copyOf(sorted);

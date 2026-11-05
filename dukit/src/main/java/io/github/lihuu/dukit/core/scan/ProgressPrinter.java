@@ -25,7 +25,7 @@ public final class ProgressPrinter implements ProgressListener {
     }
 
     @Override
-    public void onUpdate(long fileCount, long bytesSeen, @NotNull Path currentDirectory) {
+    public synchronized void onUpdate(long fileCount, long bytesSeen, @NotNull Path currentDirectory) {
         if (!enabled) {
             return;
         }
@@ -39,7 +39,7 @@ public final class ProgressPrinter implements ProgressListener {
     /**
      * Erases the progress line, if one was printed.
      */
-    public void finish() {
+    public synchronized void finish() {
         if (enabled && lastWidth > 0) {
             writer.print("\r" + " ".repeat(lastWidth) + "\r");
             writer.flush();

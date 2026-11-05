@@ -118,6 +118,64 @@ class DirectoryScannerTest {
     }
 
     @Test
+    void parallelResultsMatchTheSerialWalk() throws IOException {
+        Path root = wideTree("parallel", 6, 5);
+        ScanResult serial = new DirectoryScanner(List.of(), 1).scan(root, (files, bytes, dir) -> { });
+        ScanResult parallel = new DirectoryScanner(List.of(), 8).scan(root, (files, bytes, dir) -> { });
+
+        assertEquals(shape(serial.root()), shape(parallel.root()),
+                "a parallel walk must produce the same tree as a serial one");
+        assertEquals(serial.errors().size(), parallel.errors().size());
+
+        TopResult serialTop = new DirectoryScanner(List.of(), 1).top(root, 10, (files, bytes, dir) -> { });
+        TopResult parallelTop = new DirectoryScanner(List.of(), 8).top(root, 10, (files, bytes, dir) -> { });
+        assertEquals(serialTop.totalSize(), parallelTop.totalSize());
+        assertEquals(serialTop.fileCount(), parallelTop.fileCount());
+        assertEquals(serialTop.largestDirectories().stream().map(TopEntry::size).toList(),
+                parallelTop.largestDirectories().stream().map(TopEntry::size).toList());
+        assertEquals(serialTop.largestFiles().stream().map(TopEntry::size).toList(),
+                parallelTop.largestFiles().stream().map(TopEntry::size).toList());
+    }
+
+    private static String shape(DirEntry entry) {
+        StringBuilder builder = new StringBuilder();
+        appendShape(entry, 0, builder);
+        return builder.toString();
+    }
+
+    private static void appendShape(DirEntry entry, int level, StringBuilder builder) {
+        builder.append("  ".repeat(level)).append(entry.name()).append(' ')
+                .append(entry.size()).append(' ').append(entry.fileCount()).append(' ')
+                .append(entry.dirCount()).append(' ').append(entry.ownFileSize()).append(' ')
+                .append(entry.ownFileCount()).append('\n');
+        for (DirEntry child : entry.children()) {
+            appendShape(child, level + 1, builder);
+        }
+    }
+
+    /**
+     * Builds a tree wide and deep enough to cross the fork threshold at several levels.
+     */
+    private Path wideTree(String name, int breadth, int depth) throws IOException {
+        Path root = temporary.resolve(name);
+        buildLevel(root, breadth, depth, 0);
+        return root;
+    }
+
+    private void buildLevel(Path dir, int breadth, int depth, int level) throws IOException {
+        if (level >= depth) {
+            return;
+        }
+        for (int index = 0; index < breadth; index++) {
+            Path child = dir.resolve("d" + index);
+            Files.createDirectories(child);
+            Files.writeString(child.resolve("f" + index + ".bin"),
+                    "x".repeat(10 + index), StandardCharsets.US_ASCII);
+            buildLevel(child, breadth, depth, level + 1);
+        }
+    }
+
+    @Test
     void reportsProgressWhileScanning() throws IOException {
         Path root = tree("progress");
         List<Path> seen = new java.util.ArrayList<>();
