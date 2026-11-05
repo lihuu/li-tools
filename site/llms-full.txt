@@ -11,6 +11,7 @@ All tools in this suite provide native, machine-readable `SKILL.md` specificatio
 - **certkit Skill Guide**: `https://tools.lihu.me/certkit/SKILL.md`
 - **tokenkit Skill Guide**: `https://tools.lihu.me/tokenkit/SKILL.md`
 - **skillkit Skill Guide**: `https://tools.lihu.me/skillkit/SKILL.md`
+- **dukit Skill Guide**: `https://tools.lihu.me/dukit/SKILL.md`
 
 ### Automated Agent Installation Commands
 AI coding agents (such as Claude Code, Cursor, Gemini CLI, Copilot CLI, OpenCode) can be instructed to self-install or setup the environment:
@@ -105,6 +106,41 @@ A modern personal AI skills collection manager and parallel multi-agent distribu
 5. **Local Customization Defense**:
    - Tracks cryptographic content digests and installation modes (copy/symlink) in `.skillkit-state.json`.
    - Protects against accidental overwrites: if a skill copy inside an agent directory has been manually modified, `skillkit` refuses to overwrite it during update or uninstall.
+
+## Tool 5: dukit
+
+### Mission
+A cross-platform disk usage analyzer inspired by ncdu: scan a directory tree once, emit a directories-only JSON tree by default, rank the largest directories or files with bounded streaming heaps, and browse the result line by line — shipped as a single native binary for macOS, Linux, and Windows.
+
+### Key Innovations
+0. **Full-Screen Browser Is the Default**:
+   - `dukit` opens the current directory full-screen; `dukit <path>` opens that path.
+   - Piped invocations print a JSON report instead of failing, so `dukit | jq` works.
+1. **One-Pass Pure JDK Scanner**:
+   - `dukit scan [path]`
+   - A single `Files.walkFileTree` pass with no third-party libraries, no reflection, and no native-image metadata.
+   - Unreadable paths are collected as warnings on stderr while the scan continues; the root being unreadable is the only fatal case.
+2. **Honest, Cross-Platform Size Semantics**:
+   - Reports apparent sizes (logical file sizes, like `du --apparent-size`), the only metric the JDK exposes portably and the only one identical across APFS, ext4, and NTFS.
+   - Hardlinked content counts exactly once per scan (first occurrence wins); every hardlink still counts toward the file totals. This needs a file key, which java.nio.file does not expose on Windows (verified on JDK 25: null, and the unix: view is unsupported), so Windows counts each link separately.
+   - Symlinks are never followed; directory inodes add nothing to subtree sizes.
+3. **Full-Screen Interactive Browser**:
+   - `dukit browse [path]`
+   - Alternate screen, arrow-key selection, Enter to descend, Backspace to return, `s` to cycle sort. Always sorted by size with the largest entry selected.
+   - JLine supplies raw mode and key decoding; its FFM provider drives the Windows console through the Foreign Function & Memory API, so one implementation covers macOS, Linux and Windows — including inside the native binary.
+   - Requires an interactive terminal; piped invocations fail fast with exit code 2 and a hint toward `scan`. A terminal that cannot enter raw mode falls back to a line-based browser.
+4. **Directories-Only JSON Tree**:
+   - `dukit scan [path]`
+   - Emits `{ meta: { tool, version, path, size, files, directories, errors, generatedAt }, tree: { name, size, files, directories, errors, ownFileSize, ownFileCount, children } }` via a zero-reflection streaming writer.
+   - Regular files are not tree nodes; they fold into their parent's `ownFileSize`/`ownFileCount`. On a real `/Applications` scan this cuts the node count from 660k to 87k and the payload from 63 MB to 11 MB.
+   - `--depth <n>` trims emitted levels while every aggregate still describes the whole subtree (30 KB at depth 2).
+5. **Bounded Top-N Rankings**:
+   - `dukit top [path] [--files] [--limit <n>] [--min-size <size>]`
+   - Streams the scan through two fixed-size min-heaps, so memory tracks the limit instead of the volume; nothing is collected up front.
+   - `--files` ranks individual files, `--min-size 1G` filters small entries, `--json` emits `{ meta, entries: [{ path, size }] }` (~2 KB for 20 entries).
+6. **Display Controls**:
+   - `--depth <n>` cuts the display only; sizes always cover whole subtrees.
+   - `--exclude <glob>` is repeatable: bare names match any path component, patterns with `/` match relative to the scan root.
 
 ---
 

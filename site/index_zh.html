@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>li-tools — 零依赖开发者安全 CLI 套件与 AI 技能工具链 | 四工具</title>
-  <meta name="description" content="li-tools 是零依赖的开发者安全 CLI 套件，含 gpgkit、certkit、tokenkit、skillkit 四个工具。基于 Java 25 与 GraalVM Native Image 原生编译，macOS、Linux、Windows 11 行为一致。">
-  <meta name="keywords" content="开发者工具, GPG管理, SSL证书, TLS, OpenSSL替代, Token管理, API密钥加密, Skills管理, AI Agent, certkit, gpgkit, tokenkit, skillkit, Java 25, GraalVM原生镜像, Windows 11证书, 约定大于配置">
+  <meta name="description" content="li-tools 是零依赖的开发者 CLI 套件，含 gpgkit、certkit、tokenkit、skillkit、dukit 五个工具。基于 Java 25 与 GraalVM Native Image 原生编译，macOS、Linux、Windows 11 行为一致。">
+  <meta name="keywords" content="开发者工具, GPG管理, SSL证书, TLS, OpenSSL替代, Token管理, API密钥加密, Skills管理, AI Agent, certkit, gpgkit, tokenkit, skillkit, Java 25, GraalVM原生镜像, Windows 11证书, 磁盘占用分析, 约定大于配置">
   <meta name="author" content="lihuu">
   <link rel="canonical" href="https://tools.lihu.me/index_zh.html">
   <link rel="alternate" hreflang="en" href="https://tools.lihu.me/">
@@ -44,7 +44,7 @@
         "applicationSubCategory": "Security CLI",
         "operatingSystem": "macOS, Linux, Windows 11",
         "url": "https://tools.lihu.me/index_zh.html",
-        "description": "基于 Java 25 与 GraalVM Native Image 的零运行时依赖开发者安全与提效 CLI 工具套件，包含 gpgkit、certkit、tokenkit 与 skillkit，在 macOS、Linux 与 Windows 11 上保持命令级行为一致。",
+        "description": "基于 Java 25 与 GraalVM Native Image 的零运行时依赖开发者安全与提效 CLI 工具套件，包含 gpgkit、certkit、tokenkit、skillkit 与 dukit，在 macOS、Linux 与 Windows 11 上保持命令级行为一致。",
         "softwareVersion": "0.4.0",
         "license": "https://www.apache.org/licenses/LICENSE-2.0",
         "programmingLanguage": "Java 25",
@@ -69,13 +69,15 @@
           "基于 gpgkit 的 OpenPGP (RFC 4880) 密钥管理",
           "基于 certkit 的 X.509 证书自建 CA 与轮换",
           "基于 tokenkit 的 JWT (RFC 7519) 令牌签名与内存注入",
-          "基于 skillkit 的 AI Agent SKILL.md 技能管理与 10+ 客户端分发"
+          "基于 skillkit 的 AI Agent SKILL.md 技能管理与 10+ 客户端分发",
+          "dukit 磁盘占用分析与 JSON 导出"
         ],
         "hasPart": [
           { "@type": "SoftwareApplication", "name": "gpgkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/gpgkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
           { "@type": "SoftwareApplication", "name": "certkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/certkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
           { "@type": "SoftwareApplication", "name": "tokenkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/tokenkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
-          { "@type": "SoftwareApplication", "name": "skillkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/skillkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } }
+          { "@type": "SoftwareApplication", "name": "skillkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/skillkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
+          { "@type": "SoftwareApplication", "name": "dukit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/dukit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } }
         ]
       },
       {
@@ -97,7 +99,7 @@
             "name": "li-tools 需要预先安装 JVM、Node.js 或 Python 运行时吗？",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "不需要。gpgkit、certkit、tokenkit 与 skillkit 四个工具均通过 GraalVM Native Image 编译为原生可执行文件，发行物为单文件二进制，零运行时依赖。冷启动耗时低于 50 毫秒，可直接在无 JVM 环境的 CI 容器与 Alpine、Distroless 等精简镜像中运行。"
+              "text": "不需要。gpgkit、certkit、tokenkit、skillkit 与 dukit 五个工具均通过 GraalVM Native Image 编译为原生可执行文件，发行物为单文件二进制，零运行时依赖。冷启动耗时低于 50 毫秒，可直接在无 JVM 环境的 CI 容器与 Alpine、Distroless 等精简镜像中运行。"
             }
           },
           {
@@ -323,6 +325,33 @@
           <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">零 npm/npx 依赖</span>
         </div>
       </a>
+
+      <!-- DUKIT Card -->
+      <a href="dukit/index_zh.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-amber-500/20 hover:border-amber-500/50 block">
+        <div class="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-500/20 transition-all"></div>
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <span class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-2xl font-bold shadow-inner">💾</span>
+            <div>
+              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-amber-300 transition">dukit</h2>
+              <span class="text-xs font-mono text-amber-400">磁盘占用分析器</span>
+            </div>
+          </div>
+          <span class="text-slate-500 group-hover:text-amber-400 transition transform group-hover:translate-x-1">→</span>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed mb-6">
+          找出磁盘空间去哪了。类 ncdu 的目录扫描，行式交互浏览与 JSON 导出——macOS、Linux、Windows 同一组数字。
+        </p>
+        <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-amber-300 border border-amber-950/60 mb-5 flex items-center justify-between">
+          <span>$ dukit scan ~/Projects --json</span>
+          <span class="text-emerald-400 text-[10px] font-semibold">✔ 机器可读目录树</span>
+        </div>
+        <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">类 ncdu</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">行式浏览</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">JSON 导出</span>
+        </div>
+      </a>
     </div>
 
     <!-- Philosophy -->
@@ -396,6 +425,13 @@
                 <td class="py-2.5 px-3">10+ Agents 目录广播</td>
                 <td class="py-2.5 px-3">10+ Agents 目录广播</td>
                 <td class="py-2.5 px-3">10+ Agents (%USERPROFILE%)</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-amber-400">dukit</td>
+                <td class="py-2.5 px-3">表观大小 (du 等价)</td>
+                <td class="py-2.5 px-3">Files.walkFileTree (POSIX)</td>
+                <td class="py-2.5 px-3">Files.walkFileTree (POSIX)</td>
+                <td class="py-2.5 px-3">Files.walkFileTree (NTFS)</td>
               </tr>
             </tbody>
           </table>

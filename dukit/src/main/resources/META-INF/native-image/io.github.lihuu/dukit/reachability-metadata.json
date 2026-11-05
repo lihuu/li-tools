@@ -1,0 +1,22 @@
+{
+  "foreign": {
+    "downcalls": [
+      {
+        "returnType": "int",
+        "parameterTypes": ["void*", "struct(short, short)"]
+      },
+      {
+        "returnType": "int",
+        "parameterTypes": ["void*", "wchar_t", "int", "struct(short, short)", "void*"]
+      },
+      {
+        "returnType": "int",
+        "parameterTypes": ["void*", "short", "int", "struct(short, short)", "void*"]
+      },
+      {
+        "returnType": "int",
+        "parameterTypes": ["void*", "void*", "void*", "struct(short, short)", "void*"]
+      }
+    ]
+  }
+}

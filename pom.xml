@@ -17,6 +17,7 @@
         <module>certkit</module>
         <module>tokenkit</module>
         <module>skillkit</module>
+        <module>dukit</module>
     </modules>
 
         <properties>

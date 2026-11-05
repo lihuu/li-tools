@@ -1,6 +1,6 @@
 ---
 name: li-tools
-description: Use when managing developer security tooling, GPG commit signing keys (gpgkit), SSL/TLS certificates or local root CAs (certkit), encrypted API tokens/keys (tokenkit), and personal AI agent skills distribution (skillkit) across macOS, Linux, and Windows 11.
+description: Use when managing developer security tooling, GPG commit signing keys (gpgkit), SSL/TLS certificates or local root CAs (certkit), encrypted API tokens/keys (tokenkit), personal AI agent skills distribution (skillkit), and cross-platform disk usage analysis (dukit) across macOS, Linux, and Windows 11.
 ---
 
 # li-tools: Suite AI Agent Skill Guide
@@ -10,6 +10,7 @@ description: Use when managing developer security tooling, GPG commit signing ke
 2. **`certkit`**: One command for local development SSL/TLS certificates, root CA creation, multi-SAN generation, format conversion (PEM/P12/DER), and automated system trust store installation.
 3. **`tokenkit`**: Modern encrypted universal token manager with embedded SQLite, sub-10ms shell injection (`tokenkit env`), process isolation (`tokenkit run`), and cross-machine migration.
 4. **`skillkit`**: Personal skills repository manager and parallel distribution CLI for 10+ AI coding agents (Claude Code, Codex, Cursor, Gemini CLI, OpenCode, Antigravity, etc.) with zero npm/npx bloat.
+5. **`dukit`**: Cross-platform disk usage analyzer: size-sorted scan reports, machine-readable JSON export, and a line-based interactive browser with identical apparent-size numbers on every OS.
 
 All tools share identical design principles:
 - **Zero Config Agony**: Instant, sensible defaults (Ed25519 for GPG, ECDSA P-256 for TLS, AES-256-GCM + PBKDF2 for Tokens).
@@ -37,6 +38,9 @@ All tools share identical design principles:
 | Install own or external skill across all AI agents | `skillkit install <name> [--repo owner/repo]` | `skillkit` |
 | Parallel update all installed skills across all agents | `skillkit update --jobs 8` | `skillkit` |
 | Publish personal skills repository with scoped commit | `skillkit push [-m "msg"]` | `skillkit` |
+| Find what consumes the most disk space | `dukit scan <path> [--depth <n>]` | `dukit` |
+| Export directory sizes as JSON for automation | `dukit scan <path> --json` | `dukit` |
+| Interactively browse big directories | `dukit browse <path>` | `dukit` |
 
 ---
 
@@ -45,12 +49,12 @@ All tools share identical design principles:
 ### 1. One-Shot Agent Prompt
 If an AI agent needs to install the tools in a workspace:
 ```text
-Please install li-tools (gpgkit, certkit, tokenkit, skillkit):
-- Homebrew (macOS/Linux): `brew tap lihuu/tap && brew install gpgkit certkit tokenkit skillkit`
-- Scoop (Windows): `scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install gpgkit certkit tokenkit skillkit`
+Please install li-tools (gpgkit, certkit, tokenkit, skillkit, dukit):
+- Homebrew (macOS/Linux): `brew tap lihuu/tap && brew install gpgkit certkit tokenkit skillkit dukit`
+- Scoop (Windows): `scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install gpgkit certkit tokenkit skillkit dukit`
 - macOS / Linux Shell: `curl -fsSL https://tools.lihu.me/install.sh | bash`
 - Windows PowerShell: `irm https://tools.lihu.me/install.ps1 | iex`
-- Verify with `gpgkit --help`, `certkit --version`, `tokenkit --version`, and `skillkit --version`.
+- Verify with `gpgkit --help`, `certkit --version`, `tokenkit --version`, `skillkit --version`, and `dukit --version`.
 ```
 
 ### 2. Install Agent Skills Directly
