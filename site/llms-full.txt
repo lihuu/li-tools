@@ -113,6 +113,9 @@ A modern personal AI skills collection manager and parallel multi-agent distribu
 A cross-platform disk usage analyzer inspired by ncdu: scan a directory tree once, emit a directories-only JSON tree by default, rank the largest directories or files with bounded streaming heaps, and browse the result line by line — shipped as a single native binary for macOS, Linux, and Windows.
 
 ### Key Innovations
+0. **Full-Screen Browser Is the Default**:
+   - `dukit` opens the current directory full-screen; `dukit <path>` opens that path.
+   - Piped invocations print a JSON report instead of failing, so `dukit | jq` works.
 1. **One-Pass Pure JDK Scanner**:
    - `dukit scan [path]`
    - A single `Files.walkFileTree` pass with no third-party libraries, no reflection, and no native-image metadata.

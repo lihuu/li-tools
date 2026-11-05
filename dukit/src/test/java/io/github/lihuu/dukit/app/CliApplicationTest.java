@@ -154,6 +154,36 @@ class CliApplicationTest {
     }
 
     @Test
+    void bareInvocationWithAPathReportsJsonWhenPiped() throws IOException {
+        Path root = tree("barepath");
+        Result result = run(root.toString());
+
+        assertEquals(0, result.code(), result.err());
+        assertTrue(result.out().trim().startsWith("{"), "a piped bare invocation reports JSON: " + result.out());
+        JsonDocument document = parse(result.out());
+        assertEquals(650, document.metaSize);
+        assertEquals(List.of("a", "b"), document.childNames);
+    }
+
+    @Test
+    void bareInvocationWithAMissingPathFails() {
+        Result result = run(temporary.resolve("nope").toString());
+
+        assertEquals(1, result.code());
+        assertFalse(result.err().isBlank());
+    }
+
+    @Test
+    void subcommandsStillWinOverTheRootPathArgument() throws IOException {
+        Path root = tree("subwins");
+        Result result = run("scan", root.toString(), "--text");
+
+        assertEquals(0, result.code(), result.err());
+        assertTrue(result.out().contains("a/"), "scan still runs as a subcommand: " + result.out());
+        assertFalse(result.out().trim().startsWith("{"), "--text must not be read as a path");
+    }
+
+    @Test
     void missingPathIsAnExecutionFailure() {
         Result missing = run("scan", temporary.resolve("absent").toString());
         assertEquals(1, missing.code(), "a missing path is an execution failure, not a usage error");

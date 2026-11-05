@@ -34,6 +34,18 @@ brew install lihuu/tap/dukit
 scoop install dukit
 ```
 
+## Default Gesture
+
+Run it with no subcommand in a terminal and it opens the full-screen browser directly:
+
+```bash
+dukit                 # browse the current directory
+dukit /Applications   # browse a specific directory
+dukit | head -c 500   # piped: a JSON report instead, no error
+```
+
+Subcommands are for when you want one specific shape of output.
+
 ## Commands
 
 ### `dukit scan [path] [--depth <n>] [--exclude <glob>...] [--text]`

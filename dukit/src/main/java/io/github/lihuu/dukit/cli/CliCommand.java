@@ -8,13 +8,17 @@ import io.github.lihuu.dukit.core.model.ScanError;
 import io.github.lihuu.dukit.core.model.ScanResult;
 import io.github.lihuu.dukit.core.model.TopResult;
 import io.github.lihuu.dukit.core.scan.DirectoryScanner;
+import io.github.lihuu.dukit.core.browse.Browser;
+import io.github.lihuu.dukit.core.report.JsonReporter;
 import io.github.lihuu.dukit.core.scan.ProgressPrinter;
+import io.github.lihuu.dukit.core.tui.FullScreenBrowser;
 import org.jetbrains.annotations.NotNull;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.IVersionProvider;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
 import picocli.CommandLine.Spec;
 
@@ -29,8 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-@Command(name = "dukit", description = "Analyze disk usage across directories: full directory trees as JSON, "
-        + "top-N rankings, and an interactive browser.",
+@Command(name = "dukit", description = "Analyze disk usage. Run it with no arguments in a terminal to browse the "
+        + "current directory full-screen; give it a path to browse that one. Piped output is a JSON report. "
+        + "Subcommands cover one-shot scans and rankings.",
         mixinStandardHelpOptions = true, versionProvider = CliCommand.VersionProvider.class,
         subcommands = {ScanCommand.class, TopCommand.class, BrowseCommand.class})
 public final class CliCommand implements Callable<Integer> {
@@ -38,6 +43,10 @@ public final class CliCommand implements Callable<Integer> {
 
     @Mixin GlobalOptionsMixin globalOptions;
     @Spec CommandSpec spec;
+
+    @Parameters(index = "0", arity = "0..1",
+            description = "Directory to open (default: current directory)")
+    String path;
 
     final Path workingDirectory;
     final Map<String, String> environment;
@@ -50,9 +59,33 @@ public final class CliCommand implements Callable<Integer> {
     }
 
     @Override
-    public @NotNull Integer call() {
-        spec.commandLine().usage(spec.commandLine().getOut(), CommandLine.Help.Ansi.OFF);
+    public @NotNull Integer call() throws IOException {
+        // A bare invocation with no terminal keeps the documented behaviour: print usage.
+        // With a terminal it is the tool's main gesture, so it opens the browser.
+        if (path == null && !interactive) {
+            spec.commandLine().usage(spec.commandLine().getOut(), CommandLine.Help.Ansi.OFF);
+            return CliExitCode.OK;
+        }
+        ScanResult result = scanTree(path == null ? "." : path, null, globalOptions.quiet);
+        reportScanErrors(result, globalOptions.quiet);
+        if (interactive) {
+            if (FullScreenBrowser.run(result, outputStyle().isAnsi())) {
+                return CliExitCode.OK;
+            }
+            // Raw mode unavailable (exotic terminal): the line-based browser still works.
+            return new Browser(result, input(), out(), outputStyle()).run();
+        }
+        // Piped: a report is what a script can consume. Same shape as `scan`.
+        new JsonReporter(out(), ApplicationInfo.load(), -1).write(result);
         return CliExitCode.OK;
+    }
+
+    private @NotNull BufferedReader input() {
+        return new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+    }
+
+    private @NotNull PrintWriter out() {
+        return spec.commandLine().getOut();
     }
 
     GlobalOptionsMixin globalOptions() {
