@@ -5,6 +5,8 @@ import io.github.lihuu.dukit.core.model.ScanResult;
 import io.github.lihuu.dukit.core.model.TopEntry;
 import io.github.lihuu.dukit.core.model.TopResult;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
@@ -70,6 +72,34 @@ class DirectoryScannerTest {
         assertEquals(650, result.root().size(), "symlink targets must not be counted");
         assertEquals(4, result.root().fileCount());
         assertEquals(3, result.root().dirCount(), "a symlinked directory is not traversed");
+    }
+
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    void skipsWindowsJunctionsWithoutFollowingThem() throws IOException, InterruptedException {
+        Path outside = Files.createDirectories(temporary.resolve("junction-outside"));
+        Files.writeString(outside.resolve("outside.bin"), "x".repeat(4096), StandardCharsets.US_ASCII);
+        Path root = Files.createDirectories(temporary.resolve("junction-root"));
+        Files.writeString(root.resolve("inside.bin"), "x".repeat(64), StandardCharsets.US_ASCII);
+        Path junction = root.resolve("junction");
+
+        Process mklink = new ProcessBuilder("cmd", "/c", "mklink", "/J",
+                junction.toString(), outside.toString()).redirectErrorStream(true).start();
+        String output = new String(mklink.getInputStream().readAllBytes(), StandardCharsets.US_ASCII);
+        assumeTrue(mklink.waitFor() == 0, () -> "cannot create a junction: " + output);
+        assertTrue(Files.isDirectory(junction, LinkOption.NOFOLLOW_LINKS),
+                "a junction looks like a directory to NIO, which is what made it traversable");
+
+        try {
+            ScanResult result = new DirectoryScanner(List.of()).scan(root, (files, bytes, dir) -> { });
+
+            assertEquals(64, result.root().size(), "content behind the junction is outside the root");
+            assertEquals(1, result.root().fileCount(), "the external file is not part of the scan");
+            assertEquals(0, result.root().dirCount());
+            assertTrue(result.root().children().isEmpty(), "the junction must not become a tree node");
+        } finally {
+            Files.deleteIfExists(junction);
+        }
     }
 
     @Test

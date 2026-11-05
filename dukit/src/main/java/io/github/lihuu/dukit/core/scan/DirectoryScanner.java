@@ -40,10 +40,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * small tree costs what a serial walk costs — the fork threshold is what keeps parallelism
  * from becoming a tax on cheap scans.
  *
- * <p>Symlinks are never followed. Unreadable entries are collected as errors and the walk
- * continues; only the root failing to be a readable directory aborts. Hardlinked regular
- * files count their sizes once per scan (first occurrence wins) while still counting toward
- * the file totals. Directories contribute only their contents, never their own inode size.
+ * <p>Symlinks and other reparse points (Windows junctions) are never followed. Unreadable
+ * entries are collected as errors and the walk continues; only the root failing to be a
+ * readable directory aborts. Hardlinked regular files count their sizes once per scan (first
+ * occurrence wins) while still counting toward the file totals. Directories contribute only
+ * their contents, never their own inode size.
  */
 public final class DirectoryScanner {
     /** Forks only once a directory holds this many subdirectories. */

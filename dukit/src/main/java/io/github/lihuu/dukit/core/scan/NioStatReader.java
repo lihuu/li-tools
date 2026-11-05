@@ -45,11 +45,17 @@ final class NioStatReader implements StatReader {
     }
 
     private static @NotNull FileStat.Kind kindOf(@NotNull BasicFileAttributes attributes) {
-        if (attributes.isDirectory()) {
-            return FileStat.Kind.DIRECTORY;
-        }
+        // Windows reports a junction (IO_REPARSE_TAG_MOUNT_POINT) as a directory and as
+        // "other", never as a symbolic link. Classifying it as OTHER keeps the walk from
+        // following it out of the scan root; on Unix a directory is never "other".
         if (attributes.isSymbolicLink()) {
             return FileStat.Kind.SYMBOLIC_LINK;
+        }
+        if (attributes.isOther()) {
+            return FileStat.Kind.OTHER;
+        }
+        if (attributes.isDirectory()) {
+            return FileStat.Kind.DIRECTORY;
         }
         if (attributes.isRegularFile()) {
             return FileStat.Kind.REGULAR_FILE;
