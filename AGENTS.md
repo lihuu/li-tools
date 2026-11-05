@@ -48,12 +48,13 @@
 ## Git and worktrees
 
 - Before each work segment: `git worktree list`, `git status --short`, `git branch --show-current`.
-- Keep the main checkout on main. Work in your own `.worktrees/<agent>` directory, one task branch and PR at a time; never modify another agent's worktree.
+- Keep the main checkout on main. Work in your own `.worktrees/<agent>-<task>` directory: one task, one worktree, one branch, one PR. Never reuse a worktree name another agent may be working in, and never modify another agent's worktree.
 - Start task branches from origin/main after fetch. A fresh local repository without a remote is the bootstrap exception.
 - Stage only task-owned paths; never use git add -A, git add ., stash, reset/clean or checkout to discard unrelated changes.
 - Commit completed, verified changes in the same task. Push the task branch and create the PR; never push main directly after initial repository bootstrap.
 - Use conventional commits. Fix PRs keep test/fix commits through merge; do not squash them.
 - After merge, park your own worktree detached on origin/main and delete only your own merged task branch. Keep the worktree's build state.
+- Before deleting a branch, checking out, or removing a worktree, run `git status --short` inside it. If it is not clean, stop and ask: uncommitted files may be another agent's work in progress.
 - Install local hooks once: `git config core.hooksPath "$(git rev-parse --show-toplevel)/.githooks"`. Use an absolute path.
 - Local hooks prevent common mistakes; they do not replace remote access controls. No command can protect uncommitted files in a shared checkout.
 
