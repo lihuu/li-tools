@@ -1,5 +1,6 @@
 package io.github.lihuu.dukit.core.tui;
 
+import io.github.lihuu.dukit.core.delete.DeletePlan;
 import io.github.lihuu.dukit.core.model.DirEntry;
 import io.github.lihuu.dukit.core.report.HumanBytes;
 import org.jetbrains.annotations.NotNull;
@@ -39,6 +40,10 @@ public final class ScreenRenderer {
     public @NotNull List<String> render(@NotNull TuiState state, int width, int height) {
         int columns = Math.max(20, width);
         int rows = Math.max(3, height);
+        DeletePlan pending = state.pendingDelete();
+        if (pending != null) {
+            return renderConfirmation(pending, columns, rows);
+        }
         List<String> lines = new ArrayList<>(rows);
 
         DirEntry current = state.current();
@@ -66,7 +71,31 @@ public final class ScreenRenderer {
             }
         }
 
+        if (state.notice() != null) {
+            lines.add(style(DIM, fit("  " + state.notice(), columns)));
+        }
         lines.add(style(DIM, footer(state, entries.size(), columns)));
+        return lines;
+    }
+
+    /**
+     * The confirmation page is the dry run: it shows exactly what will move and where, and
+     * nothing happens until {@code y}.
+     */
+    private @NotNull List<String> renderConfirmation(@NotNull DeletePlan plan, int columns, int rows) {
+        List<String> lines = new ArrayList<>(rows);
+        lines.add(style(BOLD, fit("Move to Trash?", columns)));
+        lines.add("");
+        lines.add(fit("  " + plan.path(), columns));
+        lines.add(style(DIM, fit(String.format(Locale.US, "  %s · %,d files · %,d directories",
+                HumanBytes.format(plan.size()), plan.files(), plan.directories()), columns)));
+        lines.add(style(DIM, fit("  → " + plan.trash().display(), columns)));
+        lines.add("");
+        lines.add(style(DIM, fit("  Space is reclaimed only after the Trash is emptied.", columns)));
+        while (lines.size() < rows - 1) {
+            lines.add("");
+        }
+        lines.add(style(BOLD, fit("  [y] move to Trash    [n] or Esc cancel", columns)));
         return lines;
     }
 
@@ -85,7 +114,7 @@ public final class ScreenRenderer {
 
     private @NotNull String footer(@NotNull TuiState state, int count, int columns) {
         String position = count == 0 ? "0/0" : (state.selected() + 1) + "/" + count;
-        String help = "↑↓ move  ⏎ enter  ⌫ back  s sort(" + state.sortKey().label() + ")  q quit";
+        String help = "↑↓ move  ⏎ enter  ⌫ back  s sort(" + state.sortKey().label() + ")  d delete  q quit";
         int helpWidth = Math.max(0, columns - position.length() - 1);
         return fit(padRight(help, helpWidth) + " " + position, columns);
     }

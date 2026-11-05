@@ -1,6 +1,13 @@
 package io.github.lihuu.dukit.core.tui;
 
+import io.github.lihuu.dukit.core.delete.DeleteException;
+import io.github.lihuu.dukit.core.delete.DeletePlan;
+import io.github.lihuu.dukit.core.delete.DeleteResult;
+import io.github.lihuu.dukit.core.delete.DeleteService;
+import io.github.lihuu.dukit.core.delete.TreeUpdater;
+import io.github.lihuu.dukit.core.model.DirEntry;
 import io.github.lihuu.dukit.core.model.ScanResult;
+import io.github.lihuu.dukit.core.trash.TrashException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jline.terminal.Attributes;
@@ -42,7 +49,8 @@ public final class FullScreenBrowser {
      * @return true when the full-screen session ran; false when no usable terminal could be
      *         opened and the caller should fall back to the line-based browser
      */
-    public static boolean run(@NotNull ScanResult result, boolean color) throws IOException {
+    public static boolean run(@NotNull ScanResult result, boolean color, @NotNull DeleteService deleteService)
+            throws IOException {
         Terminal terminal = openTerminal();
         if (terminal == null) {
             return false;
@@ -63,11 +71,27 @@ public final class FullScreenBrowser {
             ScreenRenderer renderer = new ScreenRenderer(color);
             KeyParser parser = new KeyParser(inputOf(terminal));
 
+            ScanResult current = result;
+            boolean treeTrusted = true;
             while (true) {
                 int width = terminal.getWidth() > 0 ? terminal.getWidth() : DEFAULT_WIDTH;
                 int height = terminal.getHeight() > 0 ? terminal.getHeight() : DEFAULT_HEIGHT;
                 draw(writer, renderer.render(state, width, height));
-                if (!state.handle(parser.next(), Math.max(1, height - 4))) {
+
+                Key key = parser.next();
+                if (key == Key.DELETE) {
+                    treeTrusted = planDelete(state, current, deleteService, treeTrusted);
+                    continue;
+                }
+                if (key == Key.CONFIRM && state.pendingDelete() != null) {
+                    current = executeDelete(state, current, deleteService);
+                    continue;
+                }
+                if (key == Key.CANCEL && state.pendingDelete() != null) {
+                    state.cancelDelete();
+                    continue;
+                }
+                if (!state.handle(key, Math.max(1, height - 4))) {
                     break;
                 }
             }
@@ -85,6 +109,57 @@ public final class FullScreenBrowser {
             terminal.close();
         }
         return true;
+    }
+
+    /**
+     * Builds the confirmation plan. Nothing is touched here: the plan only describes what
+     * would move.
+     */
+    private static boolean planDelete(@NotNull TuiState state, @NotNull ScanResult scan,
+            @NotNull DeleteService deleteService, boolean treeTrusted) {
+        if (!treeTrusted) {
+            state.setNotice("tree is stale after an uncertain delete; rescan to continue");
+            return false;
+        }
+        DirEntry selected = state.selectedEntry();
+        if (selected == null) {
+            state.setNotice("nothing selected");
+            return true;
+        }
+        try {
+            DeletePlan plan = deleteService.plan(scan, state.currentPath(), selected);
+            state.requestDelete(plan);
+            return true;
+        } catch (DeleteException | TrashException refusal) {
+            state.setNotice(refusal.getMessage());
+            return true;
+        }
+    }
+
+    /**
+     * Moves the confirmed target and folds the result back into the tree.
+     */
+    private static @NotNull ScanResult executeDelete(@NotNull TuiState state, @NotNull ScanResult scan,
+            @NotNull DeleteService deleteService) {
+        DeletePlan plan = state.pendingDelete();
+        if (plan == null) {
+            return scan;
+        }
+        DeleteResult result = deleteService.execute(scan, plan);
+        state.cancelDelete();
+        if (result.status() == DeleteResult.Status.TRASHED) {
+            try {
+                ScanResult updated = TreeUpdater.remove(scan, plan.path());
+                state.replaceResult(updated);
+                state.setNotice("moved to Trash: " + plan.name());
+                return updated;
+            } catch (DeleteException inconsistent) {
+                state.setNotice("moved, but the view is stale: " + inconsistent.getMessage());
+                return scan;
+            }
+        }
+        state.setNotice(result.error());
+        return scan;
     }
 
     private static @Nullable Terminal openTerminal() {

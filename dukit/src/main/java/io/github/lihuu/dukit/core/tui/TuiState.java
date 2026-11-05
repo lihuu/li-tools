@@ -1,9 +1,11 @@
 package io.github.lihuu.dukit.core.tui;
 
 import io.github.lihuu.dukit.core.browse.SortKey;
+import io.github.lihuu.dukit.core.delete.DeletePlan;
 import io.github.lihuu.dukit.core.model.DirEntry;
 import io.github.lihuu.dukit.core.model.ScanResult;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -26,6 +28,8 @@ public final class TuiState {
     private SortKey sortKey = SortKey.SIZE;
     private int selected;
     private int scroll;
+    private @Nullable DeletePlan pendingDelete;
+    private @Nullable String notice;
 
     public TuiState(@NotNull ScanResult result) {
         this.rootPath = result.path();
@@ -60,6 +64,82 @@ public final class TuiState {
 
     public int depth() {
         return trail.size() - 1;
+    }
+
+    /**
+     * The entry the cursor is on, or {@code null} when the directory is empty.
+     */
+    public @Nullable DirEntry selectedEntry() {
+        List<DirEntry> entries = entries();
+        if (selected < 0 || selected >= entries.size()) {
+            return null;
+        }
+        return entries.get(selected);
+    }
+
+    public @Nullable DeletePlan pendingDelete() {
+        return pendingDelete;
+    }
+
+    public void requestDelete(@NotNull DeletePlan plan) {
+        this.pendingDelete = plan;
+        this.notice = null;
+    }
+
+    public void cancelDelete() {
+        this.pendingDelete = null;
+    }
+
+    public void clearDelete() {
+        this.pendingDelete = null;
+    }
+
+    public @Nullable String notice() {
+        return notice;
+    }
+
+    public void setNotice(@Nullable String notice) {
+        this.notice = notice;
+    }
+
+    /**
+     * Swaps in a tree that had a node removed, keeping the user where they were when the
+     * directory they were standing in still exists.
+     */
+    public void replaceResult(@NotNull ScanResult updated) {
+        List<String> names = new ArrayList<>();
+        Iterator<DirEntry> ancestors = trail.descendingIterator();
+        ancestors.next();
+        while (ancestors.hasNext()) {
+            names.add(ancestors.next().name());
+        }
+
+        Deque<DirEntry> rebuilt = new ArrayDeque<>();
+        DirEntry current = updated.root();
+        rebuilt.addLast(current);
+        for (String name : names) {
+            DirEntry next = null;
+            for (DirEntry child : current.children()) {
+                if (child.name().equals(name)) {
+                    next = child;
+                    break;
+                }
+            }
+            if (next == null) {
+                break;
+            }
+            rebuilt.addLast(next);
+            current = next;
+        }
+
+        trail.clear();
+        for (DirEntry entry : rebuilt) {
+            // rebuilt runs root -> current; the trail's head must be the current directory.
+            trail.addFirst(entry);
+        }
+        pendingDelete = null;
+        selected = Math.max(0, Math.min(selected, Math.max(0, entries().size() - 1)));
+        scroll = Math.max(0, Math.min(scroll, selected));
     }
 
     /**

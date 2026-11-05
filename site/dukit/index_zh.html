@@ -469,7 +469,7 @@
         <div class="glass-card p-6 rounded-xl">
           <h3 class="font-bold text-base text-white mb-2">dukit 能像 ncdu 一样删除文件吗?</h3>
           <p class="text-sm text-slate-400 leading-relaxed">
-            暂不——这是刻意为之。删除意味着分析器不再适合指向任意路径;dukit v1 只读。机器可读的 <code class="text-amber-300">--json</code> 输出让清理脚本完全由你掌控,并带上你自己的确认规则。
+            目录可以删——但只能在交互界面里。选中目录按 <code class="text-amber-300">d</code>,看过确认页再按 <code class="text-amber-300">y</code>,目录会移入系统回收站(macOS 的 <code class="text-amber-300">~/.Trash</code>、Linux 的 freedesktop Trash),绝不永久删除。这里刻意不提供 CLI 删除命令:只有当你能看见它来自哪棵树时,删除才是安全的。
           </p>
         </div>
 

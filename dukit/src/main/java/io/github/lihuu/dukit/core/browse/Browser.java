@@ -1,10 +1,17 @@
 package io.github.lihuu.dukit.core.browse;
 
 import io.github.lihuu.clicommon.style.OutputStyle;
+import io.github.lihuu.dukit.core.delete.DeleteException;
+import io.github.lihuu.dukit.core.delete.DeletePlan;
+import io.github.lihuu.dukit.core.delete.DeleteResult;
+import io.github.lihuu.dukit.core.delete.DeleteService;
+import io.github.lihuu.dukit.core.delete.TreeUpdater;
+import io.github.lihuu.dukit.core.trash.TrashException;
 import io.github.lihuu.dukit.core.model.DirEntry;
 import io.github.lihuu.dukit.core.model.ScanResult;
 import io.github.lihuu.dukit.core.report.HumanBytes;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -30,15 +37,18 @@ import java.util.Locale;
  * the tool feel responsive rather than command-driven.
  */
 public final class Browser {
-    private final ScanResult result;
+    private ScanResult result;
+    private final DeleteService deleteService;
     private final BufferedReader in;
     private final PrintWriter out;
     private final OutputStyle style;
     private final Deque<DirEntry> trail = new ArrayDeque<>();
     private SortKey sortKey = SortKey.SIZE;
 
-    public Browser(@NotNull ScanResult result, @NotNull Reader input, @NotNull PrintWriter out, @NotNull OutputStyle style) {
+    public Browser(@NotNull ScanResult result, @NotNull Reader input, @NotNull PrintWriter out,
+            @NotNull OutputStyle style, @Nullable DeleteService deleteService) {
         this.result = result;
+        this.deleteService = deleteService;
         this.in = input instanceof BufferedReader buffered ? buffered : new BufferedReader(input);
         this.out = out;
         this.style = style;
@@ -69,6 +79,8 @@ public final class Browser {
                 setSort(command);
             } else if (command.matches("\\d+")) {
                 descend(Integer.parseInt(command));
+            } else if (command.startsWith("delete ")) {
+                delete(command);
             } else if (command.startsWith("cd ")) {
                 descendCommand(command);
             } else {
@@ -76,6 +88,73 @@ public final class Browser {
             }
         }
         return 0;
+    }
+
+    /**
+     * Plans a delete, shows the same facts the full-screen confirmation page shows, and only
+     * moves after the user types the whole word back.
+     */
+    private void delete(@NotNull String command) throws IOException {
+        if (deleteService == null) {
+            out.println(style.error("delete is not available in this session"));
+            return;
+        }
+        String[] parts = command.split("\\s+");
+        DirEntry current = trail.peek();
+        if (parts.length != 2 || current == null) {
+            out.println(style.error("usage: delete <n>"));
+            return;
+        }
+        int index;
+        try {
+            index = Integer.parseInt(parts[1]) - 1;
+        } catch (NumberFormatException notANumber) {
+            out.println(style.error("usage: delete <n>"));
+            return;
+        }
+        List<DirEntry> children = sorted(current.children());
+        if (index < 0 || index >= children.size()) {
+            out.println(style.error("no entry " + parts[1] + " (1.." + children.size() + ")"));
+            return;
+        }
+        DirEntry target = children.get(index);
+        DeletePlan plan;
+        try {
+            plan = deleteService.plan(result, currentPath(), target);
+        } catch (DeleteException | TrashException refusal) {
+            out.println(style.error(refusal.getMessage()));
+            return;
+        }
+
+        out.println();
+        out.println(style.bold("Move to Trash?"));
+        out.println("  " + plan.path());
+        out.println(style.muted(String.format(Locale.US, "  %s · %,d files · %,d directories",
+                HumanBytes.format(plan.size()), plan.files(), plan.directories())));
+        out.println(style.muted("  → " + plan.trash().display()));
+        out.println(style.muted("  Space is reclaimed only after the Trash is emptied."));
+        out.print("Type 'delete' to confirm: ");
+        out.flush();
+        String answer = in.readLine();
+        if (!"delete".equals(answer == null ? null : answer.trim())) {
+            out.println(style.muted("cancelled"));
+            return;
+        }
+
+        DeleteResult outcome = deleteService.execute(result, plan);
+        if (outcome.status() != DeleteResult.Status.TRASHED) {
+            out.println(style.error(outcome.error() == null ? "delete failed" : outcome.error()));
+            return;
+        }
+        try {
+            result = TreeUpdater.remove(result, plan.path());
+            trail.clear();
+            trail.push(result.root());
+            out.println(style.success("moved to Trash: " + plan.name()));
+        } catch (DeleteException inconsistent) {
+            out.println(style.warning("moved, but the view is stale: " + inconsistent.getMessage()));
+        }
+        render();
     }
 
     private void up() {

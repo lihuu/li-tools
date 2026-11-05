@@ -41,6 +41,9 @@ public final class KeyParser {
             case 'h', 'H' -> Key.BACK;
             case 'l', 'L' -> Key.ENTER;
             case 's', 'S' -> Key.SORT;
+            case 'd', 'D' -> Key.DELETE;
+            case 'y', 'Y' -> Key.CONFIRM;
+            case 'n', 'N' -> Key.CANCEL;
             case 't', 'T' -> Key.TOGGLE_FILES;
             case 'g' -> Key.HOME;
             case 'G' -> Key.END;
@@ -51,7 +54,8 @@ public final class KeyParser {
     private @NotNull Key escapeSequence() {
         int second = input.poll();
         if (second == IntReader.EXPIRED || second == IntReader.END_OF_INPUT) {
-            return Key.NONE;
+            // A lone Esc is the universal "back out of this".
+            return Key.CANCEL;
         }
         if (second != CSI && second != SS3) {
             return Key.NONE;

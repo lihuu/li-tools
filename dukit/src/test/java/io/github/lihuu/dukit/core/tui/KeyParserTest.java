@@ -51,10 +51,17 @@ class KeyParserTest {
     }
 
     @Test
-    void loneEscapeIsIgnoredRatherThanTreatedAsAKey() {
-        assertEquals(Key.NONE, parse(27));
-        assertEquals(Key.NONE, parse(27, 'x'));
+    void loneEscapeCancels() {
+        assertEquals(Key.CANCEL, parse(27), "Esc is the universal back-out");
+        assertEquals(Key.NONE, parse(27, 'x'), "an unknown sequence is not a key");
         assertEquals(Key.NONE, parse(27, '[', 0));
+    }
+
+    @Test
+    void decodesTheDeleteGestures() {
+        assertEquals(Key.DELETE, parse('d'));
+        assertEquals(Key.CONFIRM, parse('y'));
+        assertEquals(Key.CANCEL, parse('n'));
     }
 
     private static Key parse(int... bytes) {
