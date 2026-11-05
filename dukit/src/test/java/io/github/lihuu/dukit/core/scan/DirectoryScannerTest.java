@@ -275,7 +275,12 @@ class DirectoryScannerTest {
         assertEquals(2, files.size(), "the heap is bounded by the limit");
         assertEquals(root.resolve("a/big.bin"), files.get(0).path());
         assertEquals(300, files.get(0).size(), "apparent size is still carried");
-        assertTrue(files.get(0).diskSize() >= 4096, "occupied size is block-rounded");
+        if (NativeStatReader.forCurrentPlatform() != null) {
+            assertTrue(files.get(0).diskSize() >= 4096, "occupied size is block-rounded");
+        } else {
+            // Windows exposes no block count, so occupied size falls back to apparent size.
+            assertEquals(files.get(0).size(), files.get(0).diskSize());
+        }
     }
 
     @Test

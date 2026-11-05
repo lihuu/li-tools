@@ -96,7 +96,7 @@ class CliApplicationTest {
         String out = result.out();
         assertTrue(out.contains("a/") || out.contains("a"), out);
         assertTrue(out.indexOf("a") < out.indexOf("b"), "largest first: " + out);
-        assertTrue(out.contains("KiB"), "total is reported in occupied space: " + out);
+        assertTrue(out.contains("KiB") || out.contains(" B"), "total is reported: " + out);
     }
 
     @Test
