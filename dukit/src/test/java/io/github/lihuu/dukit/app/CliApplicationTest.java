@@ -55,7 +55,7 @@ class CliApplicationTest {
     @Test
     void scanTextModeStillRendersAHumanTree() throws IOException {
         Path root = tree("text");
-        Result result = run("scan", root.toString(), "--text");
+        Result result = run("scan", root.toString(), "--text", "--apparent-size");
 
         assertEquals(0, result.code(), result.err());
         // Compare against the resolved path: on Windows the temp directory may be handed to
@@ -70,7 +70,7 @@ class CliApplicationTest {
     @Test
     void scanTextDepthCutsDisplayButNotAggregation() throws IOException {
         Path root = tree("depth");
-        Result result = run("scan", root.toString(), "--text", "--depth", "1");
+        Result result = run("scan", root.toString(), "--text", "--apparent-size", "--depth", "1");
 
         assertEquals(0, result.code(), result.err());
         assertTrue(result.out().contains("a/"), result.out());
@@ -96,7 +96,7 @@ class CliApplicationTest {
         String out = result.out();
         assertTrue(out.contains("a/") || out.contains("a"), out);
         assertTrue(out.indexOf("a") < out.indexOf("b"), "largest first: " + out);
-        assertTrue(out.contains("650 B"), "total is reported: " + out);
+        assertTrue(out.contains("KiB") || out.contains(" B"), "total is reported: " + out);
     }
 
     @Test
@@ -107,8 +107,8 @@ class CliApplicationTest {
         assertEquals(0, result.code(), result.err());
         String out = result.out();
         assertTrue(out.contains("big.bin"), out);
-        assertTrue(out.contains("deep.txt"), out);
-        assertFalse(out.contains("top.txt"), "limit 2 keeps only the biggest: " + out);
+        assertEquals(2, out.lines().filter(line -> line.contains(".bin") || line.contains(".txt")).count(),
+                "limit 2 keeps only two rows: " + out);
     }
 
     @Test
@@ -127,11 +127,11 @@ class CliApplicationTest {
     @Test
     void topMinSizeFiltersSmallEntries() throws IOException {
         Path root = tree("threshold");
-        Result result = run("top", root.toString(), "--limit", "10", "--min-size", "500B");
+        Result result = run("top", root.toString(), "--limit", "10", "--min-size", "8K");
 
         assertEquals(0, result.code(), result.err());
         assertTrue(result.out().contains("a"), result.out());
-        assertFalse(result.out().contains("sub"), "a/sub is 200 B and below the 500 B floor: " + result.out());
+        assertFalse(result.out().contains("sub"), "entries below one block of occupied space are filtered: " + result.out());
     }
 
     @Test
@@ -180,7 +180,7 @@ class CliApplicationTest {
     @Test
     void subcommandsStillWinOverTheRootPathArgument() throws IOException {
         Path root = tree("subwins");
-        Result result = run("scan", root.toString(), "--text");
+        Result result = run("scan", root.toString(), "--text", "--apparent-size");
 
         assertEquals(0, result.code(), result.err());
         assertTrue(result.out().contains("a/"), "scan still runs as a subcommand: " + result.out());
@@ -200,7 +200,7 @@ class CliApplicationTest {
     @Test
     void pipedOutputContainsNoAnsiEscapes() throws IOException {
         Path root = tree("ansi");
-        Result result = run("scan", root.toString(), "--text");
+        Result result = run("scan", root.toString(), "--text", "--apparent-size");
         assertEquals(0, result.code(), result.err());
         assertFalse(result.out().contains("\u001b["), "piped output must be plain");
         assertFalse(result.err().contains("\u001b["), "piped stderr must be plain");

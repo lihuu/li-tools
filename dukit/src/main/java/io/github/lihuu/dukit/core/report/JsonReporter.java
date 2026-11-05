@@ -42,6 +42,7 @@ public final class JsonReporter {
         json.name("tool").value(info.name());
         json.name("version").value(info.version());
         json.name("path").value(result.path().toString());
+        json.name("diskSize").value(root.diskSize());
         json.name("size").value(root.size());
         json.name("files").value(root.fileCount());
         json.name("directories").value(root.dirCount());
@@ -58,6 +59,7 @@ public final class JsonReporter {
     private void writeNode(@NotNull JsonWriter json, @NotNull DirEntry entry, int level) {
         json.beginObject();
         json.name("name").value(entry.name());
+        json.name("diskSize").value(entry.diskSize());
         json.name("size").value(entry.size());
         json.name("files").value(entry.fileCount());
         json.name("directories").value(entry.dirCount());

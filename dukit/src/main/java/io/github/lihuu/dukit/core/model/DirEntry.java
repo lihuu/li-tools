@@ -21,14 +21,19 @@ import java.util.List;
  * reconstructs the current path from its navigation trail, which keeps one
  * {@code Path}/{@code String}/{@code int[]} trio out of every node in a large tree.
  *
- * <p>Sizes are apparent sizes: the sum of logical file sizes as reported by the platform.
- * This is the only size metric the JDK exposes portably (allocated block counts are not
- * available through java.nio.file), and it keeps numbers consistent across macOS, Linux and
- * Windows. Symlinks contribute neither size nor file counts. Hardlinked files count their
- * sizes once per scan; every hardlink still counts toward {@code fileCount}.
+ * <p>Two size metrics are carried side by side. {@link #diskSize} is the space the subtree
+ * actually occupies — allocated blocks on macOS and Linux, which is what {@code du} and the
+ * system file manager report. {@link #size} is the apparent (logical) size, which differs
+ * wildly for sparse files and APFS clones and is the only metric available on Windows, where
+ * java.nio.file exposes no block count.
+ *
+ * <p>Symlinks contribute neither size nor file counts. Hardlinked files count their sizes
+ * once per scan; every hardlink still counts toward {@code fileCount}.
  *
  * @param name          directory name; the root entry carries the scanned path's file name
- * @param size          total size of the subtree, including the directory's own files
+ * @param diskSize      space the subtree occupies; falls back to {@code size} where the
+ *                      platform exposes no block count
+ * @param size          apparent (logical) size of the subtree, including own files
  * @param fileCount     regular files in the subtree, including hardlink twins
  * @param dirCount      subdirectories in the subtree, excluding this directory itself
  * @param errorCount    entries under this subtree that could not be read
@@ -40,6 +45,7 @@ import java.util.List;
  */
 public record DirEntry(
         @NotNull String name,
+        long diskSize,
         long size,
         long fileCount,
         long dirCount,

@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @param name file name, not a path
  * @param size apparent size in bytes; zero-byte files and hardlink twins are not retained
+ * @param diskSize space actually occupied by the file
  */
-public record FileEntry(@NotNull String name, long size) implements TreeEntry {
+public record FileEntry(@NotNull String name, long size, long diskSize) implements TreeEntry {
 }

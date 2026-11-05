@@ -18,19 +18,28 @@ public final class TreeReporter {
     private final PrintWriter out;
     private final OutputStyle style;
     private final int depth;
+    private final boolean apparent;
 
-    public TreeReporter(@NotNull PrintWriter out, @NotNull OutputStyle style, int depth) {
+    /**
+     * @param apparent when true, report logical file sizes instead of occupied space
+     */
+    public TreeReporter(@NotNull PrintWriter out, @NotNull OutputStyle style, int depth, boolean apparent) {
         this.out = out;
         this.style = style;
         this.depth = depth < 0 ? Integer.MAX_VALUE : depth;
+        this.apparent = apparent;
+    }
+
+    private long sizeOf(@NotNull DirEntry entry) {
+        return apparent ? entry.size() : entry.diskSize();
     }
 
     public void write(@NotNull ScanResult result) {
         DirEntry root = result.root();
-        out.println(style.bold(style.highlight(result.path().toString()) + "  " + HumanBytes.format(root.size())));
+        out.println(style.bold(style.highlight(result.path().toString()) + "  " + HumanBytes.format(sizeOf(root))));
         out.println(style.muted(summary(result)));
         if (depth > 0) {
-            renderChildren(root, "", root.size(), 1);
+            renderChildren(root, "", sizeOf(root), 1);
         }
     }
 
@@ -52,15 +61,15 @@ public final class TreeReporter {
             String branch = last ? "└── " : "├── ";
             out.println(indent + branch + sizeColumn(child, parentSize) + displayName(child));
             if (level < depth && !child.children().isEmpty()) {
-                renderChildren(child, indent + (last ? "    " : "│   "), child.size(), level + 1);
+                renderChildren(child, indent + (last ? "    " : "│   "), sizeOf(child), level + 1);
             }
         }
     }
 
     private String sizeColumn(@NotNull DirEntry child, long parentSize) {
-        String size = String.format("%9s  ", HumanBytes.format(child.size()));
+        String size = String.format("%9s  ", HumanBytes.format(sizeOf(child)));
         String percent = parentSize > 0
-                ? String.format(Locale.US, "%5.1f%%  ", 100.0 * child.size() / parentSize)
+                ? String.format(Locale.US, "%5.1f%%  ", 100.0 * sizeOf(child) / parentSize)
                 : String.format("%5s  ", "0.0%");
         return size + percent;
     }

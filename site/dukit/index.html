@@ -321,7 +321,7 @@
           </div>
           <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">Honest Size Semantics</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Apparent sizes for cross-platform parity, symlinks never followed, unreadable paths skipped with a warning instead of aborting. Hardlinked content counts once per scan on macOS and Linux; Windows exposes no file key through java.nio.file, so there each link counts separately.
+            Reports the space actually occupied (<code class="text-amber-300">st_blocks</code> via FFM), so numbers match <code class="text-amber-300">du</code> and Finder. <code class="text-amber-300">--apparent-size</code> switches to logical sizes when you need them. Sparse files make the two differ enormously. Symlinks never followed; unreadable paths warn instead of aborting.
           </p>
         </div>
 
@@ -462,7 +462,7 @@
         <div class="glass-card p-6 rounded-xl">
           <h3 class="font-bold text-base text-white mb-2">Why apparent sizes instead of allocated blocks?</h3>
           <p class="text-sm text-slate-400 leading-relaxed">
-            The Java standard library exposes no portable allocated-block metric, and per-platform FFI would break the zero-dependency, zero-native-metadata guarantee this project is built on. Apparent sizes are also the only metric that means the same thing on APFS, ext4 and NTFS — the whole point of dukit being cross-platform.
+            It does not — dukit now reports occupied space by default, matching <code class="text-amber-300">du</code> and Finder. It reads <code class="text-amber-300">st_blocks</code> through the Foreign Function &amp; Memory API on macOS and Linux, with the layout pinned by tests. Apparent size is still available with <code class="text-amber-300">--apparent-size</code>, and both numbers appear in JSON. Windows exposes no block count, so there the two coincide.
           </p>
         </div>
 

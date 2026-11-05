@@ -62,15 +62,17 @@ dukit scan . --exclude node_modules --exclude .git
 - `--depth <n>` limits how many levels of `children` are emitted. **Aggregates always cover the whole subtree**, so a depth-cut tree still reports correct totals. Default `-1` = every level; `0` = root only. This is the cheapest way to keep a payload small.
 - `--exclude` is repeatable. A bare name matches any path component; a pattern containing `/` matches relative to the scan root.
 - `--text` prints an indented tree for humans; `--depth` applies there too.
+- `--apparent-size` reports logical sizes instead of occupied space (see below).
 
 JSON shape:
 
 ```json
 {
-  "meta": { "tool", "version", "path", "size", "files", "directories", "errors", "generatedAt" },
+  "meta": { "tool", "version", "path", "diskSize", "size", "files", "directories", "errors", "generatedAt" },
   "tree": {
     "name": "Applications",
-    "size": 69664451262,          // whole subtree
+    "diskSize": 21000000000,      // occupied space (default metric)
+    "size": 69664451262,          // apparent size of the whole subtree
     "files": 573263,              // whole subtree
     "directories": 87482,         // whole subtree
     "errors": 0,
@@ -127,8 +129,11 @@ full-screen UI runs on macOS, Linux, and Windows, including in the native binary
 
 ## Size Semantics (Important)
 
-- **Apparent sizes**: the sum of logical file sizes. The JDK exposes no portable allocated-block metric, so dukit reports apparent sizes to keep numbers identical across filesystems. Compare with `du --apparent-size`.
-- **Hardlinks**: content counts exactly once per scan (first occurrence); every hardlink still counts toward `files`. **This requires a file key, which java.nio.file does not expose on Windows** — there each link's content is counted separately. macOS and Linux de-duplicate correctly.
+Two metrics are reported side by side, because they answer different questions.
+
+- **`diskSize` (default everywhere)**: space actually occupied — allocated blocks (`st_blocks × 512`) read through the Foreign Function & Memory API on macOS and Linux. This is what `du` and Finder show, and the number to trust when deciding what to delete. On Windows no block count is exposed, so `diskSize` falls back to `size`.
+- **`size` (apparent)**: the sum of logical file sizes. Identical to `du --apparent-size`. It can be *wildly* larger than what the file occupies: on a real machine one container volume image was 512 GB logical but 477 MB on disk. Use `scan --apparent-size` to report this instead.
+- **Hardlinks**: each metric counts shared content once per scan (first occurrence); every hardlink still counts toward `files`. Requires a link count, which comes from the same native `stat` call — on Windows neither is available, so links count separately.
 - **Symlinks**: never followed, never sized, not counted as files. A symlinked *root* is resolved before scanning.
 - **Directories**: only their contents contribute; the directory inode's own size is not added.
 - **Errors**: unreadable paths are skipped with a warning on stderr, never silently ignored, and counted in `errors`.

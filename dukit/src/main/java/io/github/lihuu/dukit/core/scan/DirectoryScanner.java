@@ -99,7 +99,7 @@ public final class DirectoryScanner {
             throw new IOException("cannot scan " + run.root + ": " + run.reason());
         }
         return new TopResult(run.largestDirectories.result(), run.largestFiles.result(),
-                run.node.size, run.node.ownFileCount + run.node.subtreeFileCount, run.errors());
+                run.node.diskSize, run.node.ownFileCount + run.node.subtreeFileCount, run.errors());
     }
 
     private @NotNull Run execute(@NotNull Path root, @NotNull ProgressListener listener,
@@ -275,15 +275,17 @@ public final class DirectoryScanner {
                 hardlinkTwin = stat.fileKey != null && !run.seenFileKeys.add(stat.fileKey);
             }
             long size = hardlinkTwin ? 0 : stat.size;
+            long disk = hardlinkTwin ? 0 : (stat.blocks >= 0 ? stat.blocks * 512 : stat.size);
             node.ownFileSize += size;
             node.ownFileCount++;
             node.size += size;
+            node.diskSize += disk;
             if (size > 0) {
-                node.offerFile(child, size);
+                node.offerFile(child, size, disk);
             }
-            run.bytesSeen.addAndGet(size);
-            if (run.largestFiles != null && size > 0) {
-                run.largestFiles.offer(child, size);
+            run.bytesSeen.addAndGet(disk);
+            if (run.largestFiles != null && disk > 0) {
+                run.largestFiles.offer(child, size, disk);
             }
             run.progress(child);
         }
@@ -317,26 +319,28 @@ public final class DirectoryScanner {
 
         private void merge(@NotNull Node parent, @NotNull Node child, @NotNull Path childPath) {
             parent.size += child.size;
+            parent.diskSize += child.diskSize;
             parent.subtreeFileCount += child.ownFileCount + child.subtreeFileCount;
             parent.subtreeDirCount += 1 + child.subtreeDirCount;
             parent.errorCount += child.errorCount;
             if (run.buildTree) {
                 parent.children.add(child.toEntry(childPath));
             }
-            if (run.largestDirectories != null && child.size > 0) {
-                run.largestDirectories.offer(childPath, child.size);
+            if (run.largestDirectories != null && child.diskSize > 0) {
+                run.largestDirectories.offer(childPath, child.size, child.diskSize);
             }
         }
     }
 
     private static final class Node {
         private static final Comparator<FileEntry> FILE_ORDER =
-                Comparator.comparingLong(FileEntry::size).reversed().thenComparing(FileEntry::name);
+                Comparator.comparingLong(FileEntry::diskSize).reversed().thenComparing(FileEntry::name);
 
         private final List<DirEntry> children = new ArrayList<>();
         private final int fileLimit;
         private @Nullable List<FileEntry> topFiles;
         private long size;
+        private long diskSize;
         private long ownFileSize;
         private long ownFileCount;
         private long subtreeFileCount;
@@ -352,17 +356,17 @@ public final class DirectoryScanner {
          * kept sorted in place: the limit is single digits, so an insertion costs less than
          * allocating a collector per directory.
          */
-        private void offerFile(@NotNull Path path, long size) {
+        private void offerFile(@NotNull Path path, long size, long disk) {
             if (fileLimit == 0 || size <= 0) {
                 return;
             }
             if (topFiles == null) {
                 topFiles = new ArrayList<>(Math.min(fileLimit, 8));
             }
-            if (topFiles.size() == fileLimit && size < topFiles.get(topFiles.size() - 1).size()) {
+            if (topFiles.size() == fileLimit && disk < topFiles.get(topFiles.size() - 1).diskSize()) {
                 return;
             }
-            FileEntry candidate = new FileEntry(name(path), size);
+            FileEntry candidate = new FileEntry(name(path), size, disk);
             int index = 0;
             while (index < topFiles.size() && FILE_ORDER.compare(topFiles.get(index), candidate) <= 0) {
                 index++;
@@ -377,10 +381,10 @@ public final class DirectoryScanner {
         }
 
         private @NotNull DirEntry toEntry(@NotNull Path dir) {
-            children.sort(Comparator.comparingLong((DirEntry entry) -> entry.size())
+            children.sort(Comparator.comparingLong((DirEntry entry) -> entry.diskSize())
                     .reversed()
                     .thenComparing(DirEntry::name));
-            return new DirEntry(name(dir), size, ownFileCount + subtreeFileCount,
+            return new DirEntry(name(dir), diskSize, size, ownFileCount + subtreeFileCount,
                     subtreeDirCount, errorCount, ownFileSize, ownFileCount,
                     topFiles == null ? List.of() : topFiles, children);
         }

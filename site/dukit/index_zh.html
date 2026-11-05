@@ -96,7 +96,7 @@
           },
           {
             "@type": "Question",
-            "name": "为什么 dukit 报告表观大小而不是磁盘分配块?",
+            "name": "dukit 报的是磁盘占用还是逻辑大小?",
             "acceptedAnswer": {
               "@type": "Answer",
               "text": "Java 标准库没有跨平台的分配块指标(st_blocks 无法通过 java.nio.file 获取),逐平台 FFI 会破坏本项目的零依赖保证。dukit 因此报告逻辑文件大小,让 APFS、ext4 与 NTFS 上的数字完全可比。同一扫描内硬链接内容只计一次,符号链接永不跟随,目录 inode 本身不计入。"
@@ -107,7 +107,7 @@
             "name": "dukit 的数字与 du、ncdu 相比如何?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "dukit 报告表观大小(相当于 du --apparent-size):同一扫描内每个硬链接文件的内容只计一次,不跟随符号链接,目录 inode 自身大小不计入。不可读路径会以警告形式报告到 stderr,扫描继续进行,不会因此中断。"
+              "text": "默认报告磁盘实际占用:通过 FFM 读取 st_blocks,与 du 和 Finder 一致。加 --apparent-size 可切换为逻辑大小(相当于 du --apparent-size),JSON 中两个数字都有。两者在 sparse 文件和 APFS 克隆上差异极大——实测一个容器卷映像逻辑 512GB、实际只占 477MB。Windows 不暴露块计数,两种口径在那里相同。"
             }
           },
           {
@@ -321,7 +321,7 @@
           </div>
           <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">诚实的尺寸语义</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            表观大小保证跨平台一致;符号链接永不跟随;不可读路径跳过并警告,不中断扫描。硬链接内容在 macOS 与 Linux 上同一扫描只计一次;Windows 的 java.nio.file 不暴露 fileKey,因此每个链接各计一次。
+            默认报告磁盘实际占用(FFM 读 <code class="text-amber-300">st_blocks</code>),与 du 和 Finder 一致;<code class="text-amber-300">--apparent-size</code> 切换为逻辑大小。sparse 文件会让两者相差几个数量级。符号链接永不跟随;不可读路径跳过并警告,不中断扫描。
           </p>
         </div>
 

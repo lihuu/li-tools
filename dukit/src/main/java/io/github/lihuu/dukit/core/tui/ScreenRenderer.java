@@ -49,7 +49,7 @@ public final class ScreenRenderer {
         List<String> lines = new ArrayList<>(rows);
 
         DirEntry current = state.current();
-        lines.add(style(BOLD, fit(state.currentPath() + "  " + HumanBytes.format(current.size()), columns)));
+        lines.add(style(BOLD, fit(state.currentPath() + "  " + HumanBytes.format(current.diskSize()), columns)));
         String summary = String.format(Locale.US, "%s in own files · %,d directories · %,d files",
                 HumanBytes.format(current.ownFileSize()), current.dirCount(), current.fileCount());
         if (state.showFiles() && !current.topFiles().isEmpty()) {
@@ -74,7 +74,7 @@ public final class ScreenRenderer {
                     lines.add("");
                     continue;
                 }
-                lines.add(entryLine(entries, index, state.selected() == index, current.size(), columns));
+                lines.add(entryLine(entries, index, state.selected() == index, current.diskSize(), columns));
             }
         }
 
@@ -109,9 +109,9 @@ public final class ScreenRenderer {
     private @NotNull String entryLine(@NotNull List<TreeEntry> entries, int index,
             boolean selected, long parentSize, int columns) {
         TreeEntry entry = entries.get(index);
-        double percent = parentSize > 0 ? 100.0 * entry.size() / parentSize : 0.0;
+        double percent = parentSize > 0 ? 100.0 * entry.diskSize() / parentSize : 0.0;
         String prefix = String.format(Locale.US, "%s %3d  %9s  %5.1f%%  ",
-                selected ? "▶" : " ", index + 1, HumanBytes.format(entry.size()), percent);
+                selected ? "▶" : " ", index + 1, HumanBytes.format(entry.diskSize()), percent);
         String label = entry instanceof DirEntry ? entry.name() + "/" : entry.name();
         String line = fit(prefix + label, columns);
         if (selected && color) {
