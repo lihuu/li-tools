@@ -694,7 +694,7 @@ y
 ### 10.3 行式浏览器
 
 - `Browser.result` 改为可替换的字段；trail 同样按名称重建。
-- 成功删除后保留当前目录，选中索引 clamp，重新渲染。
+- `delete <n>` 使用与 `render()`/`descend()` 相同的 `sorted(current.children())` 列表；成功后保留当前目录、选中索引 clamp、重新渲染。
 - `currentPath()` 继续由 `result.path()` + trail 计算。
 
 ### 10.4 结果不确定与 stale
