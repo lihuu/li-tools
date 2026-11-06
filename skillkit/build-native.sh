@@ -46,8 +46,8 @@ if [ -f "../scripts/pruned-security.properties" ]; then
     set -- "-J-Djava.security.properties==$(pwd)/../scripts/pruned-security.properties"
 fi
 
-# Use Native Image's default optimization level (O2). Forcing O3 on CE 25.4.4.1.1
-# increased certkit build time and image size; see ../docs/NATIVE_BUILD.md.
+# Use Native Image's default optimization level (O2). Forcing O3 increased certkit
+# build time and image size; see ../docs/NATIVE_BUILD.md for the measurements.
 "$NATIVE_IMAGE" \
     --no-fallback \
     --enable-native-access=ALL-UNNAMED \

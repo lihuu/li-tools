@@ -5,7 +5,7 @@ runs:
   steps:
     - uses: graalvm/setup-graalvm@v1
       with:
-        version: '25.4.4.1.1'
+        version: '25.5.5.0.3'
         distribution: 'graalvm-community'
         cache: 'maven'
         check-for-updates: 'false'
@@ -19,5 +19,5 @@ runs:
         fi
         native_version="$("$native_image" --version)"
         printf '%s\n' "$native_version"
-        printf '%s\n' "$native_version" | grep -F 'GraalVM CE 25.4.4.1.1+1.1'
+        printf '%s\n' "$native_version" | grep -F 'GraalVM CE 25.5.5.0.3+1.1'
         mvn --version

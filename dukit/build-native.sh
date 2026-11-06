@@ -46,8 +46,8 @@ else
     mvn -q -DskipTests package
 fi
 
-# Use Native Image's default optimization level (O2). Forcing O3 on CE 25.4.4.1.1
-# increased certkit build time and image size; see ../docs/NATIVE_BUILD.md.
+# Use Native Image's default optimization level (O2). Forcing O3 increased certkit
+# build time and image size; see ../docs/NATIVE_BUILD.md for the measurements.
 #
 # --no-fallback is the one flag that must not be removed. Without it, native-image happily emits
 # a launcher that needs a JVM at runtime and says so only when it is too late. The entire point
