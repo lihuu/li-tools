@@ -32,41 +32,40 @@ All tools in this suite provide native, machine-readable `SKILL.md` documents fo
 ## Design Philosophy
 
 - **Convention over Configuration**: 90% of use cases run with zero flags or options.
-- **Machine-Readable**: Every command supports `--json` for robust agent automation.
-- **Three-Tier Architecture**: Fast convention -> Fine control -> Raw unconstrained engine passthrough (`raw -- ...`).
+- **Machine-Readable**: Machine output is command-specific. Use `certkit check --json`, `dukit scan`, `gpgkit status --json`, `skillkit list --json` or `tokenkit list --json`.
+- **Three-Tier Architecture**: Start with task-oriented commands and use flags for finer control. `certkit raw -- ...` passes through to OpenSSL.
 - **Cross-Platform Parity**: macOS (Keychain), Linux (CA trust anchors / 0600 keyfiles), Windows 11 (`certutil.exe -user` / DPAPI).
 - **Zero Runtime Dependencies**: Compiled with GraalVM Native Image into single standalone binaries. No JVM or JRE required.
 
 ## Key Capabilities & CLI Usage
 
 ### certkit
-- `certkit gen [domain/ip...]`: Smart SAN IP/DNS deduction, signed by local CA with green-lock status.
-- `certkit ca`: Initialize local machine Root CA and install into OS trust store.
+- `certkit gen [domain/ip...]`: Smart SAN IP/DNS deduction, signed by the local CA when present. System trust depends on the CA installation.
+- `certkit ca`: Generate a local root CA. Add `--trust` to request installation into the OS trust store.
 - `certkit check [file|host:port]`: Local file inspection or remote TLS handshake probe (`--json` supported).
 - `certkit convert <file>`: Single-argument automatic bidirectional conversion (PEM <-> P12 <-> DER).
-- `certkit trust [ca|<cert>]`: System trust store injection (Windows 11 non-elevated certutil support).
-- `certkit raw <args...>`: Direct passthrough to host OpenSSL without escaping restrictions.
+- `certkit trust install [<cert>]`: System trust store injection (Windows 11 non-elevated certutil support).
+- `certkit raw -- <args...>`: Direct passthrough to host OpenSSL without escaping restrictions.
 - `certkit doctor`: OpenSSL availability, path sniffing, and environment health check.
 
 ### dukit
 - `dukit [path]`: Interactive full-screen terminal UI for exploring disk usage, sorting, viewing top files, and safe Trash deletion.
-- `dukit scan [path]`: Fast parallel disk scanning with summary and top directories.
-- `dukit export <path> --json`: Streaming, directories-only JSON hierarchy export for automation and scripts.
+- `dukit scan [path]`: Streaming, directories-only JSON tree. Use `--text` for a human-readable tree.
 - `dukit top [path] -n <count>`: Quick ranking of the largest space consumers.
-- `dukit clean [path]`: Safe interactive cleanup with Trash preservation (`~/.Trash`, freedesktop, or Windows Recycle Bin).
+- `dukit browse [path]`: Safe interactive cleanup with Trash preservation (`~/.Trash`, freedesktop, or Windows Recycle Bin).
 
 ### gpgkit
 - `gpgkit status`: Health inspect local keys, fingerprints, expiry, and keyserver presence.
-- `gpgkit gen "Name <email>"`: One-step key generation (default Ed25519 or rsa4096).
-- `gpgkit export <email>`: Export ASCII-armored public key for GitHub/GitLab.
+- `gpgkit gen --uid "Name <email>"`: Generate a GPG key. Defaults are RSA 4096, two years and no passphrase.
+- `gpg --armor --export <fingerprint>`: Export ASCII-armored public key for GitHub/GitLab.
 - `gpgkit sign <file>`: Sign file with detached ASCII-armored signature.
-- `gpgkit verify <file> <sig>`: Verify signature with structured status.
+- `gpgkit verify <file> --sig <sig>`: Verify signature with structured status.
 - `gpgkit backup`: Mandatory loopback-tested encrypted backup with metadata.
 - `gpgkit restore <file>`: Restore backup archive with auto trust restoration.
 - `gpgkit doctor`: System diagnostics and safety checklist (`--json` supported).
 
 ### skillkit
-- `skillkit install <names...>`: Install own skills or upstream repos globally across 10+ AI agents (`--repo <source>`, `--ref <ref>`, `--symlink`, `--jobs <n>`).
+- `skillkit install <names...>`: Install to the shared directory by default. Use `--agent <target>` to select destinations and `--repo <source>` for an external source.
 - `skillkit update [names...]`: Parallel virtual-thread update of installed skills (`--jobs 8`, `--dry-run`).
 - `skillkit uninstall <names...>`: Safely remove skills from all agent roots while preserving personal drafts and upstream records.
 - `skillkit list [--json]`: Inspect managed skills, installation modes (copy/symlink), and resolved commit revisions.
@@ -74,7 +73,7 @@ All tools in this suite provide native, machine-readable `SKILL.md` documents fo
 
 ### tokenkit
 - `tokenkit set <name> [val]`: Store or update an encrypted API token (args, stdin, or masked console).
-- `tokenkit get <name> [--clip]`: Retrieve decrypted token value or copy directly to OS clipboard.
+- `tokenkit get <name> [--clip]`: Retrieve plaintext or copy directly to the clipboard. Clipboard failure returns `1` with empty stdout.
 - `tokenkit list [--profile <p>]`: Masked tabular token overview (`sk-pr••••a8B3`) and `--json`.
 - `tokenkit env [--shell <sh>]`: Sub-10ms shell environment export (`zsh`, `pwsh`, `fish`).
 - `tokenkit run -- <cmd...>`: Run command with decrypted tokens injected into isolated child process.
@@ -82,7 +81,7 @@ All tools in this suite provide native, machine-readable `SKILL.md` documents fo
 - `tokenkit backup <create|list|restore>`: Local encrypted zero-lock database snapshots.
 - `tokenkit export [--all]`: Portable PBKDF2 + AES-GCM encrypted migration bundle (`.tkbundle`).
 - `tokenkit import <bundle> [--overwrite]`: Cross-platform import with default conflict skipping and colored report.
-- `tokenkit rm <name...>`: Delete one or more tokens (`-y` supported).
+- `tokenkit rm <name...>`: Delete after terminal confirmation. Automation uses `--yes --json` for explicit approval and per-token results.
 
 ## Frequently Asked Questions (FAQ) / 常见问答
 
@@ -93,7 +92,7 @@ A: No. All tools in the suite (gpgkit, certkit, tokenkit, skillkit) are compiled
 A: gpgkit is not an OpenPGP reimplementation, but an automated ergonomics and reliability layer built on top of RFC 4880. It provides declarative configuration, automated key rotation, non-interactive CI signing, and guaranteed behavioral parity across macOS, Linux, and Windows 11.
 
 ### Q3: What is skillkit and how does it manage AI agent skills?
-A: skillkit manages your personal skills repository as a single source of truth without Node.js or npm. It supports own drafts in `skills/` and third-party follows in `skillkit.json`, fanning out globally to 10+ agents (Claude Code, Codex, Cursor, Gemini CLI, OpenCode, Antigravity, etc.) in parallel using Java 25 virtual threads.
+A: skillkit manages your personal skills repository as a single source of truth without Node.js or npm. It supports own drafts in `skills/` and third-party follows in `skillkit.json`, installing to the shared directory by default and supporting selected agent directories.
 
 ### Q4: li-tools 需要预先安装 JVM、Node.js 或 Python 运行时吗？
 A: 不需要。gpgkit、certkit、tokenkit 与 skillkit 四个工具均通过 GraalVM Native Image 编译为原生可执行文件，发行物为单文件二进制，零运行时依赖。冷启动耗时低于 50 毫秒，可直接在无 JVM 环境的 CI 容器与 Alpine、Distroless 等精简镜像中运行。

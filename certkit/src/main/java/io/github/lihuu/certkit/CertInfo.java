@@ -1,5 +1,6 @@
 package io.github.lihuu.certkit;
 
+import io.github.lihuu.clicommon.json.JsonWriter;
 import org.jetbrains.annotations.NotNull;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -59,7 +60,11 @@ public record CertInfo(
     }
 
     public @NotNull String toJson() {
-        io.github.lihuu.clicommon.json.JsonWriter writer = new io.github.lihuu.clicommon.json.JsonWriter();
+        return jsonFields().endObject().toString();
+    }
+
+    @NotNull JsonWriter jsonFields() {
+        JsonWriter writer = new JsonWriter();
         writer.beginObject()
                 .name("subjectCn").value(subjectCn)
                 .name("sans").beginArray();
@@ -75,8 +80,7 @@ public record CertInfo(
                 .name("notAfter").value(ISO.format(notAfter))
                 .name("sha256Fingerprint").value(sha256Fingerprint)
                 .name("algorithm").value(sigAlgName)
-                .name("serialNumber").value(serialNumber)
-                .endObject();
-        return writer.toString();
+                .name("serialNumber").value(serialNumber);
+        return writer;
     }
 }

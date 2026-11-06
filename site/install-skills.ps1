@@ -99,6 +99,7 @@ Write-Host "🤖 Installing li-tools Agent Skills (gpgkit, certkit, tokenkit, sk
 
 $skills = @("gpgkit", "certkit", "tokenkit", "skillkit", "dukit")
 
+$failed = 0
 foreach ($dir in $uniqueDirs) {
     Write-Host "  → Target: $dir" -ForegroundColor DarkGray
     foreach ($skill in $skills) {
@@ -120,6 +121,7 @@ foreach ($dir in $uniqueDirs) {
             Copy-Item -Path $localSrc -Destination $destFile -Force
             Write-Host "    ✔ Installed $skill skill -> $destFile (local)" -ForegroundColor Green
         } else {
+            $tempFile = $null
             try {
                 $tempFile = [System.IO.Path]::GetTempFileName()
                 Invoke-RestMethod -Uri "$baseUrl/$skill/SKILL.md" -OutFile $tempFile
@@ -127,7 +129,6 @@ foreach ($dir in $uniqueDirs) {
                     $newHash = (Get-FileHash -Path $tempFile -Algorithm SHA256).Hash
                     $destHash = (Get-FileHash -Path $destFile -Algorithm SHA256).Hash
                     if ($newHash -eq $destHash) {
-                        Remove-Item -Path $tempFile -Force -ErrorAction SilentlyContinue
                         Write-Host "    ✔ $skill skill is already up to date -> $destFile (skipped)" -ForegroundColor DarkGray
                         continue
                     }
@@ -135,12 +136,21 @@ foreach ($dir in $uniqueDirs) {
                 Move-Item -Path $tempFile -Destination $destFile -Force
                 Write-Host "    ✔ Installed $skill skill -> $destFile" -ForegroundColor Green
             } catch {
-                Write-Warning "    ⚠ Failed to download $skill skill: $_"
+                $failed++
+                Write-Warning "    ⚠ Failed to install $skill skill in ${dir}: $_"
+            } finally {
+                if ($null -ne $tempFile) {
+                    Remove-Item -LiteralPath $tempFile -Force -ErrorAction SilentlyContinue
+                }
             }
         }
     }
 }
 
 Write-Host ""
+if ($failed -gt 0) {
+    [Console]::Error.WriteLine("Skill installation incomplete: $failed failure(s).")
+    exit 1
+}
 Write-Host "✅ All skills installed successfully!" -ForegroundColor Green
 Write-Host "AI coding agents will now automatically recognize and operate gpgkit, certkit, tokenkit, skillkit & dukit." -ForegroundColor Cyan

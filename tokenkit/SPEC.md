@@ -36,7 +36,7 @@
   - CLI 框架：`info.picocli:picocli` (配合 `picocli-codegen` 在编译期生成 Native 元数据)
   - 存储引擎：内嵌式 `org.xerial:sqlite-jdbc`（引擎全打包内嵌，目标机器**无需预装 SQLite**）
   - 密码学引擎：纯 JDK 25 原生 `javax.crypto` (AES-256-GCM)，无任何外部 C/OpenSSL 动态链接依赖。
-- **调用原则**：支持交互式友好终端展示，全量命令均支持 `--json`、静默模式与标准 Unix 管道流输入。
+- **调用原则**：支持终端交互和管道调用。JSON 选项由对应子命令提供，明文和透传命令有独立输出约定。
 
 ---
 
@@ -117,8 +117,7 @@ CREATE INDEX IF NOT EXISTS idx_tokens_tags ON tokens(tags);
 
 ### 全局选项 (Global Flags)
 - `--profile <name>`：指定操作的目标 Profile（缺省时为 `default`）。
-- `--json`：以 JSON 格式输出机器可读数据。
-- `--quiet` / `-q`：静默模式，仅输出关键结果或完全不输出信息文本。
+- `list --json` 和 `rm --json` 输出结构化数组。其余命令的格式见对应帮助。
 - `--help` / `-h`：输出帮助手册。
 - `--version` / `-V`：输出版本信息。
 
@@ -147,6 +146,7 @@ cat my_private.pem | tokenkit set SERVER_SSH_KEY
 # 4. 指定所属分组与元数据
 tokenkit set AWS_ACCESS_KEY_ID AKIAIOSFODNN7EXAMPLE --profile work --tag cloud,infra --desc "公司生产账号"
 ```
+- **管道输入**：读取 UTF-8 并保留输入中的换行。
 - **行为**：若同 Profile 下已存在同名 Token，执行原子覆盖更新，并刷新 `updated_at`；若不存在则插入新记录。
 
 #### 2) `tokenkit get <name>`
@@ -161,7 +161,7 @@ tokenkit get GITHUB_TOKEN --clip
 # 获取指定环境下的 Token
 tokenkit get GITHUB_TOKEN --profile work
 ```
-- **选项**：`--clip`（写入操作系统原生剪贴板，支持 macOS pbcopy、Windows clip、Linux xclip/wl-copy）。
+- **选项**：`--clip`（写入操作系统原生剪贴板，支持 macOS pbcopy、Windows clip、Linux xclip/wl-copy）。剪贴板失败时返回 `1`，stdout 为空。
 
 #### 3) `tokenkit env` (核心杀手级功能)
 导出当前 Profile 下所有 Token 为 Shell 环境变量定义：
@@ -199,15 +199,16 @@ tokenkit list --profile all         # 查看所有 Profile
 tokenkit list --tag work            # 按标签过滤
 ```
 - **输出格式**：表格形式输出 `PROFILE`, `NAME`, `KIND`, `MASKED_VALUE`, `TAGS`, `UPDATED_AT`。
-- **脱敏规则**：所有 Token 值默认自动打码（如 `sk-pr••••a8B3`），永远不在列表中展示完整明文。若指定 `--json` 则输出结构化元数据（密文值默认省略，除非显式指定 `--reveal`）。
+- **脱敏规则**：所有 Token 值默认自动打码（如 `sk-pr••••a8B3`），永远不在列表中展示完整明文。`list --json` 只输出元数据，空结果为 `[]`。
 
 #### 6) `tokenkit rm <name>`
 删除一个或多个 Token：
 ```bash
 tokenkit rm OPENAI_API_KEY
 tokenkit rm GITHUB_TOKEN --profile work
-tokenkit rm OPENAI_API_KEY GITHUB_TOKEN -y   # 免二次确认批量删除
+tokenkit rm OPENAI_API_KEY GITHUB_TOKEN --yes --json
 ```
+终端默认确认，非交互调用必须显式传入 `--yes`。JSON 逐项报告 `deleted` 或 `not_found`。所有项均删除时返回 `0`，任一项缺失时返回 `1`，已成功的删除保留。
 
 #### 7) `tokenkit profile <subcommand>`
 管理环境分组：

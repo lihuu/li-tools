@@ -91,7 +91,7 @@
             "name": "What is skillkit?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "skillkit is a zero-dependency CLI tool built with Java 25 and GraalVM Native Image to manage your personal AI agent skills collection. It installs own and upstream skills globally across all supported AI coding agents (Claude Code, Codex, Cursor, Gemini CLI, OpenCode, Antigravity, etc.) in parallel and publishes personal content to Git remotes without external skills/npm/npx commands."
+              "text": "skillkit is a zero-dependency CLI tool built with Java 25 and GraalVM Native Image to manage your personal AI agent skills collection. It installs own and upstream skills to a shared directory or explicitly selected agent directories and publishes personal content to Git remotes without external skills/npm/npx commands."
             }
           },
           {
@@ -107,7 +107,7 @@
             "name": "Which AI agents are supported by skillkit?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "A single install or update command fan-outs to 10 supported agent environments: Codex, Pi, ZCode, Claude Code, Qwen Code, Cursor, Gemini CLI, Hermes, OpenCode, and Antigravity. Shared target paths are automatically de-duplicated."
+              "text": "The install command defaults to the shared directory. Use --agent to select targets such as Codex, Pi, ZCode, Claude Code, Qwen Code, Cursor, Gemini CLI, Hermes, OpenCode, and Antigravity. Shared target paths are automatically de-duplicated."
             }
           },
           {
@@ -246,7 +246,7 @@
         </div>
         <div class="text-slate-400 mb-4 pl-4 border-l-2 border-indigo-500/30">
           <div>ℹ Resolved commit 7f3b89a from https://github.com/owner/community-skills</div>
-          <div class="text-emerald-400">✔ Recorded upstream metadata in skillkit.json and installed to all agents</div>
+          <div class="text-emerald-400">✔ Recorded upstream metadata in skillkit.json and installed to the shared directory</div>
         </div>
 
         <!-- Step 3: Parallel Update -->
@@ -276,8 +276,8 @@
     <!-- Supported Agents Grid -->
     <div id="agents" class="max-w-5xl mx-auto mb-24">
       <div class="text-center mb-10">
-        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">One Command, Global Fan-Out</h2>
-        <p class="text-slate-400 text-sm">No need to configure individual agent paths. skillkit automatically discovers and writes to all major agent directories with zero path collisions.</p>
+        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">Shared and Agent-Specific Targets</h2>
+        <p class="text-slate-400 text-sm">Install to the shared directory by default. Use --agent to choose additional destinations; shared paths are deduplicated.</p>
       </div>
 
       <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3.5">

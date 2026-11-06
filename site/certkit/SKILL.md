@@ -43,10 +43,12 @@ certkit doctor --json
 ```
 
 ### 2. Initialize Local Root CA
-Generate a self-signed root CA and automatically install it into the operating system trust store:
+Generate a local root CA:
 ```bash
 certkit ca
 ```
+
+If the CA already exists and needs to be trusted, run `certkit trust install` to install it. Use `certkit ca --trust` to create and install a fresh CA in one command when the trust change is intended.
 Optional custom name and validity:
 ```bash
 certkit ca --name "Acme Corp Dev CA" --days 3650
@@ -57,7 +59,9 @@ certkit ca --json
 ```
 
 ### 3. Generate TLS Certificates with SANs
-Generate ECDSA (default) or RSA certificate signed by the local CA:
+Choose one of the following generation examples per output directory. Use `--out` to keep successive certificates in separate directories.
+
+Generate an ECDSA certificate signed by the local CA if available:
 ```bash
 certkit gen localhost 127.0.0.1 app.dev.local
 ```
@@ -67,43 +71,44 @@ certkit gen --self-signed localhost 127.0.0.1
 ```
 Specify output directory, validity, and key type:
 ```bash
-certkit gen --out-dir ./certs --days 365 --key-type rsa4096 mydomain.local
+certkit gen --out ./certs --days 365 --algo rsa4096 mydomain.local
 ```
 Machine-readable JSON output:
 ```bash
 certkit gen --json localhost 127.0.0.1
 ```
 JSON returns:
-- `cert`: Path to public certificate (`localhost.crt`).
-- `key`: Path to private key (`localhost.key`, mode 0600).
+- `cert` and `key`: Absolute paths to `cert.pem` and `key.pem`.
 - `sans`: Array of SAN entries (e.g. `["DNS:localhost", "IP:127.0.0.1"]`).
-- `trusted`: Boolean indicating whether signed by trusted local root CA.
+- `fullchain`, `signedByCa` and `caCert`: Describe the generated chain and signer. Use `certkit trust check <ca.crt>` to inspect OS trust.
+
+Existing output files are preserved unless `--force` is explicit. `ca --json` reports `trustStatus` as `not_requested`, `installed`, or `failed`. If installation fails, the CA files are kept, exit status is `1`, and the same CA can be installed later with `certkit trust install`.
 
 ### 4. Check & Inspect Certificates
 Inspect local certificate file:
 ```bash
-certkit check localhost.crt
-certkit check --json localhost.crt
+certkit check cert.pem
+certkit check --json cert.pem
 ```
 Inspect remote server TLS certificate and handshake:
 ```bash
 certkit check google.com:443
 certkit check --json github.com:443
 ```
-Output includes Subject CN, Issuer CN, validity window, remaining days, SANs, key algorithm, and system trust status.
+Output includes Subject CN, Issuer CN, validity window, remaining days, SANs, and signature algorithm.
 
 ### 5. Format Conversion
 Convert PEM pair to PKCS#12 (`.p12` / `.pfx`) for Tomcat, Spring Boot, or Windows IIS:
 ```bash
-certkit convert cert.pem --key key.pem --to p12 --out bundle.p12 --password changeit
+certkit convert cert.pem bundle.p12 --key key.pem
 ```
 Extract PEM from PKCS#12 bundle:
 ```bash
-certkit convert bundle.p12 --to pem --out cert.pem --password changeit
+certkit convert bundle.p12 restored.pem
 ```
 Convert PEM to binary DER:
 ```bash
-certkit convert cert.pem --to der --out cert.der
+certkit convert cert.pem cert.der
 ```
 
 ### 6. Trust Store Management
@@ -120,18 +125,14 @@ certkit trust uninstall ca.crt
 ### 7. Escape Hatch (Raw OpenSSL pass-through)
 Pass commands directly to underlying OpenSSL:
 ```bash
-certkit raw -- x509 -in localhost.crt -noout -text
+certkit raw -- x509 -in cert.pem -noout -text
 ```
 
 ---
 
 ## Agent Usage Best Practices
 
-1. **Automation & Non-Interactive Execution**: Always pass `--json` to parse certificate metadata and output file paths cleanly in code.
-2. **Standard Exit Codes**:
-   - `0`: Success
-   - `1`: User error (certificate expired, invalid SAN format, file not found)
-   - `2`: System error (OpenSSL missing, insufficient trust store permissions)
-3. **Headless & CI Execution**:
-   - On Windows, `certkit ca` automatically detects headless sessions and falls back cleanly to the LocalMachine Root store if running with administrative rights, avoiding UI dialog hangs.
-   - On Linux, `certkit trust install` safely checks for sudo/root permissions and prints the exact non-elevated command advice if privileges are needed.
+1. Use `--json` with `gen`, `ca`, `check`, or `doctor`. It can appear before or after the subcommand.
+2. Exit status is `0` for success, `1` for an operation failure and `2` for invalid CLI usage.
+3. Use `ca` for generation only in CI. Request OS trust separately when needed. The platform may require permissions or interactive authorization.
+4. `raw -- ...` returns OpenSSL's output and exit status.

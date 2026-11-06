@@ -32,19 +32,21 @@ Configuring HTTPS for local development, microservices, or staging environments 
 certkit gen
 
 # Support multiple domains and private IPs via positional arguments (auto-sniffs IP vs DNS)
-certkit gen dev.local api.test 127.0.0.1 192.168.1.100
+certkit gen --out ./app-certs dev.local api.test 127.0.0.1 192.168.1.100
 ```
 
 ### 2. Want green-lock trust in your browser?
 ```bash
 # 1. Initialize your machine's trusted local Root CA (stored under ~/.certkit/ca/ and injected into system trust)
-certkit ca
+certkit ca --trust
 
 # 2. Any subsequent 'gen' command is automatically signed by your local Root CA!
-certkit gen myapp.local
+certkit gen --out ./trusted-certs myapp.local
 # ➜ Produces cert.pem, key.pem, and fullchain.pem
 # ➜ Open Chrome / Edge / Safari and enjoy instant HTTPS green-lock status!
 ```
+
+Without `--trust`, `ca` creates files only. `gen` and `ca` preserve existing files unless you pass `--force`. Use `certkit trust install` to retry trust installation with the existing CA.
 
 ### 3. Inspect certificates (No more multi-hundred-line ASN.1 dumps)
 ```bash
@@ -67,7 +69,7 @@ certkit convert cert.pem
 certkit convert cert.pem --all
 
 # Unpack PKCS#12 bundle back to text PEM certificates and keys
-certkit convert bundle.p12
+certkit convert cert.p12 restored.pem
 ```
 
 ### 5. Triple-platform system trust management

@@ -1,7 +1,7 @@
 package io.github.lihuu.tokenkit.cli;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.Console;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -100,28 +100,18 @@ public final class SetCommand implements Callable<Integer> {
         }
     }
 
-    private @Nullable String resolveTokenValue() throws Exception {
+    private @Nullable String resolveTokenValue() throws IOException {
         if (value != null) {
             return value;
         }
-        if (System.console() != null) {
-            char[] passwordChars = System.console().readPassword("Enter token value for '%s': ", name);
+        Console console = System.console();
+        if (console != null && console.isTerminal()) {
+            char[] passwordChars = console.readPassword("Enter token value for '%s': ", name);
             if (passwordChars != null) {
                 return new String(passwordChars);
             }
             return null;
         }
-        // Read from standard in (pipe)
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8))) {
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (!sb.isEmpty()) {
-                    sb.append("\n");
-                }
-                sb.append(line);
-            }
-            return sb.toString();
-        }
+        return new String(System.in.readAllBytes(), StandardCharsets.UTF_8);
     }
 }

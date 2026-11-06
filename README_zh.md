@@ -88,15 +88,15 @@ li-tools/
 
 ## 🧩 统一 CLI 交互底座 (`cli-common`)
 
-`li-tools` 矩阵内的所有命令行工具均基于共享的 `cli-common` 底座构建，保证全套件具备严密一致的终端交互、退出码契约与开发体验：
+`cli-common` 提供共享 CLI 组件。各命令支持的参数和输出以 `--help` 和对应规格为准。
 
-- **统一命令行运行壳子 (`CliRunner`, `GlobalOptionsMixin`)**：标准化基于 Picocli 的启动与分发引擎，全局注入标准化选项（`--json`, `--quiet`, `--no-color`, `--debug`），严密恪守退出码规范（`0 = 成功`, `1 = 业务失败/异常`, `2 = CLI 语法/参数错误`），并统一固化终端 UTF-8 编码防乱码。
+- **统一命令行运行壳子 (`CliRunner`, `GlobalOptionsMixin`)**：提供可复用的 Picocli 运行、参数和 UTF-8 组件。通常 `0` 表示成功，`1` 表示执行失败，`2` 表示用法错误。透传命令可以返回子进程的退出码。
 - **终端视觉与语义着色 (`OutputStyle`)**：自动判定交互式 TTY 与管道重定向，完美遵循 [NO_COLOR](https://no-color.org/) 行业规范，输出一致的语义图标（`✔`, `⚠`, `✖`, `ℹ`, `💡`）。
 - **零反射极速流式 JSON (`JsonWriter`)**：原生支持 GraalVM Native Image，无需任何额外反射配置，以纯流式方式序列化输出结构化数据。
 - **终端排版工具套件**：冒号自动对齐的键值排版器 (`KeyValueFormatter`)、ANSI 安全且支持 Unicode 边框的表格格式化器 (`TableFormatter`)、密钥智能脱敏掩码 (`TextMasker`)。
 - **跨平台操作系统交互桥**：各平台原生剪贴板无缝写入 (`ClipboardUtil`)、POSIX / PowerShell / Fish 安全环境变量转义 (`ShellFormatter`) 与操作系统智能嗅探 (`Platform`)。
 
-后续在 `li-tools` 中新增任何新 CLI 工具时，只需直接依赖 `cli-common`，即可零成本直接复用该标准壳子与完整交互体验，开发者只需专注于该工具的核心业务逻辑实现。
+JSON 由各子命令声明。常用入口包括 `certkit check --json`、`dukit scan`、`gpgkit status --json`、`skillkit list --json` 和 `tokenkit list --json`。
 
 
 ## 🚀 极速安装方式

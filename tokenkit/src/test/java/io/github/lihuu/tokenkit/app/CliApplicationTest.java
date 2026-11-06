@@ -58,6 +58,50 @@ class CliApplicationTest {
     }
 
     @Test
+    void refusesUnconfirmedDeletionWithoutATerminal() {
+        assertEquals(0, execute(new StringWriter(), new StringWriter(), "set", "KEEP", "fixture"));
+
+        StringWriter err = new StringWriter();
+        assertEquals(2, execute(new StringWriter(), err, "rm", "KEEP"));
+        assertTrue(err.toString().contains("--yes"), err.toString());
+        assertEquals(0, execute(new StringWriter(), new StringWriter(), "get", "KEEP"));
+    }
+
+    @Test
+    void emptyJsonListRemainsAnArray() {
+        StringWriter out = new StringWriter();
+        assertEquals(0, execute(out, new StringWriter(), "list", "--json"));
+        assertEquals("[]", out.toString().strip());
+    }
+
+    @Test
+    void reportsEachRemovalAndFailsIfAnyRequestedTokenIsMissing() {
+        assertEquals(0, execute(new StringWriter(), new StringWriter(), "set", "EXISTS", "fixture"));
+
+        StringWriter out = new StringWriter();
+        assertEquals(1, execute(out, new StringWriter(), "rm", "--yes", "--json", "EXISTS", "MISSING"));
+        assertTrue(out.toString().contains("\"status\": \"deleted\""), out.toString());
+        assertTrue(out.toString().contains("\"status\": \"not_found\""), out.toString());
+        assertEquals(1, execute(new StringWriter(), new StringWriter(), "get", "EXISTS"));
+    }
+
+    @Test
+    void pipedMultilineValuesRoundTripWithTheirLineEndings() {
+        String value = "\r\nfirst\r\nsecond\n";
+        java.io.InputStream original = System.in;
+        try {
+            System.setIn(new java.io.ByteArrayInputStream(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+            assertEquals(0, execute(new StringWriter(), new StringWriter(), "set", "MULTILINE"));
+        } finally {
+            System.setIn(original);
+        }
+
+        StringWriter out = new StringWriter();
+        assertEquals(0, execute(out, new StringWriter(), "get", "MULTILINE"));
+        assertEquals(value, out.toString());
+    }
+
+    @Test
     void shouldPerformCompleteWorkflowViaCliApplication() {
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();

@@ -5,12 +5,12 @@ description: Use when managing, publishing, or distributing AI agent skills acro
 
 # skillkit: AI Agent Skill Guide
 
-`skillkit` is a modern, high-performance CLI tool for managing a personal skills collection as a distribution source. It installs own or external skills globally across all supported AI coding agents, updates them in parallel using Java 25 virtual threads, and publishes personal content plus upstream metadata to a Git remote without external `skills`, `npm`, or `npx` dependencies.
+`skillkit` is a modern, high-performance CLI tool for managing a personal skills collection as a distribution source. It installs own or external skills to the shared directory or selected agent directories, updates them in parallel using Java 25 virtual threads, and publishes personal content plus upstream metadata to a Git remote without external `skills`, `npm`, or `npx` dependencies.
 
 ## Trigger Conditions
 
 Use this skill whenever the user or task requires:
-1. Installing an AI agent skill across all supported agents on the host in a single command.
+1. Installing a skill into the shared directory or selected Agent directories.
 2. Managing a personal skills repository (local authoring in `skills/` and upstream Git tracking in `skillkit.json`).
 3. Updating installed skills in parallel with bounded virtual threads (`skillkit update --jobs 8`).
 4. Publishing a personal skills collection to a remote Git repository (`skillkit push`) with scoped commits.
@@ -40,7 +40,7 @@ scoop install skillkit
 
 ### 1. Install Skills (`install`)
 
-Installs one or more skills globally across all supported agent directories simultaneously.
+Installs one or more skills into the shared `~/.agents/skills` directory by default. Select dedicated directories with `--agent` when needed.
 
 ```bash
 # Install own skill: automatically discovered from personal repo's skills/ directory
@@ -60,10 +60,13 @@ skillkit install skill-a skill-b skill-c --jobs 8
 
 # Install as symlinks instead of copying content
 skillkit install my-skill --symlink
+skillkit install my-skill --agent shared,claude-code
 
 # Dry-run preview
-skillkit install my-skill --dry-run
+skillkit install my-skill --dry-run --json
 ```
+
+Dry-run uses no writes or fetches. `planned` means local checks passed. `unverified` means the source requires a Git fetch. Known conflicts are `failed` and cause exit status `1`.
 
 ### 2. Update Skills (`update`)
 
@@ -76,7 +79,7 @@ skillkit update
 # Update specific skills with increased concurrency
 skillkit update example-skill my-skill --jobs 8
 
-# Preview pending updates
+# Check local targets and identify sources that require fetching
 skillkit update --dry-run
 ```
 
@@ -150,7 +153,7 @@ skillkit push --dry-run
 
 ## Supported AI Agent Targets
 
-A single `install` command distributes skills to all of the following agent directories:
+Select one or more of the following targets using `--agent`. Install defaults to `shared`. List, update and uninstall without a target inspect existing managed installations across supported roots.
 
 | Agent | Target Directory |
 | :--- | :--- |

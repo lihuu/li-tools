@@ -24,14 +24,14 @@
 ## 2. 核心约定（Convention over Configuration）
 
 1. **默认 CA 存放目录**：`~/.certkit/ca/`（含 `ca.crt` 与 `ca.key`）。环境变量 `CERTKIT_CA_DIR` 可覆盖。
-2. **默认信任联动**：运行 `certkit ca` 默认自动尝试将 CA 注入系统钥匙串受信任（可用 `--no-trust` 跳过）。
-3. **默认签发联动**：运行 `certkit gen` 时，若检测到 `~/.certkit/ca/` 存在，**默认自动使用该 CA 签发**（产物直接受信任全绿！）；否则退回单机自签并温馨提示。
+2. **信任变更**：`certkit ca` 默认只生成文件。显式传入 `--trust` 才安装到系统信任库，`--no-trust` 保留为仅生成的写法。
+3. **默认签发联动**：运行 `certkit gen` 时，若检测到 `~/.certkit/ca/` 存在，**默认自动使用该 CA 签发**（系统信任取决于该 CA 是否已安装）；否则退回单机自签并温馨提示。
 4. **智能参数嗅探**：`certkit gen [hosts...]` 接收纯位置参数，自动识别 IPv4/IPv6 与域名，无需分别指定 `-d` 或 `--ip`。不传时默认 `localhost` + `127.0.0.1`。
 5. **默认就地落盘**：默认在当前目录直接生成 `cert.pem` 与 `key.pem`（若 CA 签发则同时产出 `fullchain.pem`）。
 
 ## 3. 命令面
 
-全局参数：`--json`（机器可读输出）、`--quiet`、`--help`。
+`gen`、`ca`、`check`、`doctor` 支持 `--json`，可放在子命令前后。输出模式不改变操作。用 `<子命令> --help` 查看各命令选项。
 **退出码**：`0` 成功；`1` 业务失败；`2` 用法错误。
 
 ### 1) `certkit gen [hosts...]`
@@ -42,14 +42,16 @@ certkit gen dev.local api.test 192.168.1.100  # 自动识别域名与 IP，默�
 certkit gen --self-signed                      # 强制单机自签名，不用本地 CA
 certkit gen --out ./certs                      # 指定输出目录
 ```
+默认拒绝覆盖。显式传入 `--force` 可替换已有输出。`--json` 额外提供 `cert`、`key`、`fullchain`、`signedByCa` 和 `caCert`。
 
 ### 2) `certkit ca`
-一键初始化本地 Root CA 并自动信任：
+生成本地 Root CA，可按需安装信任。
 ```bash
-certkit ca                                     # 默认写入 ~/.certkit/ca/ 并自动加入系统受信任库
-certkit ca --no-trust                          # 生成 CA 但不自动调用系统信任
+certkit ca                                     # 默认仅写入 ~/.certkit/ca/
+certkit ca --trust                             # 生成后安装到系统信任库
 certkit ca --out DIR                           # 自定义生成目录
 ```
+默认拒绝覆盖已有 CA 文件，`--force` 可替换。`--json` 报告产物路径和 `trustStatus`（`not_requested`、`installed` 或 `failed`）。如果信任安装失败，保留 CA 文件并返回 `1`，之后可单独运行 `certkit trust install`。
 
 ### 3) `certkit check [target]`
 检查证书文件或远程服务状态：
