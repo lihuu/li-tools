@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>li-tools — 零依赖开发者 CLI 套件与跨平台工具箱</title>
   <meta name="description" content="基于 Java 25 与 GraalVM Native Image 构建的零依赖开发者 CLI 工具箱，发行物为单文件原生二进制，在 macOS、Linux 与 Windows 11 上提供一致的开箱即用体验。">
-  <meta name="keywords" content="开发者工具, CLI工具, certkit, gpgkit, tokenkit, skillkit, dukit, Java 25, GraalVM原生镜像, 跨平台, 约定大于配置">
+  <meta name="keywords" content="开发者工具, CLI工具, certkit, dukit, gpgkit, skillkit, tokenkit, Java 25, GraalVM原生镜像, 跨平台, 约定大于配置">
   <meta name="author" content="lihuu">
   <link rel="canonical" href="https://tools.lihu.me/index_zh.html">
   <link rel="alternate" hreflang="en" href="https://tools.lihu.me/">
@@ -28,7 +28,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="li-tools — 现代化极简开发者命令行安全工具箱">
-  <meta name="twitter:description" content="基于 Java 25 与 GraalVM Native Image 构建的现代开发者 CLI 工具矩阵。包含 gpgkit、certkit 与 tokenkit。">
+  <meta name="twitter:description" content="基于 Java 25 与 GraalVM Native Image 构建的零依赖现代开发者 CLI 工具箱，包含 certkit、dukit、gpgkit、skillkit 与 tokenkit。">
   <meta name="twitter:image" content="https://tools.lihu.me/assets/og-image.svg">
 
   <!-- Schema.org JSON-LD (GEO 优化) -->
@@ -66,18 +66,18 @@
           "零运行时依赖，单文件原生机器码二进制",
           "冷启动低于 50 毫秒",
           "macOS、Linux、Windows 11 命令级全平台平权",
-          "基于 gpgkit 的 OpenPGP (RFC 4880) 密钥管理",
           "基于 certkit 的 X.509 证书自建 CA 与轮换",
-          "基于 tokenkit 的 JWT (RFC 7519) 令牌签名与内存注入",
+          "基于 dukit 的磁盘占用分析与 JSON 导出",
+          "基于 gpgkit 的 OpenPGP (RFC 4880) 密钥管理",
           "基于 skillkit 的 AI Agent SKILL.md 技能管理与 10+ 客户端分发",
-          "dukit 磁盘占用分析与 JSON 导出"
+          "基于 tokenkit 的 JWT (RFC 7519) 令牌签名与内存注入"
         ],
         "hasPart": [
-          { "@type": "SoftwareApplication", "name": "gpgkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/gpgkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
           { "@type": "SoftwareApplication", "name": "certkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/certkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
-          { "@type": "SoftwareApplication", "name": "tokenkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/tokenkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
+          { "@type": "SoftwareApplication", "name": "dukit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/dukit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
+          { "@type": "SoftwareApplication", "name": "gpgkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/gpgkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
           { "@type": "SoftwareApplication", "name": "skillkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/skillkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
-          { "@type": "SoftwareApplication", "name": "dukit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/dukit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } }
+          { "@type": "SoftwareApplication", "name": "tokenkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/tokenkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } }
         ]
       },
       {
@@ -218,33 +218,6 @@
     <!-- The Tools Suite Grid -->
     <div id="suite" class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-24">
       
-      <!-- GPGKIT Card -->
-      <a href="gpgkit/index_zh.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-indigo-500/20 hover:border-indigo-500/50 block">
-        <div class="absolute -right-12 -top-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-indigo-500/20 transition-all"></div>
-        <div class="flex items-center justify-between mb-6">
-          <div class="flex items-center gap-3">
-            <span class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl font-bold shadow-inner">🔑</span>
-            <div>
-              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-indigo-300 transition">gpgkit</h2>
-              <span class="text-xs font-mono text-indigo-400">GPG 密钥全生命周期管理</span>
-            </div>
-          </div>
-          <span class="text-slate-500 group-hover:text-indigo-400 transition transform group-hover:translate-x-1">→</span>
-        </div>
-        <p class="text-slate-400 text-sm leading-relaxed mb-6">
-          让“换一台机器就丢 GPG 密钥”彻底成为历史。带闭环回环校验的导出还原、自动续期、安全体检，收进一个直觉命令。
-        </p>
-        <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-indigo-300 border border-indigo-950/60 mb-5 flex items-center justify-between">
-          <span>$ gpgkit backup</span>
-          <span class="text-emerald-400 text-[10px] font-semibold">✔ 强制回环验证通过</span>
-        </div>
-        <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">零外部依赖</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">沙盒回环验证</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">一键续期</span>
-        </div>
-      </a>
-
       <!-- CERTKIT Card -->
       <a href="certkit/index_zh.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-emerald-500/20 hover:border-emerald-500/50 block">
         <div class="absolute -right-12 -top-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-500/20 transition-all"></div>
@@ -272,30 +245,58 @@
         </div>
       </a>
 
-      <!-- TOKENKIT Card -->
-      <a href="tokenkit/index_zh.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-amber-500/20 hover:border-amber-500/50 block">
+      <!-- DUKIT Card -->
+      <a href="dukit/index_zh.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-amber-500/20 hover:border-amber-500/50 block">
         <div class="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-500/20 transition-all"></div>
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center gap-3">
-            <span class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-2xl font-bold shadow-inner">🪙</span>
+            <span class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-2xl font-bold shadow-inner">💾</span>
             <div>
-              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-amber-300 transition">tokenkit</h2>
-              <span class="text-xs font-mono text-amber-400">零心智负担 Token 保险箱</span>
+              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-amber-300 transition">dukit</h2>
+              <span class="text-xs font-mono text-amber-400">磁盘占用分析器</span>
             </div>
           </div>
           <span class="text-slate-500 group-hover:text-amber-400 transition transform group-hover:translate-x-1">→</span>
         </div>
         <p class="text-slate-400 text-sm leading-relaxed mb-6">
-          告别明文 .env 泄漏与硬编码密钥。AES-256-GCM 加密内嵌 SQLite 保险箱，sub-10ms 极速注入当前 Shell 进程内存，跨平台 Profile 隔离。
+          找出磁盘空间去哪了。类 ncdu 的极速目录扫描，全屏交互 TUI 浏览，安全移入系统回收站与流式 JSON 树导出——macOS、Linux、Windows 保持一致行为。
         </p>
         <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-amber-300 border border-amber-950/60 mb-5 flex items-center justify-between">
-          <span>$ eval $(tokenkit env)</span>
-          <span class="text-emerald-400 text-[10px] font-semibold">✔ 零磁盘泄露</span>
+          <span>$ dukit scan ~/Projects</span>
+          <span class="text-emerald-400 text-[10px] font-semibold">✔ 默认精简 JSON 树</span>
         </div>
         <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">AES-256-GCM</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">&lt;10ms 注入</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">内嵌 SQLite</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">类 ncdu 极速</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">全屏 TUI 交互</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">真实磁盘占用</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">安全回收站</span>
+        </div>
+      </a>
+
+      <!-- GPGKIT Card -->
+      <a href="gpgkit/index_zh.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-indigo-500/20 hover:border-indigo-500/50 block">
+        <div class="absolute -right-12 -top-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-indigo-500/20 transition-all"></div>
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <span class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl font-bold shadow-inner">🔑</span>
+            <div>
+              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-indigo-300 transition">gpgkit</h2>
+              <span class="text-xs font-mono text-indigo-400">GPG 密钥全生命周期管理</span>
+            </div>
+          </div>
+          <span class="text-slate-500 group-hover:text-indigo-400 transition transform group-hover:translate-x-1">→</span>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed mb-6">
+          让“换一台机器就丢 GPG 密钥”彻底成为历史。带闭环回环校验的导出还原、自动续期、安全体检，收进一个直觉命令。
+        </p>
+        <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-indigo-300 border border-indigo-950/60 mb-5 flex items-center justify-between">
+          <span>$ gpgkit backup</span>
+          <span class="text-emerald-400 text-[10px] font-semibold">✔ 强制回环验证通过</span>
+        </div>
+        <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">零外部依赖</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">沙盒回环验证</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">一键续期</span>
         </div>
       </a>
 
@@ -326,31 +327,30 @@
         </div>
       </a>
 
-      <!-- DUKIT Card -->
-      <a href="dukit/index_zh.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-amber-500/20 hover:border-amber-500/50 block">
+      <!-- TOKENKIT Card -->
+      <a href="tokenkit/index_zh.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-amber-500/20 hover:border-amber-500/50 block">
         <div class="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-500/20 transition-all"></div>
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center gap-3">
-            <span class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-2xl font-bold shadow-inner">💾</span>
+            <span class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-2xl font-bold shadow-inner">🪙</span>
             <div>
-              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-amber-300 transition">dukit</h2>
-              <span class="text-xs font-mono text-amber-400">磁盘占用分析器</span>
+              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-amber-300 transition">tokenkit</h2>
+              <span class="text-xs font-mono text-amber-400">零心智负担 Token 保险箱</span>
             </div>
           </div>
           <span class="text-slate-500 group-hover:text-amber-400 transition transform group-hover:translate-x-1">→</span>
         </div>
         <p class="text-slate-400 text-sm leading-relaxed mb-6">
-          找出磁盘空间去哪了。类 ncdu 的极速目录扫描，全屏交互 TUI 浏览，安全移入系统回收站与流式 JSON 树导出——macOS、Linux、Windows 保持一致行为。
+          告别明文 .env 泄漏与硬编码密钥。AES-256-GCM 加密内嵌 SQLite 保险箱，sub-10ms 极速注入当前 Shell 进程内存，跨平台 Profile 隔离。
         </p>
         <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-amber-300 border border-amber-950/60 mb-5 flex items-center justify-between">
-          <span>$ dukit scan ~/Projects</span>
-          <span class="text-emerald-400 text-[10px] font-semibold">✔ 默认精简 JSON 树</span>
+          <span>$ eval $(tokenkit env)</span>
+          <span class="text-emerald-400 text-[10px] font-semibold">✔ 零磁盘泄露</span>
         </div>
         <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">类 ncdu 极速</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">全屏 TUI 交互</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">真实磁盘占用</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">安全回收站</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">AES-256-GCM</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">&lt;10ms 注入</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">内嵌 SQLite</span>
         </div>
       </a>
     </div>
@@ -459,13 +459,6 @@
             </thead>
             <tbody class="divide-y divide-slate-800/60">
               <tr>
-                <td class="py-2.5 px-3 font-bold text-indigo-400">gpgkit</td>
-                <td class="py-2.5 px-3">OpenPGP (RFC 4880)</td>
-                <td class="py-2.5 px-3">Apple Keychain / CLI</td>
-                <td class="py-2.5 px-3">0600 GNUPGHOME / Agent</td>
-                <td class="py-2.5 px-3">GnuPG Win32 / Git GPG</td>
-              </tr>
-              <tr>
                 <td class="py-2.5 px-3 font-bold text-emerald-400">certkit</td>
                 <td class="py-2.5 px-3">X.509 PKIX (RFC 5280)</td>
                 <td class="py-2.5 px-3">System Keychain trust</td>
@@ -473,11 +466,18 @@
                 <td class="py-2.5 px-3">certutil -user (免提权)</td>
               </tr>
               <tr>
-                <td class="py-2.5 px-3 font-bold text-amber-400">tokenkit</td>
-                <td class="py-2.5 px-3">JWT (RFC 7519) + AES-GCM</td>
-                <td class="py-2.5 px-3">内嵌 SQLite + PBKDF2</td>
-                <td class="py-2.5 px-3">内嵌 SQLite + PBKDF2</td>
-                <td class="py-2.5 px-3">内嵌 SQLite + DPAPI</td>
+                <td class="py-2.5 px-3 font-bold text-amber-400">dukit</td>
+                <td class="py-2.5 px-3">真实磁盘占用 (st_blocks)</td>
+                <td class="py-2.5 px-3">FFM 原生 stat + ~/.Trash</td>
+                <td class="py-2.5 px-3">FFM 原生 stat + freedesktop</td>
+                <td class="py-2.5 px-3">JLine FFM TUI + 回收站</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-indigo-400">gpgkit</td>
+                <td class="py-2.5 px-3">OpenPGP (RFC 4880)</td>
+                <td class="py-2.5 px-3">Apple Keychain / CLI</td>
+                <td class="py-2.5 px-3">0600 GNUPGHOME / Agent</td>
+                <td class="py-2.5 px-3">GnuPG Win32 / Git GPG</td>
               </tr>
               <tr>
                 <td class="py-2.5 px-3 font-bold text-cyan-400">skillkit</td>
@@ -487,11 +487,11 @@
                 <td class="py-2.5 px-3">10+ Agents (%USERPROFILE%)</td>
               </tr>
               <tr>
-                <td class="py-2.5 px-3 font-bold text-amber-400">dukit</td>
-                <td class="py-2.5 px-3">真实磁盘占用 (st_blocks)</td>
-                <td class="py-2.5 px-3">FFM 原生 stat + ~/.Trash</td>
-                <td class="py-2.5 px-3">FFM 原生 stat + freedesktop</td>
-                <td class="py-2.5 px-3">JLine FFM TUI + 回收站</td>
+                <td class="py-2.5 px-3 font-bold text-amber-400">tokenkit</td>
+                <td class="py-2.5 px-3">JWT (RFC 7519) + AES-GCM</td>
+                <td class="py-2.5 px-3">内嵌 SQLite + PBKDF2</td>
+                <td class="py-2.5 px-3">内嵌 SQLite + PBKDF2</td>
+                <td class="py-2.5 px-3">内嵌 SQLite + DPAPI</td>
               </tr>
             </tbody>
           </table>
@@ -541,21 +541,27 @@
           </p>
         </div>
         <div class="glass-card p-6 rounded-xl">
+          <h4 class="font-bold text-white mb-2">dukit 为什么比传统的 du / find 磁盘扫描快且更准？</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            dukit 底层利用 Java 25 Foreign Function &amp; Memory (FFM) API 直接调用操作系统原生块读取接口（POSIX <code class="text-amber-400">st_blocks</code>），自动去重硬链接，结合 <code class="text-amber-400">ForkJoinPool</code> 并行遍历，毫秒级流式输出且零反射开销。
+          </p>
+        </div>
+        <div class="glass-card p-6 rounded-xl">
           <h4 class="font-bold text-white mb-2">gpgkit 如何确保备份 100% 能还原成功？</h4>
           <p class="text-sm text-slate-400 leading-relaxed">
             gpgkit 在每次执行备份时，都会在独立的临时沙盒 Keyring 中当场还原解密，并用还原出来的私钥完成一次真实的签名与校验闭环。一旦检验未通过，备份当场终止且绝不落盘半成品。
           </p>
         </div>
         <div class="glass-card p-6 rounded-xl">
-          <h4 class="font-bold text-white mb-2">tokenkit 如何保障 API 密钥不发生代码仓库泄漏？</h4>
-          <p class="text-sm text-slate-400 leading-relaxed">
-            tokenkit 摒弃了在项目内散落明文 <code class="text-amber-400">.env</code> 文件的传统做法。所有密钥集中密文保存在全局 <code class="text-amber-400">~/.tokenkit/tokens.db</code>（AES-256-GCM 加密），通过 <code class="text-amber-400">eval $(tokenkit env)</code> 在 10ms 内直接注入当前终端进程内存，磁盘零落地，Git 零污染。
-          </p>
-        </div>
-        <div class="glass-card p-6 rounded-xl">
           <h4 class="font-bold text-white mb-2">skillkit 如何简化多个 AI Coding Agent 的技能管理？</h4>
           <p class="text-sm text-slate-400 leading-relaxed">
             无需手工编写软链脚本或依赖笨重的 Node.js/npm 生态。<code class="text-cyan-400">skillkit</code> 通过 Java 25 虚拟线程高并发，一条命令将个人原创与第三方 Git 仓库自动广播分发至 10+ 主流 AI Coding Agent（Claude Code、Codex、Cursor、Gemini CLI、OpenCode、Antigravity 等），并提供严格的作用域自动提交与远端推送。
+          </p>
+        </div>
+        <div class="glass-card p-6 rounded-xl">
+          <h4 class="font-bold text-white mb-2">tokenkit 如何保障 API 密钥不发生代码仓库泄漏？</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            tokenkit 摒弃了在项目内散落明文 <code class="text-amber-400">.env</code> 文件的传统做法。所有密钥集中密文保存在全局 <code class="text-amber-400">~/.tokenkit/tokens.db</code>（AES-256-GCM 加密），通过 <code class="text-amber-400">eval $(tokenkit env)</code> 在 10ms 内直接注入当前终端进程内存，磁盘零落地，Git 零污染。
           </p>
         </div>
       </div>
@@ -571,10 +577,11 @@
       </div>
       <div>Crafted for high developer velocity • <a href="https://github.com/lihuu/li-tools/blob/main/LICENSE" target="_blank" rel="noopener" class="underline hover:text-slate-300 transition">Apache-2.0 开源协议</a> • <a href="https://github.com/lihuu/li-tools/releases/tag/v0.4.0" target="_blank" rel="noopener" class="font-bold text-slate-400 hover:text-white transition">v0.4.0</a></div>
       <div class="flex items-center gap-4">
-        <a href="gpgkit/index_zh.html" class="hover:text-indigo-400 transition">gpgkit</a>
         <a href="certkit/index_zh.html" class="hover:text-emerald-400 transition">certkit</a>
-        <a href="tokenkit/index_zh.html" class="hover:text-amber-400 transition">tokenkit</a>
+        <a href="dukit/index_zh.html" class="hover:text-amber-400 transition">dukit</a>
+        <a href="gpgkit/index_zh.html" class="hover:text-indigo-400 transition">gpgkit</a>
         <a href="skillkit/index_zh.html" class="hover:text-cyan-400 transition">skillkit</a>
+        <a href="tokenkit/index_zh.html" class="hover:text-amber-400 transition">tokenkit</a>
         <a href="SKILL.md" class="hover:text-emerald-400 transition">🤖 SKILL.md</a>
         <a href="llms.txt" class="hover:text-indigo-400 transition">llms.txt</a>
         <a href="index.html" class="hover:text-white transition">English</a>
@@ -587,11 +594,11 @@
     const commands = {
       shell: 'curl -fsSL https://tools.lihu.me/install.sh | bash',
       ps1: 'irm https://tools.lihu.me/install.ps1 | iex',
-      agent: '请帮我安装 li-tools 套件 (gpgkit, certkit, tokenkit & skillkit): https://tools.lihu.me/ 并查阅 https://tools.lihu.me/SKILL.md 执行初始化。',
+      agent: '请帮我安装 li-tools 套件 (certkit, dukit, gpgkit, skillkit & tokenkit): https://tools.lihu.me/ 并查阅 https://tools.lihu.me/SKILL.md 执行初始化。',
       skills: 'curl -fsSL https://tools.lihu.me/install-skills.sh | bash',
       releases: 'https://github.com/lihuu/li-tools/releases/latest',
-      brew: 'brew tap lihuu/tap && brew install gpgkit certkit tokenkit skillkit',
-      scoop: 'scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install gpgkit certkit tokenkit skillkit'
+      brew: 'brew tap lihuu/tap && brew install certkit dukit gpgkit skillkit tokenkit',
+      scoop: 'scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install certkit dukit gpgkit skillkit tokenkit'
     };
 
     function setTab(tab) {
