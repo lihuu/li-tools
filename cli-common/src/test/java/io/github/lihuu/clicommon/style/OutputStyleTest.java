@@ -1,5 +1,6 @@
 package io.github.lihuu.clicommon.style;
 
+import io.github.lihuu.clicommon.system.Platform;
 import org.junit.jupiter.api.Test;
 import java.util.Map;
 
@@ -33,6 +34,17 @@ class OutputStyleTest {
         assertEquals("name", style.highlight("name"));
         assertEquals("quiet", style.muted("quiet"));
         assertEquals("strong", style.bold("strong"));
+    }
+
+    @Test
+    void shouldEnableAnsiOnWindowsWhenTermIsUnset() {
+        assertTrue(OutputStyle.of(Map.of(), true, false, Platform.OS.WINDOWS).isAnsi());
+    }
+
+    @Test
+    void shouldDisableAnsiWhenTermIsUnsetOnPosix() {
+        assertFalse(OutputStyle.of(Map.of(), true, false, Platform.OS.MACOS).isAnsi());
+        assertFalse(OutputStyle.of(Map.of(), true, false, Platform.OS.LINUX).isAnsi());
     }
 
     @Test

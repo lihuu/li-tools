@@ -1,5 +1,6 @@
 package io.github.lihuu.clicommon.style;
 
+import io.github.lihuu.clicommon.system.Platform;
 import org.jetbrains.annotations.NotNull;
 import java.util.Map;
 
@@ -25,11 +26,24 @@ public final class OutputStyle {
     }
 
     public static @NotNull OutputStyle of(@NotNull Map<String, String> environment, boolean interactive, boolean noColorFlag) {
-        if (noColorFlag || environment.containsKey("NO_COLOR")) {
+        return of(environment, interactive, noColorFlag, Platform.current());
+    }
+
+    static @NotNull OutputStyle of(
+            @NotNull Map<String, String> environment,
+            boolean interactive,
+            boolean noColorFlag,
+            @NotNull Platform.OS platform
+    ) {
+        if (noColorFlag || environment.containsKey("NO_COLOR") || !interactive) {
             return PLAIN;
         }
         String term = environment.getOrDefault("TERM", "");
-        if (!interactive || term.isBlank() || "dumb".equalsIgnoreCase(term)) {
+        if ("dumb".equalsIgnoreCase(term)) {
+            return PLAIN;
+        }
+        // Windows terminals such as Windows Terminal support ANSI but usually leave TERM unset.
+        if (term.isBlank() && platform != Platform.OS.WINDOWS) {
             return PLAIN;
         }
         return ANSI;
