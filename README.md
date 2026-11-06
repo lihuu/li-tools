@@ -22,11 +22,11 @@
 
 | Tool | Mission | Highlights | Status |
 | :--- | :--- | :--- | :--- |
-| **[`gpgkit`](gpgkit/)** | Full lifecycle management of GPG keys | Zero runtime dependencies, guaranteed loopback test verification, one-command backup/restore/extend/diagnose | `Active` |
 | **[`certkit`](certkit/)** | Modern SSL/TLS certificate Swiss Army knife | Convention over configuration, trusted local Root CA, smart domain/IP SAN auto-sniffing, single-argument format conversion, triple-platform trust | `Active` |
-| **[`tokenkit`](tokenkit/)** | Modern cross-platform encrypted token manager | Embedded encrypted SQLite, AES-256-GCM + PBKDF2, sub-10ms terminal shell injection (`tokenkit env`), cross-machine encrypted migration bundles | `Active` |
-| **[`skillkit`](skillkit/)** | Local agent skill management | Local content + metadata-only upstreams, parallel install/update, personal repository pull/push, shared or selected agent targets | `Active` |
 | **[`dukit`](dukit/)** | Cross-platform disk usage analyzer | ncdu-inspired speed, occupied space by default via FFM `st_blocks`, full-screen TUI with Trash delete (`d`) & file preview (`t`), pure streaming JSON tree | `Active` |
+| **[`gpgkit`](gpgkit/)** | Full lifecycle management of GPG keys | Zero runtime dependencies, guaranteed loopback test verification, one-command backup/restore/extend/diagnose | `Active` |
+| **[`skillkit`](skillkit/)** | Local agent skill management | Local content + metadata-only upstreams, parallel install/update, personal repository pull/push, shared or selected agent targets | `Active` |
+| **[`tokenkit`](tokenkit/)** | Modern cross-platform encrypted token manager | Embedded encrypted SQLite, AES-256-GCM + PBKDF2, sub-10ms terminal shell injection (`tokenkit env`), cross-machine encrypted migration bundles | `Active` |
 
 ---
 
@@ -57,20 +57,20 @@ li-tools/
 │   └── pom.xml
 ├── site/                       # Modern landing pages deployed to GitHub Pages
 │   ├── index.html              # Suite portal homepage
-│   ├── gpgkit/index.html       # gpgkit landing page
 │   ├── certkit/index.html      # certkit landing page
-│   ├── tokenkit/index.html     # tokenkit landing page
+│   ├── dukit/index.html        # dukit landing page
+│   ├── gpgkit/index.html       # gpgkit landing page
 │   ├── skillkit/index.html     # skillkit landing page
-│   └── dukit/index.html        # dukit landing page
-├── gpgkit/                     # GPG key lifecycle manager (Pure JDK, zero runtime dependencies)
-│   ├── SPEC.md                 # Contract specifications
-│   ├── build-native.sh         # GraalVM Native Image compilation script
-│   └── src/
+│   └── tokenkit/index.html     # tokenkit landing page
 ├── certkit/                    # SSL/TLS certificate toolkit (Picocli + OpenSSL orchestration)
 │   ├── SPEC.md                 # Contract specifications
 │   ├── build-native.sh         # GraalVM Native Image compilation script
 │   └── src/
-├── tokenkit/                   # Universal encrypted token manager (Picocli + embedded SQLite)
+├── dukit/                      # Cross-platform disk usage analyzer (Pure JDK parallel scanning & FFM st_blocks)
+│   ├── SPEC.md                 # Contract specifications
+│   ├── build-native.sh         # GraalVM Native Image compilation script
+│   └── src/
+├── gpgkit/                     # GPG key lifecycle manager (Pure JDK, zero runtime dependencies)
 │   ├── SPEC.md                 # Contract specifications
 │   ├── build-native.sh         # GraalVM Native Image compilation script
 │   └── src/
@@ -78,7 +78,7 @@ li-tools/
 │   ├── SPEC.md                 # Contract specifications
 │   ├── build-native.sh         # GraalVM Native Image compilation script
 │   └── src/
-├── dukit/                      # Cross-platform disk usage analyzer (Pure JDK parallel scanning & FFM st_blocks)
+├── tokenkit/                   # Universal encrypted token manager (Picocli + embedded SQLite)
 │   ├── SPEC.md                 # Contract specifications
 │   ├── build-native.sh         # GraalVM Native Image compilation script
 │   └── src/
@@ -109,14 +109,14 @@ Choose your preferred package manager or installer:
 brew tap lihuu/tap
 
 # Install tools
-brew install gpgkit certkit tokenkit skillkit dukit
+brew install certkit dukit gpgkit skillkit tokenkit
 
 # Or install individually without tapping first:
-brew install lihuu/tap/gpgkit
 brew install lihuu/tap/certkit
-brew install lihuu/tap/tokenkit
-brew install lihuu/tap/skillkit
 brew install lihuu/tap/dukit
+brew install lihuu/tap/gpgkit
+brew install lihuu/tap/skillkit
+brew install lihuu/tap/tokenkit
 ```
 
 ### 2. Scoop (Windows)
@@ -125,7 +125,7 @@ brew install lihuu/tap/dukit
 scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket
 
 # Install tools
-scoop install gpgkit certkit tokenkit skillkit dukit
+scoop install certkit dukit gpgkit skillkit tokenkit
 ```
 
 ### 3. One-Line Script Installer (macOS, Linux & Windows 11)
@@ -176,8 +176,11 @@ See the [Native Image build evaluation (中文)](docs/NATIVE_BUILD_EVALUATION.md
 All tools in `li-tools` provide native, machine-readable `SKILL.md` specifications tailored for AI coding agents (Claude Code, Gemini CLI, Cursor, Copilot CLI, OpenCode):
 
 - **Suite Skill Guide**: [`SKILL.md`](SKILL.md) (Hosted at [https://tools.lihu.me/SKILL.md](https://tools.lihu.me/SKILL.md))
-- **gpgkit Skill Guide**: [`gpgkit/SKILL.md`](gpgkit/SKILL.md) (Hosted at [https://tools.lihu.me/gpgkit/SKILL.md](https://tools.lihu.me/gpgkit/SKILL.md))
 - **certkit Skill Guide**: [`certkit/SKILL.md`](certkit/SKILL.md) (Hosted at [https://tools.lihu.me/certkit/SKILL.md](https://tools.lihu.me/certkit/SKILL.md))
+- **dukit Skill Guide**: [`dukit/SKILL.md`](dukit/SKILL.md) (Hosted at [https://tools.lihu.me/dukit/SKILL.md](https://tools.lihu.me/dukit/SKILL.md))
+- **gpgkit Skill Guide**: [`gpgkit/SKILL.md`](gpgkit/SKILL.md) (Hosted at [https://tools.lihu.me/gpgkit/SKILL.md](https://tools.lihu.me/gpgkit/SKILL.md))
+- **skillkit Skill Guide**: [`skillkit/SKILL.md`](skillkit/SKILL.md) (Hosted at [https://tools.lihu.me/skillkit/SKILL.md](https://tools.lihu.me/skillkit/SKILL.md))
+- **tokenkit Skill Guide**: [`tokenkit/SKILL.md`](tokenkit/SKILL.md) (Hosted at [https://tools.lihu.me/tokenkit/SKILL.md](https://tools.lihu.me/tokenkit/SKILL.md))
 
 ### Install Skills for Your AI Agents
 Install skills directly into your local AI agent skill paths (`~/.agents/skills/`, `~/.gemini/skills/`, `~/.claude/skills/`):
@@ -194,8 +197,11 @@ irm https://tools.lihu.me/install-skills.ps1 | iex
 ## 🌐 Documentation & Web Pages
 
 - **[Live Website & Landing Pages](https://tools.lihu.me/)**
-- **[`gpgkit Documentation`](gpgkit/README.md)** (Available in [English](gpgkit/README.md) and [中文](gpgkit/README.zh-CN.md))
 - **[`certkit Documentation`](certkit/README.md)** (Available in [English](certkit/README.md) and [中文](certkit/README_zh.md))
+- **[`dukit Documentation`](dukit/README.md)** (Available in [English](dukit/README.md) and [中文](dukit/README_zh.md))
+- **[`gpgkit Documentation`](gpgkit/README.md)** (Available in [English](gpgkit/README.md) and [中文](gpgkit/README.zh-CN.md))
+- **[`skillkit Documentation`](skillkit/README.md)** (Available in [English](skillkit/README.md) and [中文](skillkit/README_zh.md))
+- **[`tokenkit Documentation`](tokenkit/README.md)** (Available in [English](tokenkit/README.md) and [中文](tokenkit/README_zh.md))
 
 ---
 

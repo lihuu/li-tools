@@ -21,22 +21,42 @@
     <priority>0.9</priority>
   </url>
 
-  <!-- tokenkit Landing Page -->
+  <!-- certkit Landing Page -->
   <url>
-    <loc>https://tools.lihu.me/tokenkit/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/tokenkit/" />
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/tokenkit/index_zh.html" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/tokenkit/" />
+    <loc>https://tools.lihu.me/certkit/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/certkit/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/certkit/index_zh.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/certkit/" />
     <lastmod>2026-10-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://tools.lihu.me/tokenkit/index_zh.html</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/tokenkit/" />
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/tokenkit/index_zh.html" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/tokenkit/" />
+    <loc>https://tools.lihu.me/certkit/index_zh.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/certkit/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/certkit/index_zh.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/certkit/" />
     <lastmod>2026-10-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- dukit Landing Page -->
+  <url>
+    <loc>https://tools.lihu.me/dukit/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/dukit/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/dukit/index_zh.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/dukit/" />
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://tools.lihu.me/dukit/index_zh.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/dukit/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/dukit/index_zh.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/dukit/" />
+    <lastmod>2026-11-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -56,26 +76,6 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/gpgkit/" />
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/gpgkit/index_zh.html" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/gpgkit/" />
-    <lastmod>2026-10-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- certkit Landing Page -->
-  <url>
-    <loc>https://tools.lihu.me/certkit/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/certkit/" />
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/certkit/index_zh.html" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/certkit/" />
-    <lastmod>2026-10-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://tools.lihu.me/certkit/index_zh.html</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/certkit/" />
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/certkit/index_zh.html" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/certkit/" />
     <lastmod>2026-10-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -101,22 +101,22 @@
     <priority>0.8</priority>
   </url>
 
-  <!-- dukit Landing Page -->
+  <!-- tokenkit Landing Page -->
   <url>
-    <loc>https://tools.lihu.me/dukit/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/dukit/" />
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/dukit/index_zh.html" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/dukit/" />
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://tools.lihu.me/tokenkit/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/tokenkit/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/tokenkit/index_zh.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/tokenkit/" />
+    <lastmod>2026-10-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://tools.lihu.me/dukit/index_zh.html</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/dukit/" />
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/dukit/index_zh.html" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/dukit/" />
-    <lastmod>2026-11-05</lastmod>
+    <loc>https://tools.lihu.me/tokenkit/index_zh.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tools.lihu.me/tokenkit/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/tokenkit/index_zh.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/tokenkit/" />
+    <lastmod>2026-10-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>li-tools — Zero-Dependency Developer CLI Suite</title>
   <meta name="description" content="Zero-dependency developer CLI suite compiled with Java 25 &amp; GraalVM Native Image. Fast single-binary native utilities with identical behavior on macOS, Linux, and Windows 11.">
-  <meta name="keywords" content="developer tools, cli tools, developer utility, certkit, gpgkit, tokenkit, skillkit, dukit, java 25, graalvm native image, cross-platform, developer experience">
+  <meta name="keywords" content="developer tools, cli tools, developer utility, certkit, dukit, gpgkit, skillkit, tokenkit, java 25, graalvm native image, cross-platform, developer experience">
   <meta name="author" content="lihuu">
   <link rel="canonical" href="https://tools.lihu.me/">
   <link rel="alternate" hreflang="en" href="https://tools.lihu.me/">
@@ -66,18 +66,18 @@
           "Zero runtime dependency, single-file native binary",
           "Cold start under 50ms",
           "Command-level parity on macOS, Linux, and Windows 11",
-          "OpenPGP (RFC 4880) key management via gpgkit",
           "X.509 certificate issuance and rotation via certkit",
-          "JWT (RFC 7519) token signing and verification via tokenkit",
+          "Disk usage analysis and JSON export via dukit",
+          "OpenPGP (RFC 4880) key management via gpgkit",
           "AI agent SKILL.md generation and validation via skillkit",
-          "Disk usage analysis and JSON export via dukit"
+          "JWT (RFC 7519) token signing and verification via tokenkit"
         ],
         "hasPart": [
-          { "@type": "SoftwareApplication", "name": "gpgkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/gpgkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
           { "@type": "SoftwareApplication", "name": "certkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/certkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
-          { "@type": "SoftwareApplication", "name": "tokenkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/tokenkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
+          { "@type": "SoftwareApplication", "name": "dukit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/dukit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
+          { "@type": "SoftwareApplication", "name": "gpgkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/gpgkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
           { "@type": "SoftwareApplication", "name": "skillkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/skillkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
-          { "@type": "SoftwareApplication", "name": "dukit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/dukit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } }
+          { "@type": "SoftwareApplication", "name": "tokenkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/tokenkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } }
         ]
       },
       {
@@ -218,33 +218,6 @@
     <!-- The Tools Suite Grid -->
     <div id="suite" class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-24">
       
-      <!-- GPGKIT Card -->
-      <a href="gpgkit/index.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-indigo-500/20 hover:border-indigo-500/50 block">
-        <div class="absolute -right-12 -top-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-indigo-500/20 transition-all"></div>
-        <div class="flex items-center justify-between mb-6">
-          <div class="flex items-center gap-3">
-            <span class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl font-bold shadow-inner">🔑</span>
-            <div>
-              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-indigo-300 transition">gpgkit</h2>
-              <span class="text-xs font-mono text-indigo-400">GPG Key Lifecycle Manager</span>
-            </div>
-          </div>
-          <span class="text-slate-500 group-hover:text-indigo-400 transition transform group-hover:translate-x-1">→</span>
-        </div>
-        <p class="text-slate-400 text-sm leading-relaxed mb-6">
-          Eliminate GPG key loss during machine migration. One command for loopback-verified backups, automatic extension, sign, and health checks.
-        </p>
-        <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-indigo-300 border border-indigo-950/60 mb-5 flex items-center justify-between">
-          <span>$ gpgkit backup</span>
-          <span class="text-emerald-400 text-[10px] font-semibold">✔ Loopback Tested</span>
-        </div>
-        <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Zero Dependencies</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Loopback Verify</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Auto Extend</span>
-        </div>
-      </a>
-
       <!-- CERTKIT Card -->
       <a href="certkit/index.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-emerald-500/20 hover:border-emerald-500/50 block">
         <div class="absolute -right-12 -top-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-500/20 transition-all"></div>
@@ -272,30 +245,58 @@
         </div>
       </a>
 
-      <!-- TOKENKIT Card -->
-      <a href="tokenkit/index.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-amber-500/20 hover:border-amber-500/50 block">
+      <!-- DUKIT Card -->
+      <a href="dukit/index.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-amber-500/20 hover:border-amber-500/50 block">
         <div class="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-500/20 transition-all"></div>
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center gap-3">
-            <span class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-2xl font-bold shadow-inner">🪙</span>
+            <span class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-2xl font-bold shadow-inner">💾</span>
             <div>
-              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-amber-300 transition">tokenkit</h2>
-              <span class="text-xs font-mono text-amber-400">Zero-Friction Token Vault</span>
+              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-amber-300 transition">dukit</h2>
+              <span class="text-xs font-mono text-amber-400">Disk Usage Analyzer</span>
             </div>
           </div>
           <span class="text-slate-500 group-hover:text-amber-400 transition transform group-hover:translate-x-1">→</span>
         </div>
         <p class="text-slate-400 text-sm leading-relaxed mb-6">
-          Eliminate leaked .env files and plaintext tokens. AES-256-GCM encrypted SQLite vault, sub-10ms shell memory injection, and cross-platform profile switching.
+          Find what is eating your disk. ncdu-inspired speed, full-screen TUI browsing, safe Trash deletion and directories-only JSON export — identical behavior on macOS, Linux and Windows 11.
         </p>
         <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-amber-300 border border-amber-950/60 mb-5 flex items-center justify-between">
-          <span>$ eval $(tokenkit env)</span>
-          <span class="text-emerald-400 text-[10px] font-semibold">✔ Zero Disk Leak</span>
+          <span>$ dukit scan ~/Projects</span>
+          <span class="text-emerald-400 text-[10px] font-semibold">✔ Directories-Only JSON Tree</span>
         </div>
         <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">AES-256-GCM</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Sub-10ms Hook</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Embedded SQLite</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">ncdu-Inspired</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Full-Screen TUI</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Occupied Space</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Trash Deletion</span>
+        </div>
+      </a>
+
+      <!-- GPGKIT Card -->
+      <a href="gpgkit/index.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-indigo-500/20 hover:border-indigo-500/50 block">
+        <div class="absolute -right-12 -top-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-indigo-500/20 transition-all"></div>
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <span class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl font-bold shadow-inner">🔑</span>
+            <div>
+              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-indigo-300 transition">gpgkit</h2>
+              <span class="text-xs font-mono text-indigo-400">GPG Key Lifecycle Manager</span>
+            </div>
+          </div>
+          <span class="text-slate-500 group-hover:text-indigo-400 transition transform group-hover:translate-x-1">→</span>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed mb-6">
+          Eliminate GPG key loss during machine migration. One command for loopback-verified backups, automatic extension, sign, and health checks.
+        </p>
+        <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-indigo-300 border border-indigo-950/60 mb-5 flex items-center justify-between">
+          <span>$ gpgkit backup</span>
+          <span class="text-emerald-400 text-[10px] font-semibold">✔ Loopback Tested</span>
+        </div>
+        <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Zero Dependencies</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Loopback Verify</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Auto Extend</span>
         </div>
       </a>
 
@@ -326,31 +327,30 @@
         </div>
       </a>
 
-      <!-- DUKIT Card -->
-      <a href="dukit/index.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-amber-500/20 hover:border-amber-500/50 block">
+      <!-- TOKENKIT Card -->
+      <a href="tokenkit/index.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-amber-500/20 hover:border-amber-500/50 block">
         <div class="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-500/20 transition-all"></div>
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center gap-3">
-            <span class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-2xl font-bold shadow-inner">💾</span>
+            <span class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-2xl font-bold shadow-inner">🪙</span>
             <div>
-              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-amber-300 transition">dukit</h2>
-              <span class="text-xs font-mono text-amber-400">Disk Usage Analyzer</span>
+              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-amber-300 transition">tokenkit</h2>
+              <span class="text-xs font-mono text-amber-400">Zero-Friction Token Vault</span>
             </div>
           </div>
           <span class="text-slate-500 group-hover:text-amber-400 transition transform group-hover:translate-x-1">→</span>
         </div>
         <p class="text-slate-400 text-sm leading-relaxed mb-6">
-          Find what is eating your disk. ncdu-inspired speed, full-screen TUI browsing, safe Trash deletion and directories-only JSON export — identical behavior on macOS, Linux and Windows 11.
+          Eliminate leaked .env files and plaintext tokens. AES-256-GCM encrypted SQLite vault, sub-10ms shell memory injection, and cross-platform profile switching.
         </p>
         <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-amber-300 border border-amber-950/60 mb-5 flex items-center justify-between">
-          <span>$ dukit scan ~/Projects</span>
-          <span class="text-emerald-400 text-[10px] font-semibold">✔ Directories-Only JSON Tree</span>
+          <span>$ eval $(tokenkit env)</span>
+          <span class="text-emerald-400 text-[10px] font-semibold">✔ Zero Disk Leak</span>
         </div>
         <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">ncdu-Inspired</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Full-Screen TUI</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Occupied Space</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Trash Deletion</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">AES-256-GCM</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Sub-10ms Hook</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Embedded SQLite</span>
         </div>
       </a>
 
@@ -460,13 +460,6 @@
             </thead>
             <tbody class="divide-y divide-slate-800/60">
               <tr>
-                <td class="py-2.5 px-3 font-bold text-indigo-400">gpgkit</td>
-                <td class="py-2.5 px-3">OpenPGP (RFC 4880)</td>
-                <td class="py-2.5 px-3">Apple Keychain / CLI</td>
-                <td class="py-2.5 px-3">0600 GNUPGHOME / Agent</td>
-                <td class="py-2.5 px-3">GnuPG Win32 / Git GPG</td>
-              </tr>
-              <tr>
                 <td class="py-2.5 px-3 font-bold text-emerald-400">certkit</td>
                 <td class="py-2.5 px-3">X.509 PKIX (RFC 5280)</td>
                 <td class="py-2.5 px-3">System Keychain trust</td>
@@ -474,11 +467,18 @@
                 <td class="py-2.5 px-3">certutil -user (no UAC)</td>
               </tr>
               <tr>
-                <td class="py-2.5 px-3 font-bold text-amber-400">tokenkit</td>
-                <td class="py-2.5 px-3">JWT (RFC 7519) + AES-GCM</td>
-                <td class="py-2.5 px-3">Embedded SQLite + PBKDF2</td>
-                <td class="py-2.5 px-3">Embedded SQLite + PBKDF2</td>
-                <td class="py-2.5 px-3">Embedded SQLite + DPAPI</td>
+                <td class="py-2.5 px-3 font-bold text-amber-400">dukit</td>
+                <td class="py-2.5 px-3">Occupied Space (st_blocks)</td>
+                <td class="py-2.5 px-3">FFM native stat + ~/.Trash</td>
+                <td class="py-2.5 px-3">FFM native stat + freedesktop</td>
+                <td class="py-2.5 px-3">JLine FFM TUI + Recycle Bin</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-indigo-400">gpgkit</td>
+                <td class="py-2.5 px-3">OpenPGP (RFC 4880)</td>
+                <td class="py-2.5 px-3">Apple Keychain / CLI</td>
+                <td class="py-2.5 px-3">0600 GNUPGHOME / Agent</td>
+                <td class="py-2.5 px-3">GnuPG Win32 / Git GPG</td>
               </tr>
               <tr>
                 <td class="py-2.5 px-3 font-bold text-cyan-400">skillkit</td>
@@ -488,11 +488,11 @@
                 <td class="py-2.5 px-3">10+ Agents (%USERPROFILE%)</td>
               </tr>
               <tr>
-                <td class="py-2.5 px-3 font-bold text-amber-400">dukit</td>
-                <td class="py-2.5 px-3">Occupied Space (st_blocks)</td>
-                <td class="py-2.5 px-3">FFM native stat + ~/.Trash</td>
-                <td class="py-2.5 px-3">FFM native stat + freedesktop</td>
-                <td class="py-2.5 px-3">JLine FFM TUI + Recycle Bin</td>
+                <td class="py-2.5 px-3 font-bold text-amber-400">tokenkit</td>
+                <td class="py-2.5 px-3">JWT (RFC 7519) + AES-GCM</td>
+                <td class="py-2.5 px-3">Embedded SQLite + PBKDF2</td>
+                <td class="py-2.5 px-3">Embedded SQLite + PBKDF2</td>
+                <td class="py-2.5 px-3">Embedded SQLite + DPAPI</td>
               </tr>
             </tbody>
           </table>
@@ -543,21 +543,27 @@
           </p>
         </div>
         <div class="glass-card p-6 rounded-xl">
+          <h4 class="font-bold text-white mb-2">How does dukit achieve high-speed disk scanning without high memory usage?</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            dukit utilizes Java 25 Foreign Function &amp; Memory (FFM) API to read actual physical disk blocks (<code class="text-amber-400">st_blocks</code>) directly from the OS, deduplicates hardlinks, and streams output via parallel <code class="text-amber-400">ForkJoinPool</code> directory traversal with zero reflection.
+          </p>
+        </div>
+        <div class="glass-card p-6 rounded-xl">
           <h4 class="font-bold text-white mb-2">How does gpgkit guarantee I will never lose my key?</h4>
           <p class="text-sm text-slate-400 leading-relaxed">
             Every backup operation enforces a mandatory round-trip loopback test inside an isolated scratch keyring. It restores the backup and verifies a test signature on the spot before saving the file.
           </p>
         </div>
         <div class="glass-card p-6 rounded-xl">
-          <h4 class="font-bold text-white mb-2">How does tokenkit protect against accidental .env leaks and token theft?</h4>
-          <p class="text-sm text-slate-400 leading-relaxed">
-            tokenkit never stores plaintext secrets in repository working trees or files. Secrets reside in an AES-256-GCM encrypted embedded SQLite store (<code class="text-amber-400">~/.tokenkit/tokens.db</code>) and are injected directly into active shell memory via <code class="text-amber-400">eval $(tokenkit env)</code> in sub-10ms.
-          </p>
-        </div>
-        <div class="glass-card p-6 rounded-xl">
           <h4 class="font-bold text-white mb-2">How does skillkit simplify managing skills across multiple AI coding agents?</h4>
           <p class="text-sm text-slate-400 leading-relaxed">
             Instead of running custom shell scripts or relying on heavy Node.js runtimes, <code class="text-cyan-400">skillkit</code> fans out your personal skills and upstream Git repositories to 10+ AI coding agents (Claude Code, Codex, Cursor, Gemini CLI, OpenCode, Antigravity, etc.) simultaneously in parallel with Java 25 virtual threads.
+          </p>
+        </div>
+        <div class="glass-card p-6 rounded-xl">
+          <h4 class="font-bold text-white mb-2">How does tokenkit protect against accidental .env leaks and token theft?</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            tokenkit never stores plaintext secrets in repository working trees or files. Secrets reside in an AES-256-GCM encrypted embedded SQLite store (<code class="text-amber-400">~/.tokenkit/tokens.db</code>) and are injected directly into active shell memory via <code class="text-amber-400">eval $(tokenkit env)</code> in sub-10ms.
           </p>
         </div>
       </div>
@@ -573,10 +579,11 @@
       </div>
       <div>Crafted for high developer velocity • <a href="https://github.com/lihuu/li-tools/blob/main/LICENSE" target="_blank" rel="noopener" class="underline hover:text-slate-300 transition">Apache-2.0 License</a> • <a href="https://github.com/lihuu/li-tools/releases/tag/v0.4.0" target="_blank" rel="noopener" class="font-bold text-slate-400 hover:text-white transition">v0.4.0</a></div>
       <div class="flex items-center gap-4">
-        <a href="gpgkit/index.html" class="hover:text-indigo-400 transition">gpgkit</a>
         <a href="certkit/index.html" class="hover:text-emerald-400 transition">certkit</a>
-        <a href="tokenkit/index.html" class="hover:text-amber-400 transition">tokenkit</a>
+        <a href="dukit/index.html" class="hover:text-amber-400 transition">dukit</a>
+        <a href="gpgkit/index.html" class="hover:text-indigo-400 transition">gpgkit</a>
         <a href="skillkit/index.html" class="hover:text-cyan-400 transition">skillkit</a>
+        <a href="tokenkit/index.html" class="hover:text-amber-400 transition">tokenkit</a>
         <a href="SKILL.md" class="hover:text-emerald-400 transition">🤖 SKILL.md</a>
         <a href="llms.txt" class="hover:text-indigo-400 transition">llms.txt</a>
         <a href="index_zh.html" class="hover:text-white transition">中文版</a>
@@ -589,11 +596,11 @@
     const commands = {
       shell: 'curl -fsSL https://tools.lihu.me/install.sh | bash',
       ps1: 'irm https://tools.lihu.me/install.ps1 | iex',
-      agent: 'Please install li-tools (gpgkit, certkit, tokenkit & skillkit) from https://tools.lihu.me/ and refer to https://tools.lihu.me/SKILL.md for CLI instructions.',
+      agent: 'Please install li-tools (certkit, dukit, gpgkit, skillkit & tokenkit) from https://tools.lihu.me/ and refer to https://tools.lihu.me/SKILL.md for CLI instructions.',
       skills: 'curl -fsSL https://tools.lihu.me/install-skills.sh | bash',
       releases: 'https://github.com/lihuu/li-tools/releases/latest',
-      brew: 'brew tap lihuu/tap && brew install gpgkit certkit tokenkit skillkit',
-      scoop: 'scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install gpgkit certkit tokenkit skillkit'
+      brew: 'brew tap lihuu/tap && brew install certkit dukit gpgkit skillkit tokenkit',
+      scoop: 'scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install certkit dukit gpgkit skillkit tokenkit'
     };
 
     function setTab(tab) {

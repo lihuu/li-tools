@@ -22,11 +22,11 @@
 
 | 工具 | 使命定位 | 核心亮点 | 状态 |
 | :--- | :--- | :--- | :--- |
-| **[`gpgkit`](gpgkit/)** | GPG 密钥全生命周期管理，终结“换机器丢密钥” | 零运行时依赖、强制回环可验证性校验、一键备份/还原/续期/自检 | `Active` |
 | **[`certkit`](certkit/)** | 现代 SSL/TLS 证书瑞士军刀，告别反人类的 OpenSSL 参数 | 约定大于配置、一键受信任本地 Root CA、智能域名/IP SAN 嗅探、单参数互转、三端系统受信 | `Active` |
-| **[`tokenkit`](tokenkit/)** | 现代通用敏感 Token/API Key 加密管理器，终结明文密钥泄露 | 内嵌强加密 SQLite、AES-256-GCM + PBKDF2、<10ms 终端极速环境变量注入 (`tokenkit env`)、跨系统安全加密迁移包 | `Active` |
-| **[`skillkit`](skillkit/)** | 本地 Agent skills 管理 | 本地内容与上游元数据订阅、并行安装/更新、个人仓库拉取/发布、公共或指定 Agent 分发 | `Active` |
 | **[`dukit`](dukit/)** | 现代跨平台磁盘占用分析利器，终结“磁盘空间去哪了”的迷茫 | 类 ncdu 极速分析、默认真实磁盘占用 (FFM `st_blocks`)、全屏交互 TUI 浏览、安全回收站删除 (`d`)、直属大文件预览 (`t`)、纯流式无反射 JSON 导出 | `Active` |
+| **[`gpgkit`](gpgkit/)** | GPG 密钥全生命周期管理，终结“换机器丢密钥” | 零运行时依赖、强制回环可验证性校验、一键备份/还原/续期/自检 | `Active` |
+| **[`skillkit`](skillkit/)** | 本地 Agent skills 管理 | 本地内容与上游元数据订阅、并行安装/更新、个人仓库拉取/发布、公共或指定 Agent 分发 | `Active` |
+| **[`tokenkit`](tokenkit/)** | 现代通用敏感 Token/API Key 加密管理器，终结明文密钥泄露 | 内嵌强加密 SQLite、AES-256-GCM + PBKDF2、<10ms 终端极速环境变量注入 (`tokenkit env`)、跨系统安全加密迁移包 | `Active` |
 
 ---
 
@@ -57,20 +57,20 @@ li-tools/
 │   └── pom.xml
 ├── site/                       # 现代暗黑极客风格落地页 (自动部署至 GitHub Pages)
 │   ├── index.html              # 矩阵统一门户总览页
-│   ├── gpgkit/index.html       # gpgkit 专属落地页
 │   ├── certkit/index.html      # certkit 专属落地页
-│   ├── tokenkit/index.html     # tokenkit 专属落地页
+│   ├── dukit/index.html        # dukit 专属落地页
+│   ├── gpgkit/index.html       # gpgkit 专属落地页
 │   ├── skillkit/index.html     # skillkit 专属落地页
-│   └── dukit/index.html        # dukit 专属落地页
-├── gpgkit/                     # GPG 密钥生命周期管理工具 (纯 JDK 原生标准库，零第三方运行时依赖)
-│   ├── SPEC.md                 # 接口与行为规格契约
-│   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
-│   └── src/
+│   └── tokenkit/index.html     # tokenkit 专属落地页
 ├── certkit/                    # SSL/TLS 证书管理工具 (Picocli + OpenSSL 现代化编排)
 │   ├── SPEC.md                 # 接口与行为规格契约
 │   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
 │   └── src/
-├── tokenkit/                   # 通用 Token 与敏感凭据加密管理工具 (Picocli + 内嵌 SQLite)
+├── dukit/                      # 跨平台磁盘占用分析利器（纯 JDK 并行遍历与 FFM 原生块读取）
+│   ├── SPEC.md                 # 接口与行为规格契约
+│   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
+│   └── src/
+├── gpgkit/                     # GPG 密钥生命周期管理工具 (纯 JDK 原生标准库，零第三方运行时依赖)
 │   ├── SPEC.md                 # 接口与行为规格契约
 │   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
 │   └── src/
@@ -78,7 +78,7 @@ li-tools/
 │   ├── SPEC.md                 # 接口与行为规格契约
 │   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
 │   └── src/
-├── dukit/                      # 跨平台磁盘占用分析利器（纯 JDK 并行遍历与 FFM 原生块读取）
+├── tokenkit/                   # 通用 Token 与敏感凭据加密管理工具 (Picocli + 内嵌 SQLite)
 │   ├── SPEC.md                 # 接口与行为规格契约
 │   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
 │   └── src/
@@ -109,14 +109,14 @@ li-tools/
 brew tap lihuu/tap
 
 # 安装全部工具
-brew install gpgkit certkit tokenkit skillkit dukit
+brew install certkit dukit gpgkit skillkit tokenkit
 
 # 或者不预先 Tap，直接按需单行安装：
-brew install lihuu/tap/gpgkit
 brew install lihuu/tap/certkit
-brew install lihuu/tap/tokenkit
-brew install lihuu/tap/skillkit
 brew install lihuu/tap/dukit
+brew install lihuu/tap/gpgkit
+brew install lihuu/tap/skillkit
+brew install lihuu/tap/tokenkit
 ```
 
 ### 2. Scoop 官方桶 (Windows 11)
@@ -125,7 +125,7 @@ brew install lihuu/tap/dukit
 scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket
 
 # 安装全部工具
-scoop install gpgkit certkit tokenkit skillkit dukit
+scoop install certkit dukit gpgkit skillkit tokenkit
 ```
 
 ### 3. 一行 Shell / PowerShell 脚本安装 (macOS, Linux & Windows 11)
@@ -176,8 +176,11 @@ mvn clean test
 `li-tools` 套件内的所有工具均原生提供面向 AI 编码智能体（Claude Code, Gemini CLI, Cursor, Copilot CLI, OpenCode 等）的标准 `SKILL.md`：
 
 - **套件总技能文档**: [`SKILL.md`](SKILL.md)（在线访问：[https://tools.lihu.me/SKILL.md](https://tools.lihu.me/SKILL.md)）
-- **gpgkit 技能文档**: [`gpgkit/SKILL.md`](gpgkit/SKILL.md)（在线访问：[https://tools.lihu.me/gpgkit/SKILL.md](https://tools.lihu.me/gpgkit/SKILL.md)）
 - **certkit 技能文档**: [`certkit/SKILL.md`](certkit/SKILL.md)（在线访问：[https://tools.lihu.me/certkit/SKILL.md](https://tools.lihu.me/certkit/SKILL.md)）
+- **dukit 技能文档**: [`dukit/SKILL.md`](dukit/SKILL.md)（在线访问：[https://tools.lihu.me/dukit/SKILL.md](https://tools.lihu.me/dukit/SKILL.md)）
+- **gpgkit 技能文档**: [`gpgkit/SKILL.md`](gpgkit/SKILL.md)（在线访问：[https://tools.lihu.me/gpgkit/SKILL.md](https://tools.lihu.me/gpgkit/SKILL.md)）
+- **skillkit 技能文档**: [`skillkit/SKILL.md`](skillkit/SKILL.md)（在线访问：[https://tools.lihu.me/skillkit/SKILL.md](https://tools.lihu.me/skillkit/SKILL.md)）
+- **tokenkit 技能文档**: [`tokenkit/SKILL.md`](tokenkit/SKILL.md)（在线访问：[https://tools.lihu.me/tokenkit/SKILL.md](https://tools.lihu.me/tokenkit/SKILL.md)）
 
 ### 为你的 AI 智能体一键安装技能
 一键将技能下载并导入到本地 Agent 技能目录（如 `~/.agents/skills/`、`~/.gemini/skills/`、`~/.claude/skills/`）：
@@ -194,8 +197,11 @@ irm https://tools.lihu.me/install-skills.ps1 | iex
 ## 🌐 在线文档与展示页面
 
 - **[在线落地页与文档中心](https://tools.lihu.me/)**
-- **[`gpgkit 说明文档`](gpgkit/README.md)**（提供 [英文版](gpgkit/README.md) 与 [中文版](gpgkit/README.zh-CN.md)）
 - **[`certkit 说明文档`](certkit/README.md)**（提供 [英文版](certkit/README.md) 与 [中文版](certkit/README_zh.md)）
+- **[`dukit 说明文档`](dukit/README.md)**（提供 [英文版](dukit/README.md) 与 [中文版](dukit/README_zh.md)）
+- **[`gpgkit 说明文档`](gpgkit/README.md)**（提供 [英文版](gpgkit/README.md) 与 [中文版](gpgkit/README.zh-CN.md)）
+- **[`skillkit 说明文档`](skillkit/README.md)**（提供 [英文版](skillkit/README.md) 与 [中文版](skillkit/README_zh.md)）
+- **[`tokenkit 说明文档`](tokenkit/README.md)**（提供 [英文版](tokenkit/README.md) 与 [中文版](tokenkit/README_zh.md)）
 
 ---
 
