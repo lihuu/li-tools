@@ -59,7 +59,7 @@
             "name": "How does certkit enable HTTPS green lock on localhost?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "By running 'certkit ca', a local development root CA is initialized and added to your OS trust store. All certificates generated via 'certkit gen' are automatically signed by this CA and include modern SAN extensions required by browsers."
+              "text": "By running 'certkit ca --trust', a local development root CA is initialized and added to your OS trust store. All certificates generated via 'certkit gen' are automatically signed by this CA and include modern SAN extensions required by browsers."
             }
           },
           {
@@ -188,16 +188,16 @@
         </div>
         <div class="text-slate-400 mb-4 pl-4 border-l-2 border-emerald-500/30">
           <div>ℹ Auto-detected Subject Alternative Name: <span class="text-teal-300">DNS:localhost</span></div>
-          <div>ℹ Auto-using local CA: <span class="text-slate-200">~/.certkit/ca/rootCA.crt</span></div>
-          <div class="text-emerald-400">✔ Certificate generated: ./localhost.crt (valid for 365 days)</div>
-          <div class="text-emerald-400">✔ Private key written:   ./localhost.key</div>
-          <div class="text-slate-500 text-xs mt-1">Hint: Run 'certkit trust ca' to enable instant green-lock in Chrome/Safari/Edge.</div>
+          <div>ℹ Auto-using local CA: <span class="text-slate-200">~/.certkit/ca/ca.crt</span></div>
+          <div class="text-emerald-400">✔ Certificate generated: ./cert.pem (valid for 365 days)</div>
+          <div class="text-emerald-400">✔ Private key written:   ./key.pem</div>
+          <div class="text-slate-500 text-xs mt-1">Hint: Run 'certkit trust install' to enable instant green-lock in Chrome/Safari/Edge.</div>
         </div>
 
         <div class="flex items-center gap-2 text-slate-500 mb-2">
           <span class="text-emerald-400">~</span>
           <span class="text-slate-400">$</span>
-          <span class="text-white">certkit check localhost.crt</span>
+          <span class="text-white">certkit check cert.pem</span>
         </div>
         <div class="text-slate-400 pl-4 border-l-2 border-teal-500/30">
           <div>Subject:  <span class="text-teal-300">CN=localhost</span></div>
@@ -272,7 +272,7 @@
           <p class="text-xs text-slate-400">Smart positional argument deduction, auto-injects IP/DNS SAN extensions, signed by local CA, defaults in-place.</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
-          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit ca init</div>
+          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit ca --trust</div>
           <p class="text-xs text-slate-400">Initialize a dedicated local Root CA (default 10 years) for your machine, ending self-signed certificate clutter.</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
@@ -284,11 +284,11 @@
           <p class="text-xs text-slate-400">Single-argument bidirectional conversion: PEM automatically grabs matching key for P12; P12 unpacks certificates and keys.</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
-          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit trust [ca | &lt;cert&gt;]</div>
+          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit trust install [&lt;cert&gt;]</div>
           <p class="text-xs text-slate-400">Cross-platform trust injection: macOS Keychain, Linux update-ca-certificates, Windows 11 non-elevated certutil.</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
-          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit raw &lt;args...&gt;</div>
+          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit raw -- &lt;args...&gt;</div>
           <p class="text-xs text-slate-400">Unconstrained escape hatch: directly forwards arguments to the host OpenSSL binary for specialized administrative workflows.</p>
         </div>
         <div class="glass-card p-5 rounded-xl sm:col-span-2">

@@ -41,6 +41,18 @@ public final class RepositoryManager {
     }
 
     public @NotNull ResolvedSkill resolve(@NotNull String name) throws IOException {
+        return resolve(name, false);
+    }
+
+    public @NotNull ResolvedSkill resolveFromSource(@NotNull String name, @NotNull String source, @NotNull String ref) throws IOException {
+        return resolveFromSource(name, source, ref, false);
+    }
+
+    boolean previewNeedsFetch(@NotNull String name, @Nullable String source, @NotNull String ref) throws IOException {
+        return (source == null ? resolve(name, true) : resolveFromSource(name, source, ref, true)) == null;
+    }
+
+    private @Nullable ResolvedSkill resolve(String name, boolean offline) throws IOException {
         SkillCatalog.validateName(name);
         List<SkillCatalog.Skill> locals = SkillCatalog.discover(store.root().resolve("skills"));
         RepositoryStore.Upstream upstream = store.load().get(name);
@@ -50,25 +62,28 @@ public final class RepositoryManager {
             SkillCatalog.Skill skill = SkillCatalog.select(locals, name);
             return new ResolvedSkill(name, skill.directory(), SkillFiles.digest(skill.directory()), null);
         }
-        Content content = upstreamContent(upstream, store.root(), new HashSet<>());
+        Content content = upstreamContent(upstream, store.root(), new HashSet<>(), offline);
+        if (content == null) return null;
         return new ResolvedSkill(name, content.directory(), content.revision(), upstream);
     }
 
-    public @NotNull ResolvedSkill resolveFromSource(@NotNull String name, @NotNull String source, @NotNull String ref) throws IOException {
+    private @Nullable ResolvedSkill resolveFromSource(String name, String source, String ref, boolean offline) throws IOException {
         SkillCatalog.validateName(name);
         RepositoryStore.Upstream existing = store.load().get(name);
         if (existing == null) store.ensureAvailable(name);
         else if (!sourceLocation(existing.source()).equals(source) || !existing.ref().equals(ref)) {
             throw new IllegalArgumentException("Skill already uses a different source: " + name);
         }
-        SourceResolver.Snapshot snapshot = sources.resolve(source, ref);
-        Content content = sourceContent(snapshot, name, new HashSet<>());
+        SourceResolver.Snapshot snapshot = sources.resolve(source, ref, offline);
+        if (snapshot == null) return null;
+        Content content = sourceContent(snapshot, name, new HashSet<>(), offline);
+        if (content == null) return null;
         RepositoryStore.Upstream upstream = new RepositoryStore.Upstream(name, declarationSource(source),
                 content.path(), ref, content.revision());
         return new ResolvedSkill(name, content.directory(), content.revision(), upstream);
     }
 
-    private Content sourceContent(SourceResolver.Snapshot snapshot, String name, Set<String> active) throws IOException {
+    private @Nullable Content sourceContent(SourceResolver.Snapshot snapshot, String name, Set<String> active, boolean offline) throws IOException {
         String identity = snapshot.root().toRealPath() + "\n" + name;
         if (!active.add(identity)) throw new IOException("Cyclic skill source: " + name);
         try {
@@ -82,18 +97,20 @@ public final class RepositoryManager {
                 String revision = snapshot.revision().equals("directory") ? SkillFiles.digest(skill.directory()) : snapshot.revision();
                 return new Content(skill.directory(), revision, relative.isEmpty() ? "." : relative);
             }
-            Content content = upstreamContent(upstream, snapshot.root(), active);
+            Content content = upstreamContent(upstream, snapshot.root(), active, offline);
+            if (content == null) return null;
             return new Content(content.directory(), content.revision(), "skillkit.json");
         } finally {
             active.remove(identity);
         }
     }
 
-    private Content upstreamContent(RepositoryStore.Upstream upstream, Path declarationRoot, Set<String> active) throws IOException {
-        SourceResolver.Snapshot snapshot = sources.resolve(sourceLocation(upstream.source(), declarationRoot), upstream.ref());
-        if (upstream.path().equals("skillkit.json")) return sourceContent(snapshot, upstream.name(), active);
+    private @Nullable Content upstreamContent(RepositoryStore.Upstream upstream, Path declarationRoot, Set<String> active, boolean offline) throws IOException {
+        SourceResolver.Snapshot snapshot = sources.resolve(sourceLocation(upstream.source(), declarationRoot), upstream.ref(), offline);
+        if (snapshot == null) return null;
+        if (upstream.path().equals("skillkit.json")) return sourceContent(snapshot, upstream.name(), active, offline);
         Path path = SkillFiles.inside(snapshot.root(), upstream.path());
-        if (!Files.isRegularFile(path.resolve("SKILL.md"))) return sourceContent(snapshot, upstream.name(), active);
+        if (!Files.isRegularFile(path.resolve("SKILL.md"))) return sourceContent(snapshot, upstream.name(), active, offline);
         String revision = snapshot.revision().equals("directory") ? SkillFiles.digest(path) : snapshot.revision();
         return new Content(path, revision, upstream.path());
     }

@@ -44,7 +44,7 @@ A modern SSL/TLS certificate toolkit adopting "Convention over Configuration" to
    - Automatically determines whether an argument is an IPv4/IPv6 address or a DNS domain name, dynamically constructing X.509 v3 `subjectAltName` extensions without requiring configuration files.
 2. **Local Root CA Automation**:
    - `~/.local-ca/ca.crt` (or customized path) is automatically used as the signing authority if present.
-   - `certkit ca` initializes a 10-year root authority and adds it to the operating system's trust store.
+   - `certkit ca` generates a 10-year root authority. `certkit ca --trust` also requests installation into the operating system trust store.
 3. **Cross-Platform Trust Injection (macOS, Linux, Windows 11)**:
    - macOS: `security add-trusted-cert` into user login keychain.
    - Linux: Automatically detects `/usr/local/share/ca-certificates/` (Debian/Ubuntu), `/etc/pki/ca-trust/source/anchors/` (RHEL), and `/etc/ca-certificates/trust-source/anchors/` (Arch).
@@ -89,8 +89,8 @@ A modern personal AI skills collection manager and parallel multi-agent distribu
 
 ### Key Innovations
 1. **10+ AI Agent Target Fan-Out**:
-   - `skillkit install <name>`
-   - Automatically fans out installation to all major AI coding agents: Codex, Pi, ZCode (`~/.agents/skills`), Claude Code (`~/.claude/skills`), Qwen Code (`~/.qwen/skills`), Cursor (`~/.cursor/skills`), Gemini CLI (`~/.gemini/skills`), Hermes (`~/.hermes/skills`), OpenCode (`~/.config/opencode/skills`), and Antigravity (`~/.gemini/antigravity/skills`).
+   - `skillkit install <name>` installs in the shared directory. Use `--agent shared,claude-code` or another target list to distribute to additional directories.
+   - Supported targets include Codex, Pi, ZCode (`~/.agents/skills`), Claude Code (`~/.claude/skills`), Qwen Code (`~/.qwen/skills`), Cursor (`~/.cursor/skills`), Gemini CLI (`~/.gemini/skills`), Hermes (`~/.hermes/skills`), OpenCode (`~/.config/opencode/skills`), and Antigravity (`~/.gemini/antigravity/skills`).
    - Shared target paths are automatically de-duplicated and written once.
 2. **Dual Content Architecture (Own Content vs. Upstream Metadata)**:
    - Own drafts and customized skills live directly in `skills/` as plain directories/files.
@@ -158,7 +158,7 @@ A: Developers frequently commit `.env` files or paste `export OPENAI_API_KEY="..
 A: Benchmark tests demonstrate `tokenkit env` cold execution completes in under 10 milliseconds, compared to 150-300ms for cloud-based tools like 1Password CLI or Doppler.
 
 ### Q: How does certkit achieve green-lock HTTPS on local development?
-A: By generating a local Root CA (`certkit ca`) and injecting it into the host's trust store. Any certificates generated via `certkit gen` are signed by this CA and automatically include SAN extensions required by Chrome, Edge, and Safari.
+A: Use `certkit ca --trust` to generate and install a local root CA. Subsequent `certkit gen` runs can use that CA for signing and include SAN extensions.
 
 ### Q: How is gpgkit different from standard gpg commands?
 A: Standard `gpg` commands are fragmented, difficult to remember, and leave backups unverified until catastrophe strikes. `gpgkit` enforces an automated verification loop during backup, guarantees clean rollback on failure, and manages the entire lifecycle with human-friendly verbs and structured JSON output.

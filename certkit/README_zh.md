@@ -38,13 +38,15 @@ certkit gen dev.local api.test 127.0.0.1 192.168.1.100
 ### 2. 想要浏览器全绿锁？一键搞定受信任 Root CA
 ```bash
 # 1. 一键初始化本地 Root CA（自动保存在 ~/.certkit/ca/，并自动加入系统钥匙串信任！）
-certkit ca
+certkit ca --trust
 
 # 2. 从此以后敲任何 gen，默认全自动由本地根 CA 签发！
 certkit gen myapp.local
 # ➜ 自动生成 cert.pem, key.pem 以及 fullchain.pem
 # ➜ 打开 Chrome / Edge 访问本地服务，当场享受绿色安全小锁！
 ```
+
+省略 `--trust` 时，`ca` 只生成文件。`gen` 和 `ca` 默认保留已有产物，显式传入 `--force` 才能覆盖。信任安装失败后，可用 `certkit trust install` 重试安装已有 CA。
 
 ### 3. 检查证书状态（告别几百行 ASN.1 dump）
 ```bash

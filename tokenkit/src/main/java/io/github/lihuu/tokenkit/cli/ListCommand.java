@@ -1,5 +1,7 @@
 package io.github.lihuu.tokenkit.cli;
 
+import io.github.lihuu.clicommon.json.JsonWriter;
+
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -67,7 +69,7 @@ public final class ListCommand implements Callable<Integer> {
                         .toList();
             }
 
-            if (tokens.isEmpty()) {
+            if (tokens.isEmpty() && !json) {
                 out.println(outputStyle.muted("No tokens found."));
                 return 0;
             }
@@ -120,18 +122,16 @@ public final class ListCommand implements Callable<Integer> {
     }
 
     private void renderJson(List<Token> tokens) {
-        out.println("[");
-        for (int i = 0; i < tokens.size(); i++) {
-            Token t = tokens.get(i);
-            out.printf("  {\"id\": \"%s\", \"profile\": \"%s\", \"name\": \"%s\", \"kind\": \"%s\", \"tags\": \"%s\"}%s%n",
-                    t.id(),
-                    t.profile(),
-                    t.name(),
-                    t.kind(),
-                    t.tags() != null ? t.tags() : "",
-                    (i == tokens.size() - 1) ? "" : ","
-            );
+        JsonWriter writer = new JsonWriter().beginArray();
+        for (Token token : tokens) {
+            writer.beginObject()
+                    .name("id").value(token.id())
+                    .name("profile").value(token.profile())
+                    .name("name").value(token.name())
+                    .name("kind").value(token.kind())
+                    .name("tags").value(token.tags() != null ? token.tags() : "")
+                    .endObject();
         }
-        out.println("]");
+        out.println(writer.endArray());
     }
 }

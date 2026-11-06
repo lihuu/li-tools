@@ -1,9 +1,12 @@
 package io.github.lihuu.tokenkit.cli;
 
+import java.io.Console;
 import java.io.PrintWriter;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import io.github.lihuu.clicommon.json.JsonWriter;
 import io.github.lihuu.tokenkit.core.storage.SqliteTokenRepository;
 import org.jetbrains.annotations.NotNull;
 import picocli.CommandLine.Command;
@@ -25,6 +28,9 @@ public final class RmCommand implements Callable<Integer> {
 
     @Option(names = {"-y", "--yes"}, description = "Confirm deletion without prompt")
     private boolean skipConfirm;
+
+    @Option(names = "--json", description = "Output per-token deletion results as JSON")
+    private boolean json;
 
     public RmCommand(
             @NotNull SqliteTokenRepository repository,
@@ -50,19 +56,44 @@ public final class RmCommand implements Callable<Integer> {
                     ? profile.trim()
                     : repository.getActiveProfileName();
 
-            int deletedCount = 0;
-            for (String tokenName : names) {
-                String cleanName = tokenName.trim();
-                boolean deleted = repository.deleteToken(targetProfile, cleanName);
-                if (deleted) {
-                    out.println(outputStyle.success("Token '" + outputStyle.highlight(cleanName) + "' deleted from profile '" + targetProfile + "'"));
-                    deletedCount++;
-                } else {
-                    err.println(outputStyle.warning("Token '" + cleanName + "' not found in profile '" + targetProfile + "'"));
+            LinkedHashSet<String> requested = new LinkedHashSet<>();
+            for (String name : names) {
+                requested.add(name.trim());
+            }
+            if (!skipConfirm) {
+                Console console = System.console();
+                if (console == null || !console.isTerminal()) {
+                    err.println(outputStyle.error("Deletion requires --yes without an interactive terminal"));
+                    return 2;
+                }
+                err.printf("Delete %s from profile '%s'? [y/N] ", String.join(", ", requested), targetProfile);
+                err.flush();
+                String answer = console.readLine();
+                if (!"y".equalsIgnoreCase(answer) && !"yes".equalsIgnoreCase(answer)) {
+                    err.println("Deletion cancelled");
+                    return 1;
                 }
             }
 
-            return deletedCount > 0 ? 0 : 1;
+            JsonWriter results = json ? new JsonWriter().beginArray() : null;
+            boolean allDeleted = true;
+            for (String name : requested) {
+                boolean deleted = repository.deleteToken(targetProfile, name);
+                allDeleted &= deleted;
+                if (results != null) {
+                    results.beginObject().name("profile").value(targetProfile).name("name").value(name)
+                            .name("status").value(deleted ? "deleted" : "not_found").endObject();
+                } else if (deleted) {
+                    out.println(outputStyle.success("Token '" + outputStyle.highlight(name) + "' deleted from profile '" + targetProfile + "'"));
+                } else {
+                    err.println(outputStyle.warning("Token '" + name + "' not found in profile '" + targetProfile + "'"));
+                }
+            }
+
+            if (results != null) {
+                out.println(results.endArray());
+            }
+            return allDeleted ? 0 : 1;
         } catch (Exception e) {
             err.println(outputStyle.error("Failed to delete token: " + e.getMessage()));
             return 1;

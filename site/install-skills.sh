@@ -137,12 +137,16 @@ else
 fi
 
 # De-duplicate directories
-UNIQUE_DIRS=($(printf "%s\n" "${TARGET_DIRS[@]}" | sort -u))
+UNIQUE_DIRS=()
+while IFS= read -r dir; do
+    UNIQUE_DIRS+=("$dir")
+done < <(printf '%s\n' "${TARGET_DIRS[@]}" | sort -u)
 
 echo "🤖 Installing li-tools Agent Skills (gpgkit, certkit, tokenkit, skillkit & dukit)..."
 
 SKILLS=("gpgkit" "certkit" "tokenkit" "skillkit" "dukit")
 
+failed=0
 for dir in "${UNIQUE_DIRS[@]}"; do
     echo "  → Target: ${dir}"
     for skill in "${SKILLS[@]}"; do
@@ -181,12 +185,17 @@ for dir in "${UNIQUE_DIRS[@]}"; do
                 fi
             else
                 rm -f "${tmp_file}"
-                echo "    ⚠ Failed to download ${skill} skill" >&2
+                echo "    ⚠ Failed to download ${skill} skill for ${dir}" >&2
+                failed=$((failed + 1))
             fi
         fi
     done
 done
 
 echo ""
+if (( failed > 0 )); then
+    echo "Skill installation incomplete: ${failed} download(s) failed." >&2
+    exit 1
+fi
 echo "✅ All skills installed successfully!"
 echo "AI coding agents will now automatically recognize and operate gpgkit, certkit, tokenkit, skillkit & dukit."

@@ -38,13 +38,15 @@ certkit gen dev.local api.test 127.0.0.1 192.168.1.100
 ### 2. Want green-lock trust in your browser?
 ```bash
 # 1. Initialize your machine's trusted local Root CA (stored under ~/.certkit/ca/ and injected into system trust)
-certkit ca
+certkit ca --trust
 
 # 2. Any subsequent 'gen' command is automatically signed by your local Root CA!
 certkit gen myapp.local
 # ➜ Produces cert.pem, key.pem, and fullchain.pem
 # ➜ Open Chrome / Edge / Safari and enjoy instant HTTPS green-lock status!
 ```
+
+Without `--trust`, `ca` creates files only. `gen` and `ca` preserve existing files unless you pass `--force`. Use `certkit trust install` to retry trust installation with the existing CA.
 
 ### 3. Inspect certificates (No more multi-hundred-line ASN.1 dumps)
 ```bash

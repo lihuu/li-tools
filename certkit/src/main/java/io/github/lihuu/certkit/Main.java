@@ -1,11 +1,15 @@
 package io.github.lihuu.certkit;
 
+import io.github.lihuu.clicommon.cli.CliRunner;
+import io.github.lihuu.clicommon.json.JsonWriter;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
+import picocli.CommandLine.ScopeType;
 
+import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
@@ -16,7 +20,7 @@ import java.util.concurrent.Callable;
 @Command(
     name = "certkit",
     mixinStandardHelpOptions = true,
-    version = "certkit 0.4.0",
+    versionProvider = Main.Version.class,
     description = "One command for SSL/TLS certificates without OpenSSL agony.",
     subcommands = {
         Main.GenCommand.class,
@@ -30,14 +34,18 @@ import java.util.concurrent.Callable;
 )
 public final class Main implements Callable<Integer> {
 
-    @Option(names = "--json", description = "Output results in structured JSON format")
+    @Option(names = "--json", scope = ScopeType.INHERIT,
+        description = "JSON output for gen, ca, check and doctor")
     boolean json;
 
-    @Option(names = "--quiet", description = "Suppress human-readable progress notes")
+    @Option(names = "--quiet", scope = ScopeType.INHERIT, description = "Suppress human-readable progress notes")
     boolean quiet;
 
+    @Option(names = "--no-color", scope = ScopeType.INHERIT, description = "Disable ANSI color formatting")
+    boolean noColor;
+
     public static void main(String[] args) {
-        io.github.lihuu.clicommon.cli.CliRunner.pinUtf8Streams();
+        CliRunner.pinUtf8Streams();
         int exitCode = run(args);
         if (exitCode != 0) {
             System.exit(exitCode);
@@ -45,8 +53,20 @@ public final class Main implements Callable<Integer> {
     }
 
     public static int run(String... args) {
-        CommandLine cmd = new CommandLine(new Main());
-        return cmd.execute(args);
+        return CliRunner.run(new Main(), args, new PrintWriter(System.out, true),
+                new PrintWriter(System.err, true), System.getenv(), System.console() != null);
+    }
+
+    static final class Version implements CommandLine.IVersionProvider {
+        @Override
+        public String[] getVersion() {
+            ApplicationInfo info = ApplicationInfo.load();
+            return new String[]{info.name() + " " + info.version()};
+        }
+    }
+
+    private static String absolute(Path path) {
+        return path.toAbsolutePath().normalize().toString();
     }
 
     @Override
@@ -55,7 +75,7 @@ public final class Main implements Callable<Integer> {
         return 0;
     }
 
-    @Command(name = "gen", description = "Generate TLS certificate and private key with SAN")
+    @Command(name = "gen", mixinStandardHelpOptions = true, versionProvider = Version.class, description = "Generate TLS certificate and private key with SAN")
     static class GenCommand implements Callable<Integer> {
         @ParentCommand
         private Main parent;
@@ -81,6 +101,9 @@ public final class Main implements Callable<Integer> {
         @Option(names = "--ca-key", description = "Custom CA private key path (default: ~/.certkit/ca/ca.key)")
         private Path customCaKey;
 
+        @Option(names = "--force", description = "Replace existing output files")
+        private boolean force;
+
         @Override
         public Integer call() {
             try {
@@ -89,7 +112,7 @@ public final class Main implements Callable<Integer> {
                 Path keyOut = destDir.resolve("key.pem");
                 Path fullchainOut = destDir.resolve("fullchain.pem");
 
-                var split = Defaults.splitHosts(rawHosts);
+                Defaults.HostSplit split = Defaults.splitHosts(rawHosts);
                 Openssl openssl = new Openssl();
 
                 Path activeCaCert = customCaCert;
@@ -105,14 +128,25 @@ public final class Main implements Callable<Integer> {
                 }
 
                 CertInfo info;
-                if (useCa) {
-                    info = openssl.generateSignedByCa(split.domains(), split.ips(), days, algo, activeCaCert, activeCaKey, certOut, keyOut, fullchainOut);
-                } else {
-                    info = openssl.generateSelfSigned(split.domains(), split.ips(), days, algo, certOut, keyOut);
+                List<String> outputs = useCa ? List.of("cert.pem", "key.pem", "fullchain.pem") : List.of("cert.pem", "key.pem");
+                try (CertificateOutput output = new CertificateOutput(destDir, outputs, force)) {
+                    if (useCa) {
+                        info = openssl.generateSignedByCa(split.domains(), split.ips(), days, algo, activeCaCert, activeCaKey,
+                                output.staged("cert.pem"), output.staged("key.pem"), output.staged("fullchain.pem"));
+                    } else {
+                        info = openssl.generateSelfSigned(split.domains(), split.ips(), days, algo,
+                                output.staged("cert.pem"), output.staged("key.pem"));
+                    }
+                    output.publish();
                 }
 
                 if (parent != null && parent.json) {
-                    System.out.println(info.toJson());
+                    JsonWriter result = info.jsonFields().name("cert").value(absolute(certOut))
+                            .name("key").value(absolute(keyOut))
+                            .name("fullchain").value(useCa ? absolute(fullchainOut) : null)
+                            .name("signedByCa").value(useCa)
+                            .name("caCert").value(useCa ? absolute(activeCaCert) : null);
+                    System.out.println(result.endObject());
                 } else {
                     if (parent == null || !parent.quiet) {
                         System.out.println("✔ Certificate and private key generated successfully!");
@@ -120,11 +154,11 @@ public final class Main implements Callable<Integer> {
                         System.out.println("  Private Key: " + keyOut.toAbsolutePath().normalize() + " (mode: 0600)");
                         if (useCa) {
                             System.out.println("  Fullchain:   " + fullchainOut.toAbsolutePath().normalize());
-                            System.out.println("  Signed by:   " + activeCaCert.toAbsolutePath().normalize() + " (Trusted Root CA)");
+                            System.out.println("  Signed by:   " + activeCaCert.toAbsolutePath().normalize());
                         } else if (!selfSigned) {
                             System.out.println();
                             System.out.println("💡 Note: Generated as self-signed certificate.");
-                            System.out.println("   Run 'certkit ca' once to enable trusted root CA for green-lock browser support.");
+                            System.out.println("   Run 'certkit ca --trust' to create and install a local root CA.");
                         }
                         System.out.println();
                         System.out.println(info.toHumanString());
@@ -138,7 +172,7 @@ public final class Main implements Callable<Integer> {
         }
     }
 
-    @Command(name = "ca", description = "Initialize local root CA and install into system trust store")
+    @Command(name = "ca", mixinStandardHelpOptions = true, versionProvider = Version.class, description = "Create a local root CA; use --trust to install it into the trust store")
     static class CaCommand implements Callable<Integer> {
         @ParentCommand
         private Main parent;
@@ -155,45 +189,62 @@ public final class Main implements Callable<Integer> {
         @Option(names = "--out", description = "Output directory (default: ~/.certkit/ca)")
         private Path outDir;
 
-        @Option(names = "--no-trust", description = "Skip automatic installation into system trust store")
+        @Option(names = "--trust", description = "Install the generated CA into the OS trust store")
+        private boolean trust;
+
+        @Option(names = "--no-trust", description = "Only generate the CA (default)")
         private boolean noTrust;
+
+        @Option(names = "--force", description = "Replace existing CA files")
+        private boolean force;
 
         @Override
         public Integer call() {
+            if (trust && noTrust) {
+                System.err.println("certkit ca: --trust and --no-trust cannot be combined");
+                return 2;
+            }
             try {
                 Path destDir = outDir != null ? outDir : Defaults.defaultCaDir();
                 Path caCertOut = destDir.resolve("ca.crt");
                 Path caKeyOut = destDir.resolve("ca.key");
-
                 String caName = (name != null && !name.isBlank()) ? name : defaultCaName();
 
-                Openssl openssl = new Openssl();
-                CertInfo info = openssl.generateCa(caName, days, algo, caCertOut, caKeyOut);
+                CertInfo info;
+                try (CertificateOutput output = new CertificateOutput(destDir, List.of("ca.crt", "ca.key"), force)) {
+                    info = new Openssl().generateCa(caName, days, algo, output.staged("ca.crt"), output.staged("ca.key"));
+                    output.publish();
+                }
 
+                TrustStore.TrustResult installation = trust ? new TrustStore().install(caCertOut, false) : null;
                 if (parent != null && parent.json) {
-                    System.out.println(info.toJson());
-                } else {
-                    if (parent == null || !parent.quiet) {
-                        System.out.println("✔ Root CA created successfully!");
-                        System.out.println("  CA Certificate: " + caCertOut.toAbsolutePath().normalize());
-                        System.out.println("  CA Private Key: " + caKeyOut.toAbsolutePath().normalize() + " (mode: 0600)");
-                        System.out.println();
-                        System.out.println(info.toHumanString());
-
-                        if (!noTrust) {
-                            System.out.println();
-                            TrustStore ts = new TrustStore();
-                            var res = ts.install(caCertOut, false);
-                            if (res.success()) {
-                                System.out.println("✔ " + res.message());
-                            } else {
-                                System.out.println("ℹ " + res.message());
-                                if (res.suggestedCommand() != null) {
-                                    System.out.println("  Run: " + res.suggestedCommand());
-                                }
-                            }
-                        }
+                    String trustStatus = installation == null ? "not_requested" : installation.success() ? "installed" : "failed";
+                    JsonWriter result = info.jsonFields()
+                            .name("cert").value(absolute(caCertOut))
+                            .name("key").value(absolute(caKeyOut))
+                            .name("trustStatus").value(trustStatus)
+                            .name("trustMessage").value(installation == null ? null : installation.message())
+                            .name("suggestedCommand").value(installation == null ? null : installation.suggestedCommand());
+                    System.out.println(result.endObject());
+                } else if (parent == null || !parent.quiet) {
+                    System.out.println("✔ Root CA created successfully!");
+                    System.out.println("  CA Certificate: " + absolute(caCertOut));
+                    System.out.println("  CA Private Key: " + absolute(caKeyOut));
+                    System.out.println(info.toHumanString());
+                    if (installation == null) {
+                        System.out.println("  Trust installation not requested. To install: certkit trust install <CA certificate>");
+                    } else if (installation.success()) {
+                        System.out.println("✔ " + installation.message());
                     }
+                }
+
+                if (installation != null && !installation.success()) {
+                    System.err.println("certkit ca: CA created at " + absolute(caCertOut) + "; trust installation failed: "
+                            + installation.message());
+                    if (installation.suggestedCommand() != null) {
+                        System.err.println("  Run: " + installation.suggestedCommand());
+                    }
+                    return 1;
                 }
                 return 0;
             } catch (Exception e) {
@@ -212,7 +263,7 @@ public final class Main implements Callable<Integer> {
         }
     }
 
-    @Command(name = "check", description = "Inspect local cert file or remote host:port")
+    @Command(name = "check", mixinStandardHelpOptions = true, versionProvider = Version.class, description = "Inspect local cert file or remote host:port")
     static class CheckCommand implements Callable<Integer> {
         @ParentCommand
         private Main parent;
@@ -257,7 +308,7 @@ public final class Main implements Callable<Integer> {
         }
     }
 
-    @Command(name = "convert", description = "Convert certificates between PEM, P12/PFX, and DER")
+    @Command(name = "convert", mixinStandardHelpOptions = true, versionProvider = Version.class, description = "Convert certificates between PEM, P12/PFX, and DER")
     static class ConvertCommand implements Callable<Integer> {
         @ParentCommand
         private Main parent;
@@ -344,7 +395,7 @@ public final class Main implements Callable<Integer> {
         }
     }
 
-    @Command(name = "raw", description = "Pass arguments directly to underlying openssl binary (Escape Hatch)")
+    @Command(name = "raw", mixinStandardHelpOptions = true, versionProvider = Version.class, description = "Pass arguments directly to underlying openssl binary (Escape Hatch)")
     static class RawCommand implements Callable<Integer> {
         @Parameters(arity = "1..*", description = "Raw arguments passed directly to openssl")
         private List<String> rawArgs;
@@ -371,6 +422,8 @@ public final class Main implements Callable<Integer> {
 
     @Command(
         name = "trust",
+        mixinStandardHelpOptions = true,
+        versionProvider = Version.class,
         description = "Manage system trust store for custom root CA certificates",
         subcommands = {
             TrustInstallCommand.class,
@@ -386,7 +439,7 @@ public final class Main implements Callable<Integer> {
         }
     }
 
-    @Command(name = "install", description = "Install and trust a root CA in the operating system")
+    @Command(name = "install", mixinStandardHelpOptions = true, versionProvider = Version.class, description = "Install and trust a root CA in the operating system")
     static class TrustInstallCommand implements Callable<Integer> {
         @Parameters(index = "0", arity = "0..1", description = "Root CA cert path (default: ~/.certkit/ca/ca.crt)")
         private Path rawCaCert;
@@ -418,7 +471,7 @@ public final class Main implements Callable<Integer> {
         }
     }
 
-    @Command(name = "check", description = "Check if a root CA is installed in the trust store")
+    @Command(name = "check", mixinStandardHelpOptions = true, versionProvider = Version.class, description = "Check if a root CA is installed in the trust store")
     static class TrustCheckCommand implements Callable<Integer> {
         @Parameters(index = "0", arity = "0..1", description = "Root CA cert path (default: ~/.certkit/ca/ca.crt)")
         private Path rawCaCert;
@@ -438,7 +491,7 @@ public final class Main implements Callable<Integer> {
         }
     }
 
-    @Command(name = "uninstall", description = "Remove a root CA from the trust store")
+    @Command(name = "uninstall", mixinStandardHelpOptions = true, versionProvider = Version.class, description = "Remove a root CA from the trust store")
     static class TrustUninstallCommand implements Callable<Integer> {
         @Parameters(index = "0", arity = "0..1", description = "Root CA cert path (default: ~/.certkit/ca/ca.crt)")
         private Path rawCaCert;
@@ -470,7 +523,7 @@ public final class Main implements Callable<Integer> {
         }
     }
 
-    @Command(name = "doctor", description = "Check environment health, OpenSSL availability, and trust store status")
+    @Command(name = "doctor", mixinStandardHelpOptions = true, versionProvider = Version.class, description = "Check environment health, OpenSSL availability, and trust store status")
     static class DoctorCommand implements Callable<Integer> {
         @ParentCommand
         private Main parent;

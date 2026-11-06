@@ -43,31 +43,30 @@ gpgkit doctor --json
 ```
 
 ### 2. Generate a GPG Key
-Generate a modern Ed25519 key (default, recommended):
+Generate a key with an explicit identity. The defaults are RSA 4096, two years, and no passphrase.
 ```bash
-gpgkit gen "Alice Developer <alice@example.com>"
+gpgkit gen --uid "Alice Developer <alice@example.com>"
 ```
-Or specify RSA 4096-bit:
+For Ed25519 and passphrase protection, supply a readable passphrase file:
 ```bash
-gpgkit gen --algo rsa4096 "Alice Developer <alice@example.com>"
+gpgkit gen --uid "Alice Developer <alice@example.com>" --algo ed25519 --passphrase-file /path/to/passphrase
 ```
 Non-interactive / machine-readable JSON output:
 ```bash
-gpgkit gen --json "Alice Developer <alice@example.com>"
+gpgkit gen --json --uid "Alice Developer <alice@example.com>"
 ```
 Output provides:
 - `fingerprint`: Full 40-character hex fingerprint.
-- `keyId`: Short 16-character hex Key ID (for git config).
-- `algorithm`: e.g. `ed25519` or `rsa4096`.
+- `userIds`, `algorithm`, `expires`, `passphrase` and `backupCommand`: Use the returned full fingerprint for configuration and export.
 
 ### 3. Git Commit Signing Setup
 Directly export the ASCII-armored public key to paste into GitHub/GitLab:
 ```bash
-gpgkit export alice@example.com
+gpg --armor --export <FINGERPRINT>
 ```
 Configure Git automatically with the generated Key ID:
 ```bash
-git config --global user.signingkey <KEY_ID>
+git config --global user.signingkey <FINGERPRINT>
 git config --global commit.gpgsign true
 ```
 
@@ -76,44 +75,44 @@ Generate a detached ASCII-armored signature (`.asc`):
 ```bash
 gpgkit sign release-artifact.tar.gz
 ```
-Generate an inline clearsigned text document:
+Use GnuPG directly for an inline clearsigned document:
 ```bash
-gpgkit sign --clearsign message.txt
+gpg --clearsign message.txt
 ```
 
 ### 5. Verify Signatures
 Verify a signed file:
 ```bash
-gpgkit verify release-artifact.tar.gz release-artifact.tar.gz.asc
+gpgkit verify release-artifact.tar.gz --sig release-artifact.tar.gz.asc
 ```
 Machine-readable verification:
 ```bash
-gpgkit verify --json release-artifact.tar.gz release-artifact.tar.gz.asc
+gpgkit verify --json release-artifact.tar.gz --sig release-artifact.tar.gz.asc
 ```
 JSON output contains:
 ```json
 {
-  "valid": true,
-  "signer": "Alice Developer <alice@example.com>",
+  "ok": true,
+  "userIds": ["Alice Developer <alice@example.com>"],
   "fingerprint": "...",
-  "timestamp": "2026-10-16T12:00:00Z"
+  "status": "good"
 }
 ```
 
 ### 6. Backup & Restore
 Create an encrypted single-file backup of public keys, secret keys, and trustdb:
 ```bash
-gpgkit backup --out ~/gpg-backup.bundle
+gpgkit backup --out ~/gpg-backup --generate-passphrase-to ~/gpg-backup-passphrase.txt
 ```
-Restore keys onto a new machine:
+Keep the passphrase apart from the backup. Use the backup file reported by the command when restoring on a new machine. Supply `--yes` only for a verified, intended restore.
 ```bash
-gpgkit restore ~/gpg-backup.bundle
+gpgkit restore <backup-file> --passphrase-file ~/gpg-backup-passphrase.txt
 ```
 
-### 7. Escape Hatch (Raw GPG pass-through)
-Pass arguments directly to underlying `gpg` binary:
+### 7. Low-level GnuPG operations
+Use the system `gpg` binary directly:
 ```bash
-gpgkit raw -- --list-secret-keys --keyid-format LONG
+gpg --list-secret-keys --keyid-format LONG
 ```
 
 ---
@@ -123,6 +122,6 @@ gpgkit raw -- --list-secret-keys --keyid-format LONG
 1. **Structured Outputs**: Always append `--json` when you need to parse fingerprints, keys, or validation states in automation scripts.
 2. **Standard Exit Codes**:
    - `0`: Success
-   - `1`: User error (key not found, missing argument)
-   - `2`: System error (gpg binary missing, permission denied)
-3. **Cross-Platform**: Works identically on macOS, Linux, and Windows 11.
+   - `1`: Operation failure, such as a key or file not found
+   - `2`: Invalid CLI usage, such as a missing argument
+3. Run `gpgkit --version` to check the build and `gpgkit <command> --help` for its synopsis.

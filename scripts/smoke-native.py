@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 import xml.etree.ElementTree as ET
 
@@ -57,9 +58,32 @@ def main():
         for tool, binary in binaries.items():
             assert run([binary, "--help"], directory, environment).strip(), tool
             run([binary, "--not-a-real-option"], directory, environment, expected=2)
-            if tool != "gpgkit":
-                assert version in run([binary, "--version"], directory, environment), tool
+            assert version in run([binary, "--version"], directory, environment), tool
             print(f"{tool}: native CLI PASS", flush=True)
+
+        gpgkit = binaries["gpgkit"]
+        assert "--sig" in run([gpgkit, "verify", "--help"], directory, environment)
+        run([gpgkit, "verify", "missing.tar.gz", "--sig", "missing.asc", "--json"], directory, environment, expected=1)
+        certkit = binaries["certkit"]
+        assert "--self-signed" in run([certkit, "gen", "--help"], directory, environment)
+        assert version in run([certkit, "gen", "--version"], directory, environment)
+
+        gpgconf = shutil.which("gpgconf")
+        if os.name == "posix" and shutil.which("gpg") and gpgconf:
+            with tempfile.TemporaryDirectory(prefix="gk-") as keyring:
+                signing_env = dict(environment, GNUPGHOME=keyring)
+                artifact = directory / "release-fixture.txt"
+                artifact.write_text("synthetic release fixture\n", encoding="utf-8")
+                try:
+                    key = json.loads(run([gpgkit, "gen", "--json", "--uid", "Native Smoke <smoke@example.invalid>",
+                                          "--algo", "ed25519"], directory, signing_env))
+                    run([gpgkit, "sign", artifact, "--key", key["fingerprint"]], directory, signing_env)
+                    verified = json.loads(run([gpgkit, "verify", artifact, "--sig", str(artifact) + ".asc", "--json"],
+                                               directory, signing_env))
+                    assert verified["ok"] and verified["fingerprint"] == key["fingerprint"], verified
+                    print("gpgkit: generate, sign and verify PASS", flush=True)
+                finally:
+                    run([gpgconf, "--homedir", keyring, "--kill", "gpg-agent"], directory, signing_env)
 
         keytool = shutil.which("keytool")
         if keytool is None:
@@ -81,7 +105,7 @@ def main():
                 "-storepass", password, "-file", certificate, *options,
             ], directory, environment)
             info = json.loads(run([
-                binaries["certkit"], "--json", "check", certificate,
+                binaries["certkit"], "check", certificate, "--json",
             ], directory, environment))
             assert info["subjectCn"] == "localhost", info
             assert "IP:127.0.0.1" in info["sans"], info
@@ -89,19 +113,59 @@ def main():
         assert fingerprints[0] == fingerprints[1] and fingerprints[0]
         print("certkit: PEM/DER certificate parsing PASS", flush=True)
 
+        if shutil.which("openssl"):
+            leaf = directory / "certs"
+            generated = json.loads(run([certkit, "gen", "--self-signed", "--out", leaf, "localhost", "--json"],
+                                       directory, environment))
+            assert Path(generated["cert"]).resolve() == (leaf / "cert.pem").resolve(), generated
+            assert Path(generated["key"]).resolve() == (leaf / "key.pem").resolve(), generated
+            original_key = (leaf / "key.pem").read_bytes()
+            run([certkit, "gen", "--self-signed", "--out", leaf, "localhost"], directory, environment, expected=1)
+            assert (leaf / "key.pem").read_bytes() == original_key
+            ca = json.loads(run([certkit, "ca", "--out", directory / "unused-ca", "--json"], directory, environment))
+            assert ca["trustStatus"] == "not_requested", ca
+            assert Path(ca["cert"]).is_file() and Path(ca["key"]).is_file(), ca
+            print("certkit: artifact paths, overwrite protection and CA generation PASS", flush=True)
+        else:
+            print("certkit: generation checks skipped (openssl not on PATH)", flush=True)
+
         tokenkit = binaries["tokenkit"]
         run([tokenkit, "set", "NATIVE_SMOKE", "synthetic-native-value"], directory, environment)
         assert run([tokenkit, "get", "NATIVE_SMOKE"], directory, environment) == "synthetic-native-value"
         assert b"synthetic-native-value" not in (directory / "tokens.db").read_bytes()
-        run([tokenkit, "rm", "NATIVE_SMOKE"], directory, environment)
+        if sys.platform.startswith("linux"):
+            stubs = directory / "clipboard-stubs"
+            stubs.mkdir()
+            for command in ("wl-copy", "xclip"):
+                stub = stubs / command
+                stub.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+                stub.chmod(0o700)
+            clipboard_env = dict(environment, PATH=str(stubs) + os.pathsep + environment["PATH"])
+            assert run([tokenkit, "get", "NATIVE_SMOKE", "--clip"], directory, clipboard_env, expected=1) == ""
+        run([tokenkit, "rm", "NATIVE_SMOKE"], directory, environment, expected=2)
+        assert run([tokenkit, "get", "NATIVE_SMOKE"], directory, environment) == "synthetic-native-value"
+        removed = json.loads(run([tokenkit, "rm", "NATIVE_SMOKE", "MISSING", "--yes", "--json"],
+                                 directory, environment, expected=1))
+        assert [entry["status"] for entry in removed] == ["deleted", "not_found"], removed
         run([tokenkit, "get", "NATIVE_SMOKE"], directory, environment, expected=1)
+        assert json.loads(run([tokenkit, "list", "--json"], directory, environment)) == []
         print("tokenkit: encrypted SQLite round trip PASS", flush=True)
 
         skillkit = binaries["skillkit"]
         skills_repo = directory / "skills-repo"
         skills_repo.mkdir()
-        run([skillkit, "--repository", str(skills_repo), "list"], directory, environment)
-        print("skillkit: skills repository list PASS", flush=True)
+        skills_home = directory / "skills-home"
+        skills_home.mkdir()
+        skillkit_args = [skillkit, "-Duser.home=" + str(skills_home), "--repository", skills_repo]
+        assert json.loads(run([*skillkit_args, "list", "--json"], directory, environment)) == []
+        missing = json.loads(run([*skillkit_args, "install", "missing", "--dry-run", "--json"],
+                                 directory, environment, expected=1))
+        assert missing[0]["status"] == "failed", missing
+        remote = json.loads(run([*skillkit_args, "install", "missing", "--repo", "owner/unfetched", "--dry-run", "--json"],
+                                directory, environment))
+        assert remote[0]["status"] == "unverified", remote
+        assert not (skills_home / ".agents").exists()
+        print("skillkit: skills list and offline preview PASS", flush=True)
 
         dukit = binaries["dukit"]
         scan_root = directory / "dukit-tree" / "inner"
@@ -117,6 +181,7 @@ def main():
         assert shallow["tree"]["size"] == 4096, "aggregates survive the depth cut"
         ranked = json.loads(run([dukit, "top", str(scan_root), "--files", "--json"], directory, environment))
         assert ranked["entries"][0]["size"] == 4096, ranked
+        run([dukit, "scan", scan_root, "--text", "--json"], directory, environment, expected=2)
         run([dukit, "browse", str(scan_root)], directory, environment, expected=2)
         print("dukit: scan JSON, depth cut and top ranking PASS", flush=True)
 

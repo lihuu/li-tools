@@ -1,22 +1,18 @@
 ---
 name: li-tools
-description: Use when managing developer security tooling, SSL/TLS certificates (certkit), disk usage analysis (dukit), GPG keys (gpgkit), AI agent skills (skillkit), and encrypted tokens (tokenkit) across macOS, Linux, and Windows 11.
+description: Use when managing developer security tooling, GPG commit signing keys (gpgkit), SSL/TLS certificates or local root CAs (certkit), encrypted API tokens/keys (tokenkit), personal AI agent skills distribution (skillkit), and cross-platform disk usage analysis (dukit) across macOS, Linux, and Windows 11.
 ---
 
 # li-tools: Suite AI Agent Skill Guide
 
-`li-tools` is an open-source, AI-first developer security suite powered by a unified CLI shell (`cli-common`):
-1. **`certkit`**: One command for local development SSL/TLS certificates, root CA creation, multi-SAN generation, format conversion (PEM/P12/DER), and automated system trust store installation.
-2. **`dukit`**: One command for cross-platform disk usage analysis, ncdu-inspired full-screen TUI, occupied space by default via FFM `st_blocks`, safe Trash deletion, and streaming JSON export.
-3. **`gpgkit`**: One command for GPG key generation, Git commit signing, file signing, verification, and backup.
-4. **`skillkit`**: One command for managing personal skills repositories and parallel fanout distribution to 10+ AI coding agents.
-5. **`tokenkit`**: One command for encrypted local API key / secret management, shell environment injection (`tokenkit env`), and cross-machine backup/restore.
+`li-tools` is an open-source, AI-first developer toolchain containing:
+1. **`gpgkit`**: One command for GPG key generation, Git commit signing, file signing, verification, and backup.
+2. **`certkit`**: One command for local development SSL/TLS certificates, root CA creation, multi-SAN generation, format conversion (PEM/P12/DER), and automated system trust store installation.
+3. **`tokenkit`**: Modern encrypted universal token manager with embedded SQLite, sub-10ms shell injection (`tokenkit env`), process isolation (`tokenkit run`), and cross-machine migration.
+4. **`skillkit`**: Personal skills repository manager and parallel distribution CLI for 10+ AI coding agents (Claude Code, Codex, Cursor, Gemini CLI, OpenCode, Antigravity, etc.) with zero npm/npx bloat.
+5. **`dukit`**: Cross-platform disk usage analyzer: size-sorted scan reports, machine-readable JSON export, and a line-based interactive browser with identical apparent-size numbers on every OS.
 
-All tools share an identical interaction contract powered by `cli-common`:
-- **Unified Global Options**: `--json` (machine-readable streaming JSON for Agent consumption), `--quiet` (minimal output), `--no-color` ([NO_COLOR](https://no-color.org/) compliant), `--debug` (detailed diagnostics).
-- **Strict Exit Code Contract**: `0` = Success, `1` = Operation failure (single-line actionable stderr, no raw unhandled stack traces), `2` = Usage/syntax error.
-- **Zero Config Agony**: Instant, sensible defaults (Ed25519 for GPG, ECDSA P-256 for TLS, SQLite + AES-256-GCM for tokens).
-- **Triple-Platform Equity**: Native performance and identical CLI contracts across macOS (Apple Silicon & Intel), Linux (x86_64), and Windows 11.
+Use `--help` and `--version` to identify the installed interface. JSON is command-specific. For example, use `certkit check --json`, `dukit scan` (JSON by default), `gpgkit status --json`, `skillkit list --json`, or `tokenkit list --json`. For secrets, prefer `tokenkit run`; `get` and `env` can emit plaintext.
 
 ---
 
@@ -24,18 +20,23 @@ All tools share an identical interaction contract powered by `cli-common`:
 
 | Developer Task | Recommended Command | Tool |
 |---|---|---|
-| Create HTTPS "green lock" certs for local development | `certkit ca` & `certkit gen localhost 127.0.0.1` | `certkit` |
-| Inspect a cert file or live remote HTTPS connection | `certkit check <file>` or `certkit check <host:443>` | `certkit` |
-| Convert between PEM, P12/PFX, and DER for Java / Docker | `certkit convert <file> --to p12 --password <pw>` | `certkit` |
-| Scan disk space and browse interactive full-screen TUI | `dukit` or `dukit scan <dir>` | `dukit` |
-| Export streaming directories-only JSON disk tree | `dukit export <dir> --json` | `dukit` |
-| Configure Git commit signing for GitHub/GitLab | `gpgkit gen "Name <email>"` & `gpgkit export <email>` | `gpgkit` |
+| Configure Git commit signing for GitHub/GitLab | `gpgkit gen --uid "Name <email>"` & `gpg --armor --export <fingerprint>` | `gpgkit` |
 | Sign / verify release artifacts, tarballs, or text | `gpgkit sign <file>` & `gpgkit verify <file>` | `gpgkit` |
-| Backup or restore GPG secret keys to a new machine | `gpgkit backup` & `gpgkit restore` | `gpgkit` |
-| Manage personal skills and fanout to 10+ AI agents | `skillkit install <name>` or `skillkit update` | `skillkit` |
-| Store API keys, tokens, or passwords securely | `tokenkit set <name> <value>` | `tokenkit` |
-| Inject project tokens into shell or run process | `eval "$(tokenkit env -p <profile>)"` or `tokenkit run -p <profile> -- <cmd>` | `tokenkit` |
-| Backup or migrate encrypted tokens across machines | `tokenkit backup` & `tokenkit restore <bundle.enc>` | `tokenkit` |
+| Backup or restore GPG secret keys to a new machine | `gpgkit backup` & `gpgkit restore <backup-file>` | `gpgkit` |
+| Create HTTPS "green lock" certs for local development | `certkit ca --trust` & `certkit gen localhost 127.0.0.1` | `certkit` |
+| Inspect a cert file or live remote HTTPS connection | `certkit check <file>` or `certkit check <host:443>` | `certkit` |
+| Convert between PEM, P12/PFX, and DER for Java / Docker | `certkit convert cert.pem bundle.p12 --key key.pem` | `certkit` |
+| Store API keys encrypted without plaintext in .env or .zshrc | `tokenkit set OPENAI_API_KEY` (masked prompt) | `tokenkit` |
+| Inject decrypted tokens into current shell session sub-10ms | `eval "$(tokenkit env)"` | `tokenkit` |
+| Run isolated child command with decrypted tokens | `tokenkit run -- npm run dev` | `tokenkit` |
+| Copy token to clipboard without displaying on screen | `tokenkit get GITHUB_TOKEN --clip` | `tokenkit` |
+| Export/import encrypted token bundles across machines | `tokenkit export` & `tokenkit import <bundle>` | `tokenkit` |
+| Install into shared skills or selected Agent directories | `skillkit install <name> [--agent <target>] [--repo owner/repo]` | `skillkit` |
+| Parallel update all installed skills across all agents | `skillkit update --jobs 8` | `skillkit` |
+| Publish personal skills repository with scoped commit | `skillkit push [-m "msg"]` | `skillkit` |
+| Find what consumes the most disk space | `dukit top <path> --json` | `dukit` |
+| Export directory sizes as JSON for automation | `dukit scan <path> --json` | `dukit` |
+| Interactively browse big directories | `dukit browse <path>` | `dukit` |
 
 ---
 
@@ -44,16 +45,16 @@ All tools share an identical interaction contract powered by `cli-common`:
 ### 1. One-Shot Agent Prompt
 If an AI agent needs to install the tools in a workspace:
 ```text
-Please install li-tools (certkit, dukit, gpgkit, skillkit & tokenkit):
-- Homebrew (macOS/Linux): `brew tap lihuu/tap && brew install certkit dukit gpgkit skillkit tokenkit`
-- Scoop (Windows): `scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install certkit dukit gpgkit skillkit tokenkit`
+Please install li-tools (gpgkit, certkit, tokenkit, skillkit, dukit):
+- Homebrew (macOS/Linux): `brew tap lihuu/tap && brew install gpgkit certkit tokenkit skillkit dukit`
+- Scoop (Windows): `scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install gpgkit certkit tokenkit skillkit dukit`
 - macOS / Linux Shell: `curl -fsSL https://tools.lihu.me/install.sh | bash`
 - Windows PowerShell: `irm https://tools.lihu.me/install.ps1 | iex`
-- Verify with `certkit --version`, `dukit --version`, `gpgkit --help`, `skillkit --version`, and `tokenkit --version`.
+- Verify with `gpgkit --version`, `certkit --version`, `tokenkit --version`, `skillkit --version`, and `dukit --version`.
 ```
 
 ### 2. Install Agent Skills Directly
-Install skills into your AI agent environment (`~/.agents/skills/`, `~/.gemini/skills/`, `~/.claude/skills/`, or local `.ai/skills/`):
+The installer defaults to `~/.agents/skills/`. Use the installer help to select a different target.
 ```bash
 # macOS / Linux:
 curl -fsSL https://tools.lihu.me/install-skills.sh | bash
@@ -65,8 +66,8 @@ irm https://tools.lihu.me/install-skills.ps1 | iex
 ---
 
 ## Dedicated Sub-Skills
-- **certkit Skill**: `https://tools.lihu.me/certkit/SKILL.md`
-- **dukit Skill**: `https://tools.lihu.me/dukit/SKILL.md`
 - **gpgkit Skill**: `https://tools.lihu.me/gpgkit/SKILL.md`
-- **skillkit Skill**: `https://tools.lihu.me/skillkit/SKILL.md`
+- **certkit Skill**: `https://tools.lihu.me/certkit/SKILL.md`
 - **tokenkit Skill**: `https://tools.lihu.me/tokenkit/SKILL.md`
+- **skillkit Skill**: `https://tools.lihu.me/skillkit/SKILL.md`
+- **dukit Skill**: `https://tools.lihu.me/dukit/SKILL.md`

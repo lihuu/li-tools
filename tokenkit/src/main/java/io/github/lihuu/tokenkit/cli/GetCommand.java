@@ -69,11 +69,9 @@ public final class GetCommand implements Callable<Integer> {
                 if (copied) {
                     out.println(outputStyle.success("Token '" + outputStyle.highlight(name.trim()) + "' copied to system clipboard"));
                     return 0;
-                } else {
-                    err.println(outputStyle.warning("Failed to access system clipboard; printing to stdout:"));
-                    out.println(secretValue);
-                    return 0;
                 }
+                err.println(outputStyle.error("Failed to access system clipboard"));
+                return 1;
             }
 
             out.print(secretValue);

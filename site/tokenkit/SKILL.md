@@ -1,6 +1,6 @@
 ---
 name: tokenkit
-description: Use when securely managing, storing, retrieving, masking, or injecting API keys and sensitive environment tokens with sub-10ms shell export and zero plaintext leaks.
+description: Use when securely managing, storing, retrieving, masking, or injecting API keys and sensitive environment tokens through an encrypted local vault and child-process environment injection.
 ---
 
 # tokenkit: AI Agent Skill Guide
@@ -41,14 +41,14 @@ scoop install tokenkit
 
 ### 1. Store or Update Token (`set`)
 ```bash
-# Explicit value
-tokenkit set OPENAI_API_KEY sk-proj-xxxxxx
+# Masked input at a terminal
+tokenkit set OPENAI_API_KEY
 
-# Pipe from standard input (great for multi-line private keys / certs)
-cat id_rsa | tokenkit set SERVER_SSH_KEY
+# Feed UTF-8 values from an authorized source, preserving line endings
+tokenkit set SERVER_SSH_KEY < /path/to/authorized/input
 
-# Assign to profile with metadata
-tokenkit set AWS_ACCESS_KEY_ID AKIAXXXX --profile work --tag cloud,infra --desc "Production AWS"
+# Apply profile and metadata to a masked prompt
+tokenkit set AWS_ACCESS_KEY_ID --profile work --tag cloud,infra --desc "Production AWS"
 ```
 
 ### 2. Retrieve Token Value (`get`)
@@ -56,14 +56,16 @@ tokenkit set AWS_ACCESS_KEY_ID AKIAXXXX --profile work --tag cloud,infra --desc 
 # Output raw plaintext to stdout (no trailing newline, pipeline-friendly)
 tokenkit get OPENAI_API_KEY
 
-# Copy directly to OS clipboard without screen display
+# Copy to the OS clipboard. On failure exits 1 with empty stdout.
 tokenkit get GITHUB_TOKEN --clip
 
 # Retrieve from specific profile
 tokenkit get AWS_ACCESS_KEY_ID --profile work
 ```
 
-### 3. Shell Environment Export (`env` — Sub-10ms)
+### 3. Shell Environment Export (`env`)
+
+`get` without `--clip` and `env` write plaintext to stdout. For agent workflows, prefer `run` to inject credentials into the intended child process without reading the values into the tool transcript.
 Designed to run in shell profiles (`.zshrc`, `.bashrc`, PowerShell `$PROFILE`) with zero perceptible delay:
 ```bash
 # Evaluate in zsh / bash
@@ -95,7 +97,7 @@ tokenkit list
 tokenkit list --profile all
 tokenkit list --tag cloud
 
-# Machine-readable JSON output for Agent parsing
+# Machine-readable metadata array. No results returns [].
 tokenkit list --json
 ```
 
@@ -140,9 +142,11 @@ tokenkit import ./my-tokens.tkbundle --overwrite
 ### 9. Remove Tokens (`rm`)
 ```bash
 tokenkit rm OPENAI_API_KEY
-tokenkit rm KEY1 KEY2 -y
+tokenkit rm KEY1 KEY2 --yes --json
 tokenkit rm AWS_SECRET_ACCESS_KEY --profile work
 ```
+
+Without `--yes`, deletion requires a terminal confirmation. Scripts must pass `--yes` explicitly. In JSON mode each requested token reports `deleted` or `not_found`. Exit status is `1` if any requested token was absent, including partial success.
 
 ---
 

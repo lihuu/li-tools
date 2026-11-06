@@ -404,7 +404,7 @@
           <ul class="text-xs text-slate-400 space-y-2 font-mono">
             <li class="flex items-start gap-2">
               <span class="text-purple-400 font-bold">✔</span>
-              <span><strong class="text-slate-200">纯流式结构化输出</strong>：统一 <code class="text-purple-300">--json</code> 契约，输出精简 Directories-Only 树，节省宝贵 Token。</span>
+              <span><strong class="text-slate-200">纯流式结构化输出</strong>：支持结构化输出的命令提供 JSON。dukit 扫描树只包含目录，减少上下文占用。</span>
             </li>
             <li class="flex items-start gap-2">
               <span class="text-purple-400 font-bold">✔</span>
@@ -537,7 +537,7 @@
         <div class="glass-card p-6 rounded-xl">
           <h4 class="font-bold text-white mb-2">certkit 是如何让本地开发网站直接实现全绿锁的？</h4>
           <p class="text-sm text-slate-400 leading-relaxed">
-            执行 <code class="text-emerald-400">certkit ca</code> 会在本地初始化根证书授权机构并注入操作系统受信库；之后运行 <code class="text-emerald-400">certkit gen</code> 签发的所有证书均由该本地 CA 签发并自动注入 SAN 扩展，浏览器访问即可获得原生绿锁。
+            执行 <code class="text-emerald-400">certkit ca --trust</code> 会在本地初始化根证书授权机构并注入操作系统受信库；之后运行 <code class="text-emerald-400">certkit gen</code> 签发的所有证书均由该本地 CA 签发并自动注入 SAN 扩展，浏览器访问即可获得原生绿锁。
           </p>
         </div>
         <div class="glass-card p-6 rounded-xl">

@@ -54,12 +54,8 @@ fi
 # of this build is a file that runs on a machine with no JDK, so a build that cannot produce one
 # has to fail here rather than ship.
 #
-# No -H:ReflectionConfigurationFiles and no reachability metadata, because nothing here is
-# reached reflectively: dispatch is a switch over strings (Main), JSON is written by hand (Json),
-# and gpg is an external process. That is the whole reason the project has no dependencies. If
-# something reflective is ever added, its metadata goes under
-# src/main/resources/META-INF/native-image/ — and note that the JVM tests will not catch its
-# absence, only the native image will.
+# Dispatch is explicit and JSON is written without reflection. The version resource is included
+# by the metadata under src/main/resources/META-INF/native-image/ and checked by native smoke.
 #
 # NATIVE_IMAGE_THREADS caps how many threads native-image uses to compile. Unset, it sizes itself
 # for the whole machine, which is right for one build and wrong for several at once: running a

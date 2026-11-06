@@ -91,7 +91,7 @@
             "name": "什么是 skillkit？",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "skillkit 是一款零依赖的 CLI 工具，基于 Java 25 与 GraalVM Native Image 构建，用于管理个人的 AI Agent Skills 资产库。支持一键将原创或第三方 skills 全局并行分发至所有受支持的 AI Coding Agents（Claude Code、Codex、Cursor、Gemini CLI、OpenCode、Antigravity 等），并提供严格的作用域提交与远端推送，无需外部 skills、npm 或 npx 命令。"
+              "text": "skillkit 是一款零依赖的 CLI 工具，基于 Java 25 与 GraalVM Native Image 构建，用于管理个人的 AI Agent Skills 资产库。原创或第三方 skills 默认安装到共享目录，也可选择指定的 Agent 目录，并提供严格的作用域提交与远端推送，无需外部 skills、npm 或 npx 命令。"
             }
           },
           {
@@ -246,7 +246,7 @@
         </div>
         <div class="text-slate-400 mb-4 pl-4 border-l-2 border-indigo-500/30">
           <div>ℹ 已解析上游提交 7f3b89a (https://github.com/owner/community-skills)</div>
-          <div class="text-emerald-400">✔ 自动在 skillkit.json 记录来源元数据，并部署至所有 Agent 目标</div>
+          <div class="text-emerald-400">✔ 自动在 skillkit.json 记录来源元数据，并安装到共享目录</div>
         </div>
 
         <!-- Step 3: Parallel Update -->
@@ -276,8 +276,8 @@
     <!-- Supported Agents Grid -->
     <div id="agents" class="max-w-5xl mx-auto mb-24">
       <div class="text-center mb-10">
-        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">单次安装，全生态自动广播（Fan-Out）</h2>
-        <p class="text-slate-400 text-sm">无需手动记忆每个 Agent 的专属路径。skillkit 自动识别并分发到所有主流 Agent 目录，共享路径自动去重合并。</p>
+        <h2 class="text-2xl font-bold tracking-tight text-white mb-2">共享目录与指定 Agent</h2>
+        <p class="text-slate-400 text-sm">默认安装到共享目录。通过 --agent 选择其他目标，共享路径会自动去重。</p>
       </div>
 
       <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3.5">

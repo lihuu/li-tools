@@ -88,15 +88,15 @@ li-tools/
 
 ## 🧩 Shared CLI Architecture (`cli-common`)
 
-All tools in `li-tools` build upon the unified `cli-common` engine, ensuring identical interaction UX, exit code semantics, and developer experience across the entire matrix:
+`cli-common` provides shared CLI building blocks. Use each command’s `--help` or specification for its supported flags and output.
 
-- **Unified CLI Runner Shell (`CliRunner`, `GlobalOptionsMixin`)**: Standardized Picocli execution harness providing uniform flags (`--json`, `--quiet`, `--no-color`, `--debug`), strict exit code contracts (`0 = OK`, `1 = FAILURE`, `2 = USAGE`), and automatic UTF-8 stream pinning.
+- **Unified CLI Runner Shell (`CliRunner`, `GlobalOptionsMixin`)**: Reusable Picocli execution, option and UTF-8 helpers. The usual exit codes are `0` for success, `1` for execution failure and `2` for usage errors. Pass-through commands may return a child process exit code.
 - **Terminal Visual Styling (`OutputStyle`)**: Automatic detection of interactive TTY vs piped output, full compliance with the [NO_COLOR](https://no-color.org/) standard, and unified semantic glyphs (`✔`, `⚠`, `✖`, `ℹ`, `💡`).
 - **Zero-Reflection Streaming JSON (`JsonWriter`)**: Lightweight, GraalVM Native Image-friendly JSON serializer without runtime reflection.
 - **Terminal Formatters**: Auto-aligning key-value printers (`KeyValueFormatter`), Unicode box-drawing tables with ANSI-safe width calculation (`TableFormatter`), and secret masking utilities (`TextMasker`).
 - **Platform & System Bridges**: Native clipboard interaction (`ClipboardUtil`), POSIX/PowerShell/Fish environment variable escaping (`ShellFormatter`), and OS detection (`Platform`).
 
-Adding a new tool to `li-tools` requires zero boilerplate: simply depend on `cli-common` to inherit the exact shell, flags, formatting, and exit protocol.
+JSON support is command-specific. Examples include `certkit check --json`, `dukit scan`, `gpgkit status --json`, `skillkit list --json` and `tokenkit list --json`.
 
 
 ## 🚀 Installation

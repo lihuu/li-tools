@@ -12,11 +12,7 @@ description: Use when managing developer security tooling, GPG commit signing ke
 4. **`skillkit`**: Personal skills repository manager and parallel distribution CLI for 10+ AI coding agents (Claude Code, Codex, Cursor, Gemini CLI, OpenCode, Antigravity, etc.) with zero npm/npx bloat.
 5. **`dukit`**: Cross-platform disk usage analyzer: size-sorted scan reports, machine-readable JSON export, and a line-based interactive browser with identical apparent-size numbers on every OS.
 
-All tools share identical design principles:
-- **Zero Config Agony**: Instant, sensible defaults (Ed25519 for GPG, ECDSA P-256 for TLS, AES-256-GCM + PBKDF2 for Tokens).
-- **Machine-Readable**: All commands support `--json` for predictable automation and Agent consumption.
-- **Escape Hatch**: Full transparency and control over underlying cryptographic operations.
-- **Triple-Platform Equity**: Native performance and identical CLI contracts across macOS (Apple Silicon & Intel), Linux (x86_64 & arm64), and Windows 11.
+Use `--help` and `--version` to identify the installed interface. JSON is command-specific. For example, use `certkit check --json`, `dukit scan` (JSON by default), `gpgkit status --json`, `skillkit list --json`, or `tokenkit list --json`. For secrets, prefer `tokenkit run`; `get` and `env` can emit plaintext.
 
 ---
 
@@ -24,21 +20,21 @@ All tools share identical design principles:
 
 | Developer Task | Recommended Command | Tool |
 |---|---|---|
-| Configure Git commit signing for GitHub/GitLab | `gpgkit gen "Name <email>"` & `gpgkit export <email>` | `gpgkit` |
+| Configure Git commit signing for GitHub/GitLab | `gpgkit gen --uid "Name <email>"` & `gpg --armor --export <fingerprint>` | `gpgkit` |
 | Sign / verify release artifacts, tarballs, or text | `gpgkit sign <file>` & `gpgkit verify <file>` | `gpgkit` |
-| Backup or restore GPG secret keys to a new machine | `gpgkit backup` & `gpgkit restore` | `gpgkit` |
-| Create HTTPS "green lock" certs for local development | `certkit ca` & `certkit gen localhost 127.0.0.1` | `certkit` |
+| Backup or restore GPG secret keys to a new machine | `gpgkit backup` & `gpgkit restore <backup-file>` | `gpgkit` |
+| Create HTTPS "green lock" certs for local development | `certkit ca --trust` & `certkit gen localhost 127.0.0.1` | `certkit` |
 | Inspect a cert file or live remote HTTPS connection | `certkit check <file>` or `certkit check <host:443>` | `certkit` |
-| Convert between PEM, P12/PFX, and DER for Java / Docker | `certkit convert <file> --to p12 --password <pw>` | `certkit` |
-| Store API keys encrypted without plaintext in .env or .zshrc | `tokenkit set OPENAI_API_KEY <val>` | `tokenkit` |
+| Convert between PEM, P12/PFX, and DER for Java / Docker | `certkit convert cert.pem bundle.p12 --key key.pem` | `certkit` |
+| Store API keys encrypted without plaintext in .env or .zshrc | `tokenkit set OPENAI_API_KEY` (masked prompt) | `tokenkit` |
 | Inject decrypted tokens into current shell session sub-10ms | `eval "$(tokenkit env)"` | `tokenkit` |
 | Run isolated child command with decrypted tokens | `tokenkit run -- npm run dev` | `tokenkit` |
 | Copy token to clipboard without displaying on screen | `tokenkit get GITHUB_TOKEN --clip` | `tokenkit` |
 | Export/import encrypted token bundles across machines | `tokenkit export` & `tokenkit import <bundle>` | `tokenkit` |
-| Install own or external skill across all AI agents | `skillkit install <name> [--repo owner/repo]` | `skillkit` |
+| Install into shared skills or selected Agent directories | `skillkit install <name> [--agent <target>] [--repo owner/repo]` | `skillkit` |
 | Parallel update all installed skills across all agents | `skillkit update --jobs 8` | `skillkit` |
 | Publish personal skills repository with scoped commit | `skillkit push [-m "msg"]` | `skillkit` |
-| Find what consumes the most disk space | `dukit scan <path> [--depth <n>]` | `dukit` |
+| Find what consumes the most disk space | `dukit top <path> --json` | `dukit` |
 | Export directory sizes as JSON for automation | `dukit scan <path> --json` | `dukit` |
 | Interactively browse big directories | `dukit browse <path>` | `dukit` |
 
@@ -54,11 +50,11 @@ Please install li-tools (gpgkit, certkit, tokenkit, skillkit, dukit):
 - Scoop (Windows): `scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install gpgkit certkit tokenkit skillkit dukit`
 - macOS / Linux Shell: `curl -fsSL https://tools.lihu.me/install.sh | bash`
 - Windows PowerShell: `irm https://tools.lihu.me/install.ps1 | iex`
-- Verify with `gpgkit --help`, `certkit --version`, `tokenkit --version`, `skillkit --version`, and `dukit --version`.
+- Verify with `gpgkit --version`, `certkit --version`, `tokenkit --version`, `skillkit --version`, and `dukit --version`.
 ```
 
 ### 2. Install Agent Skills Directly
-Install skills into your AI agent environment (`~/.agents/skills/`, `~/.gemini/skills/`, `~/.claude/skills/`, or local `.ai/skills/`):
+The installer defaults to `~/.agents/skills/`. Use the installer help to select a different target.
 ```bash
 # macOS / Linux:
 curl -fsSL https://tools.lihu.me/install-skills.sh | bash
@@ -74,3 +70,4 @@ irm https://tools.lihu.me/install-skills.ps1 | iex
 - **certkit Skill**: `https://tools.lihu.me/certkit/SKILL.md`
 - **tokenkit Skill**: `https://tools.lihu.me/tokenkit/SKILL.md`
 - **skillkit Skill**: `https://tools.lihu.me/skillkit/SKILL.md`
+- **dukit Skill**: `https://tools.lihu.me/dukit/SKILL.md`

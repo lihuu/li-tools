@@ -36,7 +36,7 @@ skillkit push --repo owner/my-skills
 skillkit push
 ```
 
-安装默认复制内容，`install --symlink` 可改为软链。安装、更新支持 `--jobs` 和 `--dry-run`；卸载支持 `--dry-run`。所有命令支持公共输出选项，详见 [CLI 契约](SPEC.md)。
+安装默认复制内容，`install --symlink` 可改为软链。安装、更新支持 `--jobs` 和 `--dry-run`，卸载支持 `--dry-run`。预览会报告本地冲突，需要获取 Git 来源时标记为 `unverified`。所有命令支持公共输出选项，详见 [CLI 契约](SPEC.md)。
 
 ## 自己的仓库
 

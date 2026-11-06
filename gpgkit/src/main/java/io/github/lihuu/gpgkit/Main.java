@@ -23,9 +23,11 @@ public final class Main {
             usage: gpgkit [--json] [--quiet] [--help] <command> [arguments]
 
             global options:
-              --json    machine-readable output on stdout
-              --quiet   the short answer only: no explanations
-              --help    this text
+              --json          machine-readable output on stdout
+              --quiet         the short answer only
+              -h, --help       show help, or the synopsis for a command
+              -V, --version    print the version
+              --no-color      use plain text
 
             exit codes:
               0  success
@@ -33,20 +35,45 @@ public final class Main {
               2  usage error
 
             commands:
-              status [--refresh]      list local keys: fingerprint, algorithm, created,
-                                      expiry and days remaining, usage, whether the private
-                                      key is here, keyserver visibility; ends with one verdict
-              gen [--uid "Name <mail>"] [--expire 2y] [--algo rsa4096|ed25519]
-                  [--passphrase-file F | --no-passphrase] [--publish]
-              backup [--key <id|all>] [--out DIR]
-                     [--passphrase-file F | --generate-passphrase-to F]
-                     [--dest <spec>]...
-              restore FILE [--passphrase-file F] [--keyring DIR] [--yes]
-              extend [--key <id>] [--expire 2y] [--publish]
-              sign <file>... [--checksums sha256] [--out DIR] [--key <id>]
-              verify <file> [--sig <file.asc>] [--checksums FILE]
-              publish [--key <id>] [--keyserver hkps://keyserver.ubuntu.com]
-              doctor                  can this machine still sign, and still publish?""";
+            """;
+
+    private static final List<String> SYNOPSES = List.of(
+            """
+            status [--refresh]
+                List local keys, expiry and keyserver visibility.
+            """,
+            """
+            gen [--uid "Name <mail>"] [--expire 2y] [--algo rsa4096|ed25519]
+                [--passphrase-file F | --no-passphrase] [--publish]
+            """,
+            """
+            backup [--key <id|all>] [--out DIR]
+                   [--passphrase-file F | --generate-passphrase-to F]
+                   [--dest <spec>]...
+            """,
+            "restore FILE [--passphrase-file F] [--keyring DIR] [--yes]",
+            "extend [--key <id>] [--expire 2y] [--publish]",
+            "sign <file>... [--checksums sha256] [--out DIR] [--key <id>]",
+            "verify <file> [--sig <file.asc>] [--checksums FILE]",
+            "publish [--key <id>] [--keyserver hkps://keyserver.ubuntu.com]",
+            "doctor                  can this machine still sign, and still publish?"
+    );
+
+    private static void printHelp(List<String> words) {
+        if (!words.isEmpty()) {
+            String command = words.getFirst();
+            for (String synopsis : SYNOPSES) {
+                if (synopsis.startsWith(command + " ")) {
+                    System.out.println("usage: gpgkit " + synopsis.stripTrailing());
+                    return;
+                }
+            }
+        }
+        System.out.print(USAGE);
+        for (String synopsis : SYNOPSES) {
+            synopsis.stripTrailing().lines().forEach(line -> System.out.println("  " + line));
+        }
+    }
 
     public static void main(String[] args) {
         CliRunner.pinUtf8Streams();
@@ -58,6 +85,7 @@ public final class Main {
         boolean json = false;
         boolean quiet = false;
         boolean help = false;
+        boolean version = false;
         boolean positional = false;
         for (String argument : argv) {
             if (!positional) {
@@ -75,8 +103,15 @@ public final class Main {
                     quiet = true;
                     continue;
                 }
-                if (argument.equals("--help")) {
+                if (argument.equals("--help") || argument.equals("-h")) {
                     help = true;
+                    continue;
+                }
+                if (argument.equals("--version") || argument.equals("-V")) {
+                    version = true;
+                    continue;
+                }
+                if (argument.equals("--no-color")) {
                     continue;
                 }
             }
@@ -84,14 +119,17 @@ public final class Main {
         }
 
         if (help) {
-            System.out.println(USAGE);
-            // --help wins over a bad command line: asking what the tool does is never an error.
+            printHelp(words);
+            return Defaults.EXIT_OK;
+        }
+        if (version) {
+            ApplicationInfo info = ApplicationInfo.load();
+            System.out.println(info.name() + " " + info.version());
             return Defaults.EXIT_OK;
         }
         if (words.isEmpty()) {
-            System.err.println("gpgkit: no command given");
-            System.err.println(USAGE);
-            return Defaults.EXIT_USAGE;
+            printHelp(words);
+            return Defaults.EXIT_OK;
         }
 
         GlobalOptions global = new GlobalOptions(json, quiet, help);
@@ -112,7 +150,7 @@ public final class Main {
                 case "publish" -> new PublishCommand(global).run(commandArguments);
                 default -> {
                     System.err.println("gpgkit: unknown command: " + command);
-                    System.err.println(USAGE);
+                    System.err.println("Run gpgkit --help for available commands.");
                     yield Defaults.EXIT_USAGE;
                 }
             };

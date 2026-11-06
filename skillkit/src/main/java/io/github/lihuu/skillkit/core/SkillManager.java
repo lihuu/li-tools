@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static io.github.lihuu.skillkit.core.InstallationStore.Installation;
@@ -39,14 +40,7 @@ public final class SkillManager {
             else if (!installed.containsAll(names)) throw new IllegalArgumentException("Update only accepts installed skills");
         }
         if (dryRun) {
-            List<Item> planned = new ArrayList<>();
-            for (Path root : roots) {
-                LinkedHashSet<String> installed = update ? installedNames(List.of(root)) : new LinkedHashSet<>();
-                for (String name : names) if (!update || installed.contains(name)) {
-                    planned.add(new Item(name, root.resolve(name).toString(), "planned", update ? "update" : "install"));
-                }
-            }
-            return planned;
+            return previewInstallation(names, roots, update, source, ref);
         }
         if (names.isEmpty()) return List.of();
         try (OperationLock ignored = OperationLock.acquire(repository.store().root())) {
@@ -105,6 +99,29 @@ public final class SkillManager {
                 SkillFiles.delete(operation);
             }
         }
+    }
+
+    private List<Item> previewInstallation(List<String> names, List<Path> roots, boolean update,
+                                           @Nullable String source, String ref) throws IOException {
+        String action = update ? "update" : "install";
+        List<Item> items = new ArrayList<>();
+        for (Path root : roots) {
+            Map<String, Installation> state = new InstallationStore(root).load();
+            Set<String> installed = update ? installedNames(List.of(root)) : Set.of();
+            for (String name : names) {
+                if (update && !installed.contains(name)) continue;
+                Path target = root.resolve(name);
+                try {
+                    verify(target, state.get(name));
+                    boolean needsFetch = repository.previewNeedsFetch(name, source, ref);
+                    items.add(new Item(name, target.toString(), needsFetch ? "unverified" : "planned",
+                            needsFetch ? action + " requires fetching the source" : action));
+                } catch (IOException | IllegalArgumentException failure) {
+                    items.add(new Item(name, target.toString(), "failed", failure.getMessage()));
+                }
+            }
+        }
+        return items;
     }
 
     private Prepared prepare(String name, Path operation, String requestedSource, String ref) throws IOException {
@@ -208,7 +225,17 @@ public final class SkillManager {
             if (!Files.isDirectory(root)) continue;
             if (dryRun) {
                 Map<String, Installation> state = new InstallationStore(root).load();
-                for (String name : names) if (state.containsKey(name)) items.add(new Item(name, root.resolve(name).toString(), "planned", "remove"));
+                for (String name : new LinkedHashSet<>(names)) {
+                    Installation previous = state.get(name);
+                    if (previous == null) continue;
+                    Path target = root.resolve(name);
+                    try {
+                        verify(target, previous);
+                        items.add(new Item(name, target.toString(), "planned", "remove"));
+                    } catch (IOException | IllegalArgumentException failure) {
+                        items.add(new Item(name, target.toString(), "failed", failure.getMessage()));
+                    }
+                }
                 continue;
             }
             try (OperationLock ignored = OperationLock.acquire(root)) {

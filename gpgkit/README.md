@@ -96,7 +96,8 @@ Every subcommand accepts:
 |---|---|
 | `--json` | machine-readable output on stdout |
 | `--quiet` | the short answer only, no explanations |
-| `--help` | usage |
+| `--help` | suite help or the selected command synopsis |
+| `--version` | version from the build |
 
 Exit codes are a fixed contract that scripts and CI can rely on:
 

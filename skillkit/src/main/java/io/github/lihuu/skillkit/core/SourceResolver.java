@@ -1,6 +1,7 @@
 package io.github.lihuu.skillkit.core;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,6 +25,10 @@ public final class SourceResolver {
     public record Snapshot(@NotNull Path root, @NotNull String revision) {}
 
     public @NotNull Snapshot resolve(@NotNull String source, @NotNull String ref) throws IOException {
+        return resolve(source, ref, false);
+    }
+
+    @Nullable Snapshot resolve(@NotNull String source, @NotNull String ref, boolean offline) throws IOException {
         if (source.isBlank() || ref.isBlank() || ref.startsWith("-")) throw new IllegalArgumentException("Invalid source or ref");
         if (!source.contains(":") && Files.isDirectory(Path.of(source))) {
             if (!ref.equals("HEAD")) throw new IllegalArgumentException("--ref requires a Git URL; use a file:// URL for a local Git repository");
@@ -39,6 +44,7 @@ public final class SourceResolver {
                 || url.startsWith("git@") || url.startsWith("file://"))) {
             throw new IllegalArgumentException("Source is not a directory or Git URL: " + source);
         }
+        if (offline) return null;
         String identity = url + "\n" + ref;
         synchronized (locks.computeIfAbsent(url, ignored -> new Object())) {
             IOException previousFailure = failures.get(identity);

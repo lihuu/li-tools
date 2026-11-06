@@ -188,16 +188,16 @@
         </div>
         <div class="text-slate-400 mb-4 pl-4 border-l-2 border-emerald-500/30">
           <div>ℹ 自动嗅探 Subject Alternative Name: <span class="text-teal-300">DNS:localhost</span></div>
-          <div>ℹ 自动复用本地根 CA: <span class="text-slate-200">~/.certkit/ca/rootCA.crt</span></div>
-          <div class="text-emerald-400">✔ 证书签发完成: ./localhost.crt (有效期 365 天)</div>
-          <div class="text-emerald-400">✔ 私钥安全落盘: ./localhost.key (权限 0600)</div>
-          <div class="text-slate-500 text-xs mt-1">提示: 执行 'certkit trust ca' 即可在 Chrome/Safari/Edge 享受原生绿锁。</div>
+          <div>ℹ 自动复用本地根 CA: <span class="text-slate-200">~/.certkit/ca/ca.crt</span></div>
+          <div class="text-emerald-400">✔ 证书签发完成: ./cert.pem (有效期 365 天)</div>
+          <div class="text-emerald-400">✔ 私钥安全落盘: ./key.pem (权限 0600)</div>
+          <div class="text-slate-500 text-xs mt-1">提示: 执行 'certkit trust install' 即可在 Chrome/Safari/Edge 享受原生绿锁。</div>
         </div>
 
         <div class="flex items-center gap-2 text-slate-500 mb-2">
           <span class="text-emerald-400">~</span>
           <span class="text-slate-400">$</span>
-          <span class="text-white">certkit check localhost.crt</span>
+          <span class="text-white">certkit check cert.pem</span>
         </div>
         <div class="text-slate-400 pl-4 border-l-2 border-teal-500/30">
           <div>主题 CN:   <span class="text-teal-300">CN=localhost</span></div>
@@ -256,7 +256,7 @@
         </h4>
         <ul class="text-sm text-slate-400 space-y-2.5">
           <li>• 约定大于配置：<code class="text-emerald-300 font-mono">certkit gen localhost</code> 智能嗅探 IP/域名自动配置 SAN</li>
-          <li>• 自动复用本地 CA：自动在 <code class="text-slate-300">~/.certkit/ca/</code> 创建并复用根 CA，天然支持自签互认</li>
+          <li>• 自动复用本地 CA：复用 <code class="text-slate-300">~/.certkit/ca/</code> 中已有的根 CA</li>
           <li>• 单参数对切转换：<code class="text-emerald-300 font-mono">certkit convert server.crt</code> 自动找 key 并转为 PKCS#12 (.p12)</li>
           <li>• Windows 11 免提权注入：通过 <code class="text-slate-300">certutil.exe -user</code> 实现无 UAC 弹窗的浏览器全绿锁</li>
         </ul>
@@ -272,7 +272,7 @@
           <p class="text-xs text-slate-400">位置参数智能嗅探，自动追加 IP/DNS SAN 扩展，自动复用 ~/.certkit/ca/ 签发，默认当前目录就地落盘。</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
-          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit ca init</div>
+          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit ca --trust</div>
           <p class="text-xs text-slate-400">一键创建属于开发机的高信任根 CA（默认 10 年），提供专属自签基础设施，杜绝自签散乱失控。</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
@@ -284,11 +284,11 @@
           <p class="text-xs text-slate-400">单参数自动对切：PEM 证书自动搜寻同名密钥转为 P12，P12 自动解出 PEM 证书与私钥。</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
-          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit trust [ca | &lt;cert&gt;]</div>
+          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit trust install [&lt;cert&gt;]</div>
           <p class="text-xs text-slate-400">跨平台信任注入：macOS 钥匙串、Linux update-ca-certificates、Windows 11 免提权 certutil 当前用户注入。</p>
         </div>
         <div class="glass-card p-5 rounded-xl">
-          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit raw &lt;args...&gt;</div>
+          <div class="font-mono text-emerald-400 font-semibold mb-1 text-sm">certkit raw -- &lt;args...&gt;</div>
           <p class="text-xs text-slate-400">底层逃生门：无损透传给底层检测到的 openssl 执行，保留资深运维与复杂场景下的全量能力。</p>
         </div>
         <div class="glass-card p-5 rounded-xl sm:col-span-2">

@@ -405,7 +405,7 @@
           <ul class="text-xs text-slate-400 space-y-2 font-mono">
             <li class="flex items-start gap-2">
               <span class="text-purple-400 font-bold">✔</span>
-              <span><strong class="text-slate-200">Streaming Structured Output</strong>: Uniform <code class="text-purple-300">--json</code> schema; directories-only trees minimize token consumption.</span>
+              <span><strong class="text-slate-200">Streaming Structured Output</strong>: JSON is available for supported commands. The dukit scan tree includes directories only to minimize token consumption.</span>
             </li>
             <li class="flex items-start gap-2">
               <span class="text-purple-400 font-bold">✔</span>
@@ -539,7 +539,7 @@
         <div class="glass-card p-6 rounded-xl">
           <h4 class="font-bold text-white mb-2">How does certkit provide green-lock HTTPS without browser warnings?</h4>
           <p class="text-sm text-slate-400 leading-relaxed">
-            By running <code class="text-emerald-400">certkit ca</code>, certkit generates a dedicated local Root CA and injects it into your OS trust store. All certificates generated with <code class="text-emerald-400">certkit gen</code> are signed by this CA and include modern SAN extensions.
+            By running <code class="text-emerald-400">certkit ca --trust</code>, certkit generates a dedicated local Root CA and injects it into your OS trust store. All certificates generated with <code class="text-emerald-400">certkit gen</code> are signed by this CA and include modern SAN extensions.
           </p>
         </div>
         <div class="glass-card p-6 rounded-xl">
