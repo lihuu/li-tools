@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>li-tools — Zero-Dependency Developer CLI Suite</title>
   <meta name="description" content="Zero-dependency developer CLI suite compiled with Java 25 &amp; GraalVM Native Image. Fast single-binary native utilities with identical behavior on macOS, Linux, and Windows 11.">
-  <meta name="keywords" content="developer tools, cli tools, developer utility, certkit, dukit, gpgkit, skillkit, tokenkit, java 25, graalvm native image, cross-platform, developer experience">
+  <meta name="keywords" content="developer tools, cli tools, developer utility, certkit, dukit, gpgkit, jsonkit, skillkit, tokenkit, java 25, graalvm native image, cross-platform, developer experience">
   <meta name="author" content="lihuu">
   <link rel="canonical" href="https://tools.lihu.me/">
   <link rel="alternate" hreflang="en" href="https://tools.lihu.me/">
@@ -70,11 +70,13 @@
           "Disk usage analysis and JSON export via dukit",
           "OpenPGP (RFC 4880) key management via gpgkit",
           "AI agent SKILL.md generation and validation via skillkit",
-          "JWT (RFC 7519) token signing and verification via tokenkit"
+          "JWT (RFC 7519) token signing and verification via tokenkit",
+          "JSON formatting and RFC 9535 JSONPath queries via jsonkit"
         ],
         "hasPart": [
           { "@type": "SoftwareApplication", "name": "certkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/certkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
           { "@type": "SoftwareApplication", "name": "dukit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/dukit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
+          { "@type": "SoftwareApplication", "name": "jsonkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/jsonkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
           { "@type": "SoftwareApplication", "name": "gpgkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/gpgkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
           { "@type": "SoftwareApplication", "name": "skillkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/skillkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
           { "@type": "SoftwareApplication", "name": "tokenkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/tokenkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } }
@@ -297,6 +299,33 @@
           <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Zero Dependencies</span>
           <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Loopback Verify</span>
           <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Auto Extend</span>
+        </div>
+      </a>
+
+      <!-- JSONKIT Card -->
+      <a href="jsonkit/index.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-sky-500/20 hover:border-sky-500/50 block">
+        <div class="absolute -right-12 -top-12 w-48 h-48 bg-sky-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-sky-500/20 transition-all"></div>
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <span class="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center text-xl font-mono font-bold shadow-inner">{ }</span>
+            <div>
+              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-sky-300 transition">jsonkit</h2>
+              <span class="text-xs font-mono text-sky-400">JSON Formatter &amp; JSONPath</span>
+            </div>
+          </div>
+          <span class="text-slate-500 group-hover:text-sky-400 transition transform group-hover:translate-x-1">→</span>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed mb-6">
+          Format a file, highlight it in the terminal, then select exactly the value you need. RFC 9535 JSONPath, preserved number literals and plain JSON when stdout is redirected.
+        </p>
+        <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-sky-300 border border-sky-950/60 mb-5 flex items-center justify-between">
+          <span>$ jsonkit -p 'items[*].id' response.json</span>
+          <span class="text-emerald-400 text-[10px] font-semibold">✔ RFC 9535</span>
+        </div>
+        <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Pretty Print</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">JSONPath Filters</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Agent Safe</span>
         </div>
       </a>
 
@@ -582,6 +611,7 @@
         <a href="certkit/index.html" class="hover:text-emerald-400 transition">certkit</a>
         <a href="dukit/index.html" class="hover:text-amber-400 transition">dukit</a>
         <a href="gpgkit/index.html" class="hover:text-indigo-400 transition">gpgkit</a>
+        <a href="jsonkit/index.html" class="hover:text-sky-400 transition">jsonkit</a>
         <a href="skillkit/index.html" class="hover:text-cyan-400 transition">skillkit</a>
         <a href="tokenkit/index.html" class="hover:text-amber-400 transition">tokenkit</a>
         <a href="SKILL.md" class="hover:text-emerald-400 transition">🤖 SKILL.md</a>
@@ -596,11 +626,11 @@
     const commands = {
       shell: 'curl -fsSL https://tools.lihu.me/install.sh | bash',
       ps1: 'irm https://tools.lihu.me/install.ps1 | iex',
-      agent: 'Please install li-tools (certkit, dukit, gpgkit, skillkit & tokenkit) from https://tools.lihu.me/ and refer to https://tools.lihu.me/SKILL.md for CLI instructions.',
+      agent: 'Please install li-tools (certkit, dukit, gpgkit, jsonkit, skillkit & tokenkit) from https://tools.lihu.me/ and refer to https://tools.lihu.me/SKILL.md for CLI instructions.',
       skills: 'curl -fsSL https://tools.lihu.me/install-skills.sh | bash',
       releases: 'https://github.com/lihuu/li-tools/releases/latest',
-      brew: 'brew tap lihuu/tap && brew install certkit dukit gpgkit skillkit tokenkit',
-      scoop: 'scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install certkit dukit gpgkit skillkit tokenkit'
+      brew: 'brew tap lihuu/tap && brew install certkit dukit gpgkit jsonkit skillkit tokenkit',
+      scoop: 'scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install certkit dukit gpgkit jsonkit skillkit tokenkit'
     };
 
     function setTab(tab) {

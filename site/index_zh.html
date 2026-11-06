@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>li-tools — 零依赖开发者 CLI 套件与跨平台工具箱</title>
   <meta name="description" content="基于 Java 25 与 GraalVM Native Image 构建的零依赖开发者 CLI 工具箱，发行物为单文件原生二进制，在 macOS、Linux 与 Windows 11 上提供一致的开箱即用体验。">
-  <meta name="keywords" content="开发者工具, CLI工具, certkit, dukit, gpgkit, skillkit, tokenkit, Java 25, GraalVM原生镜像, 跨平台, 约定大于配置">
+  <meta name="keywords" content="开发者工具, CLI工具, certkit, dukit, gpgkit, jsonkit, skillkit, tokenkit, Java 25, GraalVM原生镜像, 跨平台, 约定大于配置">
   <meta name="author" content="lihuu">
   <link rel="canonical" href="https://tools.lihu.me/index_zh.html">
   <link rel="alternate" hreflang="en" href="https://tools.lihu.me/">
@@ -28,7 +28,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="li-tools — 现代化极简开发者命令行安全工具箱">
-  <meta name="twitter:description" content="基于 Java 25 与 GraalVM Native Image 构建的零依赖现代开发者 CLI 工具箱，包含 certkit、dukit、gpgkit、skillkit 与 tokenkit。">
+  <meta name="twitter:description" content="基于 Java 25 与 GraalVM Native Image 构建的零依赖现代开发者 CLI 工具箱，包含 certkit、dukit、gpgkit、jsonkit、skillkit 与 tokenkit。">
   <meta name="twitter:image" content="https://tools.lihu.me/assets/og-image.svg">
 
   <!-- Schema.org JSON-LD (GEO 优化) -->
@@ -70,11 +70,13 @@
           "基于 dukit 的磁盘占用分析与 JSON 导出",
           "基于 gpgkit 的 OpenPGP (RFC 4880) 密钥管理",
           "基于 skillkit 的 AI Agent SKILL.md 技能管理与 10+ 客户端分发",
-          "基于 tokenkit 的 JWT (RFC 7519) 令牌签名与内存注入"
+          "基于 tokenkit 的 JWT (RFC 7519) 令牌签名与内存注入",
+          "基于 jsonkit 的 JSON 格式化、高亮与 RFC 9535 JSONPath 查询"
         ],
         "hasPart": [
           { "@type": "SoftwareApplication", "name": "certkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/certkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
           { "@type": "SoftwareApplication", "name": "dukit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/dukit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
+          { "@type": "SoftwareApplication", "name": "jsonkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/jsonkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
           { "@type": "SoftwareApplication", "name": "gpgkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/gpgkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
           { "@type": "SoftwareApplication", "name": "skillkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/skillkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } },
           { "@type": "SoftwareApplication", "name": "tokenkit", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Linux, Windows 11", "url": "https://tools.lihu.me/tokenkit", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" } }
@@ -297,6 +299,33 @@
           <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">零外部依赖</span>
           <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">沙盒回环验证</span>
           <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">一键续期</span>
+        </div>
+      </a>
+
+      <!-- JSONKIT Card -->
+      <a href="jsonkit/index_zh.html" class="glass-card rounded-2xl p-8 relative group overflow-hidden border-sky-500/20 hover:border-sky-500/50 block">
+        <div class="absolute -right-12 -top-12 w-48 h-48 bg-sky-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-sky-500/20 transition-all"></div>
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <span class="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center text-xl font-mono font-bold shadow-inner">{ }</span>
+            <div>
+              <h2 class="text-2xl font-bold tracking-tight text-white group-hover:text-sky-300 transition">jsonkit</h2>
+              <span class="text-xs font-mono text-sky-400">JSON 格式化与 JSONPath</span>
+            </div>
+          </div>
+          <span class="text-slate-500 group-hover:text-sky-400 transition transform group-hover:translate-x-1">→</span>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed mb-6">
+          格式化文件、终端高亮，再精确取出需要的值。支持 RFC 9535 JSONPath，保留数字字面量，stdout 重定向时输出纯 JSON。
+        </p>
+        <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-sky-300 border border-sky-950/60 mb-5 flex items-center justify-between">
+          <span>$ jsonkit -p 'items[*].id' response.json</span>
+          <span class="text-emerald-400 text-[10px] font-semibold">✔ RFC 9535</span>
+        </div>
+        <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">格式化美化</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">JSONPath 过滤</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Agent 友好</span>
         </div>
       </a>
 
@@ -580,6 +609,7 @@
         <a href="certkit/index_zh.html" class="hover:text-emerald-400 transition">certkit</a>
         <a href="dukit/index_zh.html" class="hover:text-amber-400 transition">dukit</a>
         <a href="gpgkit/index_zh.html" class="hover:text-indigo-400 transition">gpgkit</a>
+        <a href="jsonkit/index_zh.html" class="hover:text-sky-400 transition">jsonkit</a>
         <a href="skillkit/index_zh.html" class="hover:text-cyan-400 transition">skillkit</a>
         <a href="tokenkit/index_zh.html" class="hover:text-amber-400 transition">tokenkit</a>
         <a href="SKILL.md" class="hover:text-emerald-400 transition">🤖 SKILL.md</a>
@@ -594,11 +624,11 @@
     const commands = {
       shell: 'curl -fsSL https://tools.lihu.me/install.sh | bash',
       ps1: 'irm https://tools.lihu.me/install.ps1 | iex',
-      agent: '请帮我安装 li-tools 套件 (certkit, dukit, gpgkit, skillkit & tokenkit): https://tools.lihu.me/ 并查阅 https://tools.lihu.me/SKILL.md 执行初始化。',
+      agent: '请帮我安装 li-tools 套件 (certkit, dukit, gpgkit, jsonkit, skillkit & tokenkit): https://tools.lihu.me/ 并查阅 https://tools.lihu.me/SKILL.md 执行初始化。',
       skills: 'curl -fsSL https://tools.lihu.me/install-skills.sh | bash',
       releases: 'https://github.com/lihuu/li-tools/releases/latest',
-      brew: 'brew tap lihuu/tap && brew install certkit dukit gpgkit skillkit tokenkit',
-      scoop: 'scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install certkit dukit gpgkit skillkit tokenkit'
+      brew: 'brew tap lihuu/tap && brew install certkit dukit gpgkit jsonkit skillkit tokenkit',
+      scoop: 'scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install certkit dukit gpgkit jsonkit skillkit tokenkit'
     };
 
     function setTab(tab) {

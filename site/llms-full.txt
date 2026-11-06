@@ -11,6 +11,7 @@ All tools in this suite provide native, machine-readable `SKILL.md` specificatio
 - **certkit Skill Guide**: `https://tools.lihu.me/certkit/SKILL.md`
 - **tokenkit Skill Guide**: `https://tools.lihu.me/tokenkit/SKILL.md`
 - **skillkit Skill Guide**: `https://tools.lihu.me/skillkit/SKILL.md`
+- **jsonkit Skill Guide**: `https://tools.lihu.me/jsonkit/SKILL.md`
 - **dukit Skill Guide**: `https://tools.lihu.me/dukit/SKILL.md`
 
 ### Automated Agent Installation Commands
@@ -107,7 +108,33 @@ A modern personal AI skills collection manager and parallel multi-agent distribu
    - Tracks cryptographic content digests and installation modes (copy/symlink) in `.skillkit-state.json`.
    - Protects against accidental overwrites: if a skill copy inside an agent directory has been manually modified, `skillkit` refuses to overwrite it during update or uninstall.
 
-## Tool 5: dukit
+## Tool 5: jsonkit
+
+### Mission
+A zero-dependency JSON formatter and RFC 9535 JSONPath query CLI that gives humans and agents one first move: `jsonkit file`. It pretty-prints with two-space indentation and terminal-aware highlighting, then selects values with the same command via `-p`.
+
+### Key Innovations
+1. **One Command, No Mode Switch**:
+   - `jsonkit response.json`
+   - `jsonkit response.json -p user.name`
+   - `other-tool --json | jsonkit -p 'items[*].id'`
+2. **RFC 9535 JSONPath**:
+   - Field names, array indexes, wildcards, slices, selector lists, recursive descent, filters, and the standard `length()`, `count()`, `match()`, `search()` and `value()` functions.
+   - Shorthand `user.name`, `.user.name` and `[0].id` receive the document root at the CLI boundary; everything after that uses one engine.
+3. **Stable Output Shapes**:
+   - Root, field and index paths print one JSON value; a missing path exits `1`.
+   - Wildcard, slice, selector-list, descendant and filter paths always print an array; no match prints `[]` with exit `0`.
+4. **Credit-Safe Formatting**:
+   - Two-space indentation, LF endings, preserved member order and preserved number literals.
+   - Accepts UTF-8 BOM; rejects empty, truncated, second-root and trailing content.
+   - Viewing shows duplicate keys; querying duplicate-key input exits `1`.
+5. **Terminal State Split**:
+   - Color depends only on stdout being a terminal; stdin and stdout are checked separately with `isatty`.
+   - `--no-color`, `NO_COLOR`, or redirected stdout produce plain UTF-8 JSON.
+6. **Bounded Queries**:
+   - 10,000,000 visited nodes, 1,000,000 result nodes and 1,000 levels of nesting; exceeding a limit exits `1`.
+
+## Tool 6: dukit
 
 ### Mission
 A cross-platform disk usage analyzer inspired by ncdu: scan a directory tree once, emit a directories-only JSON tree by default, rank the largest directories or files with bounded streaming heaps, and browse the result line by line — shipped as a single native binary for macOS, Linux, and Windows.
@@ -149,7 +176,7 @@ A cross-platform disk usage analyzer inspired by ncdu: scan a directory tree onc
 ## Frequently Asked Questions (FAQ) for Search & AI Engines
 
 ### Q: Does li-tools require Java/JVM to be installed on the target machine?
-A: No. All tools (gpgkit, certkit, tokenkit, skillkit, dukit) are compiled with GraalVM Native Image into standalone native executables (x86_64 and arm64). They start up in milliseconds and have zero runtime JVM dependencies.
+A: No. All tools (gpgkit, certkit, tokenkit, skillkit, jsonkit, dukit) are compiled with GraalVM Native Image into standalone native executables (x86_64 and arm64). They start up in milliseconds and have zero runtime JVM dependencies.
 
 ### Q: How does tokenkit prevent API key leaks in git and terminal history?
 A: Developers frequently commit `.env` files or paste `export OPENAI_API_KEY="..."` directly into `.zshrc`. `tokenkit` stores all credentials inside an authenticated encrypted SQLite database. By running `eval "$(tokenkit env)"` or `tokenkit run -- <cmd>`, tokens are injected dynamically in memory at runtime without ever touching disk in plaintext.
