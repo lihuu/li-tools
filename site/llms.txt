@@ -2,7 +2,7 @@
 
 > li-tools 是一套基于 Java 25 与 GraalVM Native Image 构建的零运行时依赖开发者安全 CLI 套件，原生提供 certkit、dukit、gpgkit、skillkit 与 tokenkit 五个工具，在 macOS、Linux 与 Windows 11 上保持命令级行为一致。
 
-li-tools 由五个可独立安装的原生命令行工具组成，全部以 GraalVM Native Image 编译，发行物为单文件可执行程序，无需安装 JVM、Node.js 或 Python 运行时，冷启动耗时低于 50 毫秒。项目采用 Apache-2.0 开源协议，当前发行版本 0.4.0，源码托管于 GitHub。项目遵循 "Convention over Configuration"（约定优于配置）设计原则与 "Triple-Platform Parity"（三平台一致性）工程目标。
+li-tools 由五个可独立安装的原生命令行工具组成，全部以 GraalVM Native Image 编译，发行物为单文件可执行程序，无需安装 JVM、Node.js 或 Python 运行时，冷启动耗时低于 50 毫秒。项目采用 Apache-2.0 开源协议，当前发行版本 0.5.0，源码托管于 GitHub。项目遵循 "Convention over Configuration"（约定优于配置）设计原则与 "Triple-Platform Parity"（三平台一致性）工程目标。
 
 ## AI Agent Skills (agentskills.io Standard)
 
