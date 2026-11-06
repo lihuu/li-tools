@@ -32,7 +32,7 @@
 certkit gen
 
 # 支持多个域名和内网 IP（位置参数直接打，工具自动智能嗅探 IP 与域名）
-certkit gen dev.local api.test 127.0.0.1 192.168.1.100
+certkit gen --out ./app-certs dev.local api.test 127.0.0.1 192.168.1.100
 ```
 
 ### 2. 想要浏览器全绿锁？一键搞定受信任 Root CA
@@ -41,7 +41,7 @@ certkit gen dev.local api.test 127.0.0.1 192.168.1.100
 certkit ca --trust
 
 # 2. 从此以后敲任何 gen，默认全自动由本地根 CA 签发！
-certkit gen myapp.local
+certkit gen --out ./trusted-certs myapp.local
 # ➜ 自动生成 cert.pem, key.pem 以及 fullchain.pem
 # ➜ 打开 Chrome / Edge 访问本地服务，当场享受绿色安全小锁！
 ```
@@ -69,7 +69,7 @@ certkit convert cert.pem
 certkit convert cert.pem --all
 
 # 还原回文本格式
-certkit convert bundle.p12
+certkit convert cert.p12 restored.pem
 ```
 
 ### 5. 跨平台系统信任管理（macOS / Linux / Windows 11）

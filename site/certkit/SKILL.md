@@ -43,11 +43,12 @@ certkit doctor --json
 ```
 
 ### 2. Initialize Local Root CA
-Generate a local root CA. Add `--trust` only when installing it into the operating system trust store is intended.
+Generate a local root CA:
 ```bash
 certkit ca
-certkit ca --trust  # create and install in the OS trust store
 ```
+
+If the CA already exists and needs to be trusted, run `certkit trust install` to install it. Use `certkit ca --trust` to create and install a fresh CA in one command when the trust change is intended.
 Optional custom name and validity:
 ```bash
 certkit ca --name "Acme Corp Dev CA" --days 3650
@@ -58,7 +59,9 @@ certkit ca --json
 ```
 
 ### 3. Generate TLS Certificates with SANs
-Generate ECDSA (default) or RSA certificate signed by the local CA:
+Choose one of the following generation examples per output directory. Use `--out` to keep successive certificates in separate directories.
+
+Generate an ECDSA certificate signed by the local CA if available:
 ```bash
 certkit gen localhost 127.0.0.1 app.dev.local
 ```
