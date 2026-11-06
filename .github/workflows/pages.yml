@@ -6,6 +6,11 @@ on:
     paths:
       - "site/**"
       - ".github/workflows/pages.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "site/**"
+      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
@@ -14,21 +19,16 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: "pages-${{ github.ref }}"
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  validate:
+    name: Validate SEO TDK Constraints
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
 
       - name: Validate SEO TDK Constraints
         run: |
@@ -46,6 +46,21 @@ jobs:
           if (zhDesc < 120 || zhDesc > 155) throw new Error(`ZH Desc length ${zhDesc} outside 120-155`);
           console.log("✅ All TDK constraints successfully validated!");
           '
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
@@ -78,7 +93,9 @@ jobs:
                   "https://tools.lihu.me/gpgkit/",
                   "https://tools.lihu.me/gpgkit/index_zh.html",
                   "https://tools.lihu.me/certkit/",
-                  "https://tools.lihu.me/certkit/index_zh.html"
+                  "https://tools.lihu.me/certkit/index_zh.html",
+                  "https://tools.lihu.me/dukit/",
+                  "https://tools.lihu.me/dukit/index_zh.html"
               ]
           }
           data = json.dumps(payload).encode("utf-8")
