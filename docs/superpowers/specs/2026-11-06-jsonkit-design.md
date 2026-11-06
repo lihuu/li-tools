@@ -1,10 +1,10 @@
 # JSONkit CLI 规格
 
-状态为待评审。首版交付默认格式化查看、常用取值和标准 JSONPath 条件过滤。产品名为 JSONkit，主命令为 `jsonkit`，短别名为 `jk`。
+状态为待评审。首版交付默认格式化查看、常用取值和标准 JSONPath 条件过滤。产品名为 JSONkit，正式命令为 `jsonkit`。
 
 ## 目标
 
-人第一次打开 JSON 文件时，只需记住 `jk 文件`。默认缩进格式化，终端支持颜色时自动高亮。Agent 可以用同一个命令接收其他工具的 JSON 输出，用路径提取需要的值，再交给下一步。查询结果类型、退出码和重定向输出是跨平台契约。
+人第一次打开 JSON 文件时，只需记住 `jsonkit 文件`。默认缩进格式化，终端支持颜色时自动高亮。Agent 可以用同一个命令接收其他工具的 JSON 输出，用路径提取需要的值，再交给下一步。查询结果类型、退出码和重定向输出是跨平台契约。
 
 ## 命令接口
 
@@ -14,17 +14,17 @@ jsonkit --help
 jsonkit --version
 ```
 
-`jk` 接受相同参数和输入。文件和查询是独立的参数，查询可放在文件前后。支持 `--` 结束选项解析，以便打开以连字符开头的文件。命令只读本地文件或 stdin，结果写 stdout，诊断写 stderr。
+文件和查询是独立的参数，查询可放在文件前后。支持 `--` 结束选项解析，以便打开以连字符开头的文件。命令只读本地文件或 stdin，结果写 stdout，诊断写 stderr。
 
 | 调用 | 行为 |
 | --- | --- |
-| `jk response.json` | 缩进并显示整份 JSON |
-| `jk response.json -p user.name` | 显示命中的单个 JSON 值 |
-| `jk -p '$.items[0].id' response.json` | 通过完整 JSONPath 显示第一个 ID |
-| `other-tool --json \| jk -p 'items[*].id'` | 从 stdin 读取并输出匹配值数组 |
-| `jk -p "items[?@.status == 'failed'].id" response.json` | 条件过滤并输出匹配的 ID 数组 |
-| `jk` | stdin 为管道或重定向文件时读取 stdin。stdin 接交互终端时显示帮助并返回 0 |
-| `jk -` | 显式从 stdin 读取，包括从终端输入直到 EOF |
+| `jsonkit response.json` | 缩进并显示整份 JSON |
+| `jsonkit response.json -p user.name` | 显示命中的单个 JSON 值 |
+| `jsonkit -p '$.items[0].id' response.json` | 通过完整 JSONPath 显示第一个 ID |
+| `other-tool --json \| jsonkit -p 'items[*].id'` | 从 stdin 读取并输出匹配值数组 |
+| `jsonkit -p "items[?@.status == 'failed'].id" response.json` | 条件过滤并输出匹配的 ID 数组 |
+| `jsonkit` | stdin 为管道或重定向文件时读取 stdin。stdin 接交互终端时显示帮助并返回 0 |
+| `jsonkit -` | 显式从 stdin 读取，包括从终端输入直到 EOF |
 
 有 `--path` 且无文件时使用 stdin。如果 stdin 是交互终端，提示提供文件或显式传入 `-`，并返回用法错误，避免误等输入。读取或查询结果无需另选子命令。格式化和取值共用 JSON 解析校验，解析失败直接给出诊断。
 
@@ -78,7 +78,7 @@ CLI 根据解析后的表达式结构确定输出形状。
 
 ## 分发和验收
 
-现有支持矩阵为 macOS ARM64、Linux AMD64 和 Windows AMD64。每个平台发行一个 JSONkit Native 可执行文件。首版支持 JSONkit 的 Shell、PowerShell 安装脚本及 Homebrew、Scoop 包均提供 `jsonkit` 与 `jk` 两个可调用名称。两者运行同一个程序且行为一致。短名通过安装阶段建立，发布归档只携带一份二进制。Windows 短名必须保持原生可执行文件的参数传递行为。手动解包的示例使用主命令名。若目标目录存在其他程序的 `jk`，保留原文件并明确报告别名冲突。
+现有支持矩阵为 macOS ARM64、Linux AMD64 和 Windows AMD64。每个平台发行一个 Native 可执行文件，Windows 下文件名为 `jsonkit.exe`，其余平台为 `jsonkit`。Shell、PowerShell 安装脚本及 Homebrew、Scoop 包统一安装正式命令 `jsonkit`。文档和 Agent 示例均使用正式命令名。`jk` 可由用户在自己的 Shell 中设为个人别名。
 
 | 验收面 | 可观察结果 |
 | --- | --- |
@@ -86,6 +86,6 @@ CLI 根据解析后的表达式结构确定输出形状。
 | 查询 | 标准和简写得到相同结果。覆盖 Unicode 键、带点键、数组下标、通配符、切片、选择器列表、递归和条件过滤。覆盖标准函数、无匹配、单个 `null`、多个结果、单个数组值和无效表达式 |
 | JSON 与诊断 | 覆盖大整数、高精度小数、UTF-8 BOM、CRLF 输入、空输入、截断、额外根值及重复键。成功 stdout 可解析。查询失败 stdout 为空，诊断和退出码符合契约 |
 | Native 选型 | 使用仓库锁定的 GraalVM 构建并运行输入、查询和高亮路径。检查反射与资源元数据需求，记录新增依赖和 Native 原始文件、发布归档的体积。测试所用引擎版本对应的 RFC 一致性用例 |
-| 三平台与别名 | 对三平台 Native 二进制运行同一套语义用例。比较无色 stdout 字节和退出码。各平台文档及冒烟覆盖含空格的文件路径、Shell 传参、stdin 管道和安装后 `jk` 与 `jsonkit` 的等价行为 |
+| 三平台与分发 | 对三平台 Native 二进制运行同一套语义用例。比较无色 stdout 字节和退出码。各平台文档及冒烟覆盖含空格的文件路径、Shell 传参、stdin 管道和安装后直接调用 `jsonkit` |
 
 [现有 Native 发布矩阵](../../../.github/workflows/release.yml) · [现有 Native 冒烟脚本](../../../scripts/smoke-native.py)
