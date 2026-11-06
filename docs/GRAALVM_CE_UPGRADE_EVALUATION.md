@@ -105,3 +105,27 @@ PKCS12 检查证明转换可用，未对其算法强度作验收结论。
 
 复现时，先从上述源码基线准备一次 JAR，再分别显式调用两版 `bin/native-image`，
 使用本节所列相同参数与输入，并轮换顺序。保留原始采样，不以新一轮结果覆盖本文历史数据。
+
+## 2026-11-06：CE 25.4.4.1.1 → CE 25.5.5.0.3
+
+| 项目 | 升级前 | 升级后 |
+|---|---|---|
+| GraalVM CE Runtime | `25.4.4.1.1+1.1` | `25.5.5.0.3+1.1` |
+| JDK / Native Image 首行版本 | `25.0.4.1.1` | `25.0.5.0.3` |
+| macOS JDK bundle | `graalvm-community-25.4.4.1.1+1.1` | `graalvm-community-25.5.5.0.3+1.1` |
+
+官方包 `graalvm-community-jdk-25i5-25.0.5.0.3_macos-aarch64_bin.tar.gz`
+的 `.sha256` 校验一致（`41741c06…5cce6`），安装到用户标准 JDK 目录；
+`/usr/libexec/java_home -v 25` 自动选中新版，Maven 报告的 Java home 同步改变。
+CI 固定版本、README 与本文档已一起更新，避免本地与工作流的版本漂移。
+
+本轮只走脚本默认路径（O2），未重复 O3 对照。certkit 同一 JAR、
+14 线程、4 GiB 堆、standalone，两次 Native 构建 29.69 / 30.61 秒，
+产物 23.65 MB（十进制）；上一版同条件为 29.09 / 25.93 秒、24.08 MB。
+差异落在同一台的噪声范围内，**不支持“新版更快”或“新版更慢”的结论**。
+构建日志出现 4 条告警（含 `--future-defaults` 建议），不影响产物。
+
+验证范围：`mvn clean test` 六模块 294 项，0 失败 0 错误 13 跳过；
+`./build-native.sh` 五个工具全部产出原生可执行文件（合计 141 秒，含一次 Maven 打包）；
+`scripts/smoke-native.py` 全部 PASS；`scripts/tests` 13 项 OK。
+未在本轮验证 Linux/Windows 产物与分层缓存。

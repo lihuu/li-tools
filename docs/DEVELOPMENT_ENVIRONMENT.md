@@ -3,13 +3,13 @@
 Native 构建使用 **GraalVM Community Edition（CE）**，Java 源码保持 release 25；
 Maven 要求 3.9+。`gpgkit` 需要 GnuPG，`certkit` 需要 OpenSSL。
 
-截至 2026-10-22，本地已验证的最新官方 CE 为：
+截至 2026-11-06，本地已验证的最新官方 CE 为：
 
 | 项目 | 版本 |
 |---|---|
-| GraalVM 发行版 | Community 25 Innovation 4，`25.4.4.1.1` |
-| Runtime 完整标识 | `GraalVM CE 25.4.4.1.1+1.1` |
-| `native-image --version` 首行 / JDK | `25.0.4.1.1` |
+| GraalVM 发行版 | Community 25 Innovation 5，`25.5.5.0.3` |
+| Runtime 完整标识 | `GraalVM CE 25.5.5.0.3+1.1` |
+| `native-image --version` 首行 / JDK | `25.0.5.0.3` |
 
 这些编号表示不同层次。不要只看到 `openjdk 25` 就认为编译器版本相同，
 也不要把 CE（社区版）和 Innovation（发行系列）理解为互斥选项。
@@ -28,7 +28,7 @@ gh api repos/graalvm/graalvm-ce-builds/releases/latest \
 项目要求，再重新运行相关 JVM 和 Native 检查。
 普通 CI 与 Native 发布构建统一使用
 [项目 GraalVM 配置](../.github/actions/setup-graalvm/action.yml)，
-目前精确锁定 CE `25.4.4.1.1`，并检查 Runtime 标识为 `GraalVM CE 25.4.4.1.1+1.1`。
+目前精确锁定 CE `25.5.5.0.3`，并检查 Runtime 标识为 `GraalVM CE 25.5.5.0.3+1.1`。
 升级时同步修改这个配置和本地环境，不以浮动的 Java 主版本替代 GraalVM 发行版本。
 
 ## macOS Apple Silicon 安装
@@ -38,9 +38,9 @@ gh api repos/graalvm/graalvm-ce-builds/releases/latest \
 
 ```sh
 set -e
-GRAALVM_RELEASE=graal-25.4.4.1.1
-GRAALVM_ASSET=graalvm-community-jdk-25i4-25.0.4.1.1_macos-aarch64_bin.tar.gz
-GRAALVM_BUNDLE=graalvm-community-25.4.4.1.1+1.1
+GRAALVM_RELEASE=graal-25.5.5.0.3
+GRAALVM_ASSET=graalvm-community-jdk-25i5-25.0.5.0.3_macos-aarch64_bin.tar.gz
+GRAALVM_BUNDLE=graalvm-community-25.5.5.0.3+1.1
 GRAALVM_DOWNLOAD_DIR=$(mktemp -d)
 
 gh release download "$GRAALVM_RELEASE" --repo graalvm/graalvm-ce-builds \
@@ -58,7 +58,8 @@ tar -xzf "$GRAALVM_DOWNLOAD_DIR/$GRAALVM_ASSET" \
 ```
 
 若同名安装已存在，先确认其版本，跳过解压步骤；不要覆盖现有安装。
-保留旧 JDK，可用于版本对照或切回旧工具链。
+升级后先保留旧 JDK 做对照；等新版的 JVM 测试和 Native 构建都通过，再删除旧版本，
+并确认 `/usr/libexec/java_home -v 25` 已指向新版。
 
 ## 选择工具链并验证
 

@@ -52,7 +52,7 @@
 仅替代 Maven、Native Image 两个外部命令边界。
 
 普通 CI 和发布构建共用 `.github/actions/setup-graalvm/action.yml`，
-固定为 GraalVM CE `25.4.4.1.1`，安装后检查完整 Runtime 版本。
+固定为 GraalVM CE `25.5.5.0.3`，安装后检查完整 Runtime 版本。
 发布矩阵按 Linux AMD64、macOS ARM64、Windows AMD64 分成三个任务，
 每个任务统一打包一次，再依次构建三个工具并运行 `scripts/smoke-native.py`。
 该冒烟验证真实 Native 的 CLI、合成 PEM/DER 证书解析及临时加密 SQLite 读写，
