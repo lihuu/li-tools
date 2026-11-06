@@ -53,6 +53,14 @@ class CliApplicationTest {
     }
 
     @Test
+    void rejectsConflictingScanOutputFormats() throws IOException {
+        Result result = run("scan", tree("conflicting-formats").toString(), "--text", "--json");
+
+        assertEquals(2, result.code(), result.err());
+        assertTrue(result.out().isEmpty(), result.out());
+    }
+
+    @Test
     void scanTextModeStillRendersAHumanTree() throws IOException {
         Path root = tree("text");
         Result result = run("scan", root.toString(), "--text", "--apparent-size");

@@ -22,6 +22,27 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ExitCodeTest {
     @Test
+    void versionReportsThePackagedVersion(@TempDir Path work) {
+        Cli.Result result = new Cli(work, work).run("--version");
+
+        assertEquals(0, result.exitCode(), result.combined());
+        assertTrue(result.stdout().strip().matches("gpgkit [0-9]+\\.[0-9]+\\.[0-9]+.*"), result.stdout());
+    }
+
+    @Test
+    void bareInvocationAndCommandHelpSucceed(@TempDir Path work) {
+        Cli cli = new Cli(work, work);
+        Cli.Result bare = cli.run();
+        assertEquals(0, bare.exitCode(), bare.combined());
+        assertTrue(bare.stdout().contains("commands:"), bare.stdout());
+
+        Cli.Result verify = cli.run("verify", "--help");
+        assertEquals(0, verify.exitCode(), verify.combined());
+        assertTrue(verify.stdout().contains("--sig"), verify.stdout());
+        assertTrue(!verify.stdout().contains("commands:"), verify.stdout());
+    }
+
+    @Test
     void genTreatsAnUnknownAlgorithmAsAUsageError(@TempDir Path work) {
         Cli.Result result = new Cli(work, work).run("gen", "--algo", "rsa2048");
 

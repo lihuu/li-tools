@@ -13,6 +13,44 @@ import static org.junit.jupiter.api.Assertions.*;
 class CliCommandTest {
 
     @Test
+    void refusesToReplaceExistingLeafFiles(@TempDir Path tempDir) throws Exception {
+        Path existingKey = tempDir.resolve("key.pem");
+        Files.writeString(existingKey, "existing key");
+
+        assertEquals(1, Main.run("gen", "--self-signed", "--out", tempDir.toString(), "localhost"));
+        assertEquals("existing key", Files.readString(existingKey));
+        assertFalse(Files.exists(tempDir.resolve("cert.pem")));
+    }
+
+    @Test
+    void refusesToReplaceAnExistingRootCa(@TempDir Path tempDir) throws Exception {
+        assertEquals(0, Main.run("ca", "--no-trust", "--out", tempDir.toString()));
+        Path certificate = tempDir.resolve("ca.crt");
+        byte[] original = Files.readAllBytes(certificate);
+
+        assertEquals(1, Main.run("ca", "--no-trust", "--out", tempDir.toString()));
+        assertArrayEquals(original, Files.readAllBytes(certificate));
+    }
+
+    @Test
+    void generationSupportsSubcommandHelpAndJsonWithArtifactPaths(@TempDir Path tempDir) {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        PrintStream original = System.out;
+        try {
+            System.setOut(new PrintStream(output));
+            assertEquals(0, Main.run("gen", "--help"));
+            assertTrue(output.toString().contains("certkit gen"));
+            output.reset();
+
+            assertEquals(0, Main.run("gen", "--json", "--self-signed", "--out", tempDir.toString()));
+            assertTrue(output.toString().contains("\"cert\""), output.toString());
+            assertTrue(output.toString().contains("\"key\""), output.toString());
+        } finally {
+            System.setOut(original);
+        }
+    }
+
+    @Test
     void genAndCheckWorkflowWithConventionFirstArgs(@TempDir Path tempDir) {
         Path certsDir = tempDir.resolve("certs");
 

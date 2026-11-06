@@ -78,6 +78,22 @@ class SimpleInstallCommandsTest {
     }
 
     @Test
+    void dryRunFindsMissingLocalSkillsAndExistingUnmanagedTargets() throws IOException {
+        local("mine", "my source");
+        Path occupied = home().resolve(".agents/skills/mine/SKILL.md");
+        Files.createDirectories(occupied.getParent());
+        Files.writeString(occupied, "unmanaged");
+
+        Result result = run("install", "missing", "mine", "--dry-run", "--json");
+
+        assertEquals(1, result.code(), result.out());
+        assertTrue(result.out().contains("Skill not found: missing"), result.out());
+        assertTrue(result.out().contains("Unmanaged target already exists"), result.out());
+        assertEquals("unmanaged", Files.readString(occupied));
+        assertFalse(Files.exists(occupied.getParent().getParent().resolve(".skillkit-state.json")));
+    }
+
+    @Test
     void installHelpDoesNotRequireStorageOrScopeChoices() {
         Result result = run("install", "--help");
         assertEquals(0, result.code());
