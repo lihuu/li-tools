@@ -92,7 +92,7 @@
 {
   "meta": {
     "tool": "dukit",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "path": "/Users/example/Projects",
     "diskSize": 19756847104,
     "size": 21474836480,
@@ -146,7 +146,7 @@
 {
   "meta": {
     "tool": "dukit",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "path": "/Users/example/Projects",
     "mode": "directories",
     "limit": 20,
