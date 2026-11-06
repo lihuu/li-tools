@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>li-tools — 零依赖开发者安全 CLI 套件与 AI 技能工具链 | 五工具</title>
-  <meta name="description" content="li-tools 是零依赖的开发者 CLI 套件，含 gpgkit、certkit、tokenkit、skillkit、dukit 五个工具。基于 Java 25 与 GraalVM Native Image 原生编译，macOS、Linux、Windows 11 行为一致。">
-  <meta name="keywords" content="开发者工具, GPG管理, SSL证书, TLS, OpenSSL替代, Token管理, API密钥加密, Skills管理, AI Agent, certkit, gpgkit, tokenkit, skillkit, Java 25, GraalVM原生镜像, Windows 11证书, 磁盘占用分析, 约定大于配置">
+  <title>li-tools — 零依赖开发者 CLI 套件与跨平台工具箱</title>
+  <meta name="description" content="基于 Java 25 与 GraalVM Native Image 构建的零依赖开发者 CLI 工具箱，发行物为单文件原生二进制，在 macOS、Linux 与 Windows 11 上提供一致的开箱即用体验。">
+  <meta name="keywords" content="开发者工具, CLI工具, certkit, gpgkit, tokenkit, skillkit, dukit, Java 25, GraalVM原生镜像, 跨平台, 约定大于配置">
   <meta name="author" content="lihuu">
   <link rel="canonical" href="https://tools.lihu.me/index_zh.html">
   <link rel="alternate" hreflang="en" href="https://tools.lihu.me/">
@@ -44,7 +44,7 @@
         "applicationSubCategory": "Security CLI",
         "operatingSystem": "macOS, Linux, Windows 11",
         "url": "https://tools.lihu.me/index_zh.html",
-        "description": "基于 Java 25 与 GraalVM Native Image 的零运行时依赖开发者安全与提效 CLI 工具套件，包含 gpgkit、certkit、tokenkit、skillkit 与 dukit，在 macOS、Linux 与 Windows 11 上保持命令级行为一致。",
+        "description": "基于 Java 25 与 GraalVM Native Image 的零运行时依赖开发者 CLI 工具套件，在 macOS、Linux 与 Windows 11 上保持命令级行为一致。",
         "softwareVersion": "0.4.0",
         "license": "https://www.apache.org/licenses/LICENSE-2.0",
         "programmingLanguage": "Java 25",
@@ -99,7 +99,7 @@
             "name": "li-tools 需要预先安装 JVM、Node.js 或 Python 运行时吗？",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "不需要。gpgkit、certkit、tokenkit、skillkit 与 dukit 五个工具均通过 GraalVM Native Image 编译为原生可执行文件，发行物为单文件二进制，零运行时依赖。冷启动耗时低于 50 毫秒，可直接在无 JVM 环境的 CI 容器与 Alpine、Distroless 等精简镜像中运行。"
+              "text": "不需要。li-tools 套件内所有工具均通过 GraalVM Native Image 编译为原生可执行文件，发行物为单文件二进制，零运行时依赖。冷启动耗时低于 50 毫秒，可直接在无 JVM 环境的 CI 容器与 Alpine、Distroless 等精简镜像中运行。"
             }
           },
           {
