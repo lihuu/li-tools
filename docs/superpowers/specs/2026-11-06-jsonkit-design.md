@@ -1,0 +1,98 @@
+# JSONkit CLI 规格
+
+状态为待评审。首版交付默认格式化查看、常用取值和标准 JSONPath 条件过滤。产品名为 JSONkit，正式命令为 `jsonkit`。
+
+## 目标
+
+人第一次打开 JSON 文件时，只需记住 `jsonkit 文件`。默认缩进格式化，终端支持颜色时自动高亮。Agent 可以用同一个命令接收其他工具的 JSON 输出，用路径提取需要的值，再交给下一步。查询结果类型、退出码和重定向输出是跨平台契约。
+
+## 命令接口
+
+```text
+jsonkit [FILE|-] [-p PATH | --path PATH] [--no-color] [--debug]
+jsonkit --help
+jsonkit --version
+```
+
+文件和查询是独立的参数，查询可放在文件前后。支持 `--` 结束选项解析，以便打开以连字符开头的文件。命令只读本地文件或 stdin，结果写 stdout，诊断写 stderr。
+
+沿用公共 `--no-color` 和 `--debug` 的语义。`--debug` 将意外异常的堆栈写到 stderr。命令默认输出 JSON，首版公开选项以上述用法为准。
+
+| 调用 | 行为 |
+| --- | --- |
+| `jsonkit response.json` | 缩进并显示整份 JSON |
+| `jsonkit response.json -p user.name` | 显示命中的单个 JSON 值 |
+| `jsonkit -p '$.items[0].id' response.json` | 通过完整 JSONPath 显示第一个 ID |
+| `other-tool --json \| jsonkit -p 'items[*].id'` | 从 stdin 读取并输出匹配值数组 |
+| `jsonkit -p "items[?@.status == 'failed'].id" response.json` | 条件过滤并输出匹配的 ID 数组 |
+| `jsonkit` | stdin 为管道或重定向文件时读取 stdin。stdin 接交互终端时显示帮助并返回 0 |
+| `jsonkit -` | 显式从 stdin 读取，包括从终端输入直到 EOF |
+
+有 `--path` 且无文件时使用 stdin。如果 stdin 是交互终端，提示提供文件或显式传入 `-`，并返回用法错误，避免误等输入。读取或查询结果无需另选子命令。格式化和取值共用 JSON 解析校验，解析失败直接给出诊断。
+
+选择 `--path` 的原因是文件仍可以作为唯一的位置参数，而文件和管道可以复用相同的查询写法。第二个位置参数可以节省一个选项，但通过管道取值时需要显式补文件占位符。独立的查看和查询子命令会让最常用的文件查看多一步。JSONkit 的首版范围以只读查看和选取 JSON 值为限。
+
+## 输入、显示与退出码
+
+- 每次读取一份 UTF-8 JSON 文档，支持任意合法的根值，包括数组、字符串、数字、布尔值和 `null`。可接受 UTF-8 BOM。拒绝空输入、截断文档、第二个根值和非空白尾部内容。
+- 非空对象和数组逐项换行，每层缩进两个空格。字段名后的冒号加一个空格，空对象和空数组显示为 `{}` 和 `[]`。使用 LF 并以一个 LF 结束。格式化保持数组和对象成员的原始顺序，保留数字字面量，避免大整数或高精度小数被重写成近似值。
+- 自动高亮取决于 **stdout** 是否接支持 ANSI 的终端，和输入来自文件还是管道无关。键、字符串、数字与字面量可用不同颜色，颜色之外保持一致的可见文本。stdout 重定向、`--no-color` 或存在 `NO_COLOR` 时输出无 ANSI 的 UTF-8 JSON。Agent 即使用伪终端执行，也可显式传入 `--no-color`。
+- 分别判断 stdin 和 stdout 的终端状态。stdin 决定裸命令是读输入还是显示帮助，stdout 决定是否高亮。复用共享颜色规则时，为 stdout 单独提供终端状态。
+- 诊断包含可获取的文件名或 stdin 标签和行列。成功结果不混入提示文字。查询在输入校验和求值完成后才写结果。默认查看可流式显示，因此迟到的解析或读取失败可能留下已写出的前缀，调用方以退出码判断结果是否完整。
+- 查看允许展示含重复键的 JSON 文本，查询遇到重复对象键则返回明确错误，以免路径悄悄选中其中一个值。
+
+| 退出码 | 含义 |
+| --- | --- |
+| `0` | 成功输出 JSON 或显示帮助、版本。多值查询无匹配也算成功，输出 `[]` |
+| `1` | 文件读取失败、输入 JSON 不合法、查询输入有重复键、单值路径无匹配，或求值超出资源限制 |
+| `2` | CLI 用法错误或 JSONPath 表达式无效 |
+
+## 查询语义
+
+首版用同一套 RFC 9535 查询语义处理标准写法和简写。支持字段名、数组下标、通配符、切片、选择器列表、递归后代查询和条件过滤，以及标准过滤函数。实现用一致性用例验证标准语法和结果。查询语义不随书写方式切换。
+
+简写只在 CLI 入口补根节点。以 `$` 开头的表达式原样交给引擎。以 `.` 或 `[` 开头时前置 `$`，以裸字段名开头时前置 `$.`。空路径报用法错误。补根节点后按同一规则校验，不尝试修正表达式内部语法。
+
+| 输入路径 | 交给引擎的路径 |
+| --- | --- |
+| `user.name` | `$.user.name` |
+| `.user.name` | `$.user.name` |
+| `[0].id` | `$[0].id` |
+| `['a.b']` | `$['a.b']`，选择一个本身含点号的键 |
+| `items[?@.status == 'failed'].id` | `$.items[?@.status == 'failed'].id` |
+
+CLI 根据解析后的表达式结构确定输出形状。
+
+- 只由字段名、下标组成的单值路径和根路径 `$` 输出选中的 JSON 值。选中字符串 `Alice` 输出 `"Alice"`，选中空值输出 `null`，路径缺失返回 `1`。若选中的值本身是数组，直接输出该数组。
+- 含通配符、切片、多个选择器、后代查询或过滤的路径输出匹配值数组。命中一个空值时输出 `[null]`，无命中输出 `[]`。同一表达式的输出形状不会因文档中有几条命中而改变。
+- 保留 RFC 规定的查询顺序。RFC 允许对象子节点以任意顺序返回的地方，JSONkit 使用输入中的成员顺序，同一输入在各平台得到一致的数组顺序。
+
+[RFC 9535](https://www.rfc-editor.org/rfc/rfc9535.html) · [JSONPath 一致性测试集](https://github.com/jsonpath-standard/jsonpath-compliance-test-suite)
+
+## 技术选择
+
+- 按[新增工具接入清单](../../ADDING_A_TOOL.md)添加独立的 `jsonkit` 模块，沿用 Java 25、Maven、Picocli、`cli-common` 和 GraalVM Native Image。参数、输入输出和终端检测留在 CLI 层。JSON 解析、高亮和路径求值分别按职责组织。
+- `jackson-core` 读取 token 并写出 JSON。默认查看走流式读写。查询用同一个解析器构建保留对象成员顺序和数字精度的值树，再交给标准查询引擎。高亮基于 token 类型，仅在终端渲染时加入。
+- 实现时将 `jackson-core` 的版本统一到根 POM 的 `dependencyManagement`。`jsonkit` 和 `skillkit` 在各自模块声明运行所需依赖，`dukit` 保留 `test` 作用域。选定的 JSONPath 引擎由 `jsonkit` 模块声明。
+- 常用取值和条件过滤共用一个引擎。优先验证 `io.github.treetrail:jsonpath-core`，它可查询普通 Java `Map`、`List` 和标量。先核对版本、许可、传递依赖和 RFC 一致性，再验证所用路径的 Native 可达性和产物增量。候选库尚未锁定。Treetrail 上游已记录其正则锚点行为与标准有差异，选型时需专门验证 `match()` 和 `search()`。首版验收要求所选引擎通过锁定版本的一致性用例。已知的 RFC 语义偏差需在交付前解决，即使该偏差没有被现有用例覆盖。
+- 选型验证还需确认能按语法判定单值路径。优先读取引擎解析出的结构。必要时独立识别仅由根、字段名和下标构成的窄语法。实际语法校验和求值始终交给引擎。
+- 查询的内存开销随输入文档增长。为解析和求值设置可诊断的资源上限，选型时记录最终默认值。超过上限返回 `1`，避免静默丢弃结果。JSON 写出和普通 Java 值树均无需引入 Databind。
+
+[Treetrail 候选项目](https://github.com/treetrail/treetrail) · [共享 CLI 入口](../../../cli-common/src/main/java/io/github/lihuu/clicommon/cli/CliRunner.java) · [共享颜色策略](../../../cli-common/src/main/java/io/github/lihuu/clicommon/style/OutputStyle.java)
+
+## 分发和验收
+
+现有支持矩阵为 macOS ARM64、Linux AMD64 和 Windows AMD64。每个平台发行一个 Native 可执行文件，Windows 下文件名为 `jsonkit.exe`，其余平台为 `jsonkit`。Shell、PowerShell 安装脚本及 Homebrew、Scoop 包统一安装正式命令 `jsonkit`。文档和 Agent 示例均使用正式命令名。`jk` 可由用户在自己的 Shell 中设为个人别名。
+
+首版提供独立的 `jsonkit/SKILL.md`，包含按平台安装单个工具、通过 `jsonkit --version` 确认安装、打开文件和管道取值的示例。同步官网版本、套件索引和 Skill 安装器。首发时，先确认最新 GitHub Release 的三平台产物及校验和齐全，再把 JSONkit 加入公开站点的安装入口和默认批量安装。Homebrew 和 Scoop 同步后分别验证安装。
+
+| 验收面 | 可观察结果 |
+| --- | --- |
+| 默认查看 | 文件、管道、显式 `-` 三种输入均可使用。真实终端会高亮。重定向、`--no-color` 和空值 `NO_COLOR` 均无 ANSI。裸终端调用显示帮助，缺少查询输入时返回 `2` |
+| 终端组合 | 在三平台的 ANSI 终端验证管道输入且 stdout 接终端时会高亮。stdin 接终端且 stdout 重定向时，裸命令显示无色帮助，传文件或显式 `-` 则输出无色 JSON |
+| 查询 | 标准和简写得到相同结果。覆盖 Unicode 键、带点键、数组下标、通配符、切片、选择器列表、递归和条件过滤。覆盖标准函数、无匹配、单个 `null`、多个结果、单个数组值和无效表达式 |
+| JSON 与诊断 | 覆盖大整数、高精度小数、UTF-8 BOM、CRLF 输入、空输入、截断、额外根值及重复键。成功 stdout 可解析。查询失败 stdout 为空，诊断和退出码符合契约 |
+| Native 选型 | 使用仓库锁定的 GraalVM 构建并运行输入、查询和高亮路径。检查反射与资源元数据需求，记录新增依赖和 Native 原始文件、发布归档的体积。测试所用引擎版本对应的 RFC 一致性用例 |
+| 三平台与分发 | 对三平台 Native 二进制运行同一套语义用例。比较无色 stdout 字节和退出码。各平台文档及冒烟覆盖含空格的文件路径、Shell 传参、stdin 管道和安装后直接调用 `jsonkit` |
+
+[现有 Native 发布矩阵](../../../.github/workflows/release.yml) · [现有 Native 冒烟脚本](../../../scripts/smoke-native.py)
