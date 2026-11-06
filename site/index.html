@@ -359,6 +359,65 @@
     <!-- Philosophy -->
     <div id="philosophy" class="max-w-4xl mx-auto mb-24">
       <h3 class="text-2xl font-bold mb-10 text-center tracking-tight">Core Design Tenets</h3>
+
+      <!-- Dual-Citizen Philosophy -->
+      <div class="grid md:grid-cols-2 gap-6 mb-10">
+        <!-- Human-Centric Card -->
+        <div class="glass-card p-7 rounded-2xl relative overflow-hidden border-sky-500/20 hover:border-sky-500/40 transition">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center text-xl">🧑</span>
+            <div>
+              <h4 class="text-lg font-bold text-white tracking-tight">Human-Centric</h4>
+              <span class="text-xs font-mono text-sky-400">Zero Cognitive Tax • Convention First</span>
+            </div>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed mb-4">
+            Eliminates archaic Unix flag agony. Sensible defaults handle 90% of daily workflows with zero flags, paired with responsive TUI ergonomics:
+          </p>
+          <ul class="text-xs text-slate-400 space-y-2 font-mono">
+            <li class="flex items-start gap-2">
+              <span class="text-sky-400 font-bold">✔</span>
+              <span><strong class="text-slate-200">Zero-Flag Conveniences</strong>: <code class="text-sky-300">certkit gen</code> generates trusted certs directly; <code class="text-sky-300">dukit</code> opens full-screen TUI immediately.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-sky-400 font-bold">✔</span>
+              <span><strong class="text-slate-200">Terminal Ergonomics</strong>: Smooth alternate-screen navigation via JLine FFM, arrow keys, and direct file preview toggling.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-sky-400 font-bold">✔</span>
+              <span><strong class="text-slate-200">Safe by Default</strong>: Destructive operations require visual inspection and move to OS Trash (<code class="text-sky-300">d</code>), never permanent hard delete.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Agent-Ready Card -->
+        <div class="glass-card p-7 rounded-2xl relative overflow-hidden border-purple-500/20 hover:border-purple-500/40 transition">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-xl">🤖</span>
+            <div>
+              <h4 class="text-lg font-bold text-white tracking-tight">Agent-Ready</h4>
+              <span class="text-xs font-mono text-purple-400">Structured Contracts • Machine-Native</span>
+            </div>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed mb-4">
+            No regex guessing or ANSI escape pollution. Engineered as first-class primitives for LLMs and autonomous coding agents (Claude Code, Cursor, Gemini):
+          </p>
+          <ul class="text-xs text-slate-400 space-y-2 font-mono">
+            <li class="flex items-start gap-2">
+              <span class="text-purple-400 font-bold">✔</span>
+              <span><strong class="text-slate-200">Streaming Structured Output</strong>: Uniform <code class="text-purple-300">--json</code> schema; directories-only trees minimize token consumption.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-purple-400 font-bold">✔</span>
+              <span><strong class="text-slate-200">First-Class Agent Skills</strong>: Authoritative SPEC contracts and standard <code class="text-purple-300">SKILL.md</code> guides for instant agent tool discovery.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-purple-400 font-bold">✔</span>
+              <span><strong class="text-slate-200">Non-Blocking &amp; Strict Exits</strong>: Pipe-aware fallback prevents hanging; 0/1/2 exit codes make retry branches deterministic.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
       <div class="grid sm:grid-cols-3 gap-6">
         <div class="glass-card p-6 rounded-xl">
           <div class="text-2xl mb-3">🧭</div>

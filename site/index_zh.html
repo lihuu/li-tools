@@ -358,6 +358,65 @@
     <!-- Philosophy -->
     <div id="philosophy" class="max-w-4xl mx-auto mb-24">
       <h3 class="text-2xl font-bold mb-10 text-center tracking-tight">核心设计哲学 (Core Tenets)</h3>
+
+      <!-- Dual-Citizen Philosophy (双公民设计哲学) -->
+      <div class="grid md:grid-cols-2 gap-6 mb-10">
+        <!-- Human-Centric Card -->
+        <div class="glass-card p-7 rounded-2xl relative overflow-hidden border-sky-500/20 hover:border-sky-500/40 transition">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center text-xl">🧑</span>
+            <div>
+              <h4 class="text-lg font-bold text-white tracking-tight">对人类友好 (Human-Centric)</h4>
+              <span class="text-xs font-mono text-sky-400">0 认知税 • 约定优于配置</span>
+            </div>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed mb-4">
+            消除陈旧 Unix 工具反人类的参数折磨。为 90% 的高频日常意图内置行业最佳约定，搭配现代终端 TUI 与安全兜底：
+          </p>
+          <ul class="text-xs text-slate-400 space-y-2 font-mono">
+            <li class="flex items-start gap-2">
+              <span class="text-sky-400 font-bold">✔</span>
+              <span><strong class="text-slate-200">0 参数默认直达</strong>：<code class="text-sky-300">certkit gen</code> 自动生成受信任证书，<code class="text-sky-300">dukit</code> 裸敲直接进全屏 TUI。</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-sky-400 font-bold">✔</span>
+              <span><strong class="text-slate-200">双缓冲终端漫游</strong>：基于 JLine FFM 双缓冲全屏交互，方向键穿梭、直属大文件预览。</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-sky-400 font-bold">✔</span>
+              <span><strong class="text-slate-200">防误触安全兜底</strong>：危险操作仅限看清目录后按 <code class="text-sky-300">d</code> 移入系统回收站，绝无粗暴硬删。</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Agent-Ready Card -->
+        <div class="glass-card p-7 rounded-2xl relative overflow-hidden border-purple-500/20 hover:border-purple-500/40 transition">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-xl">🤖</span>
+            <div>
+              <h4 class="text-lg font-bold text-white tracking-tight">对 AI Agent 友好 (Agent-Ready)</h4>
+              <span class="text-xs font-mono text-purple-400">结构化契约 • 机器原生消费</span>
+            </div>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed mb-4">
+            告别正则乱猜与 ANSI 乱码污染。专为 LLM 与自主 Coding Agent（Claude Code、Cursor、Gemini）打造零幻觉消费接口：
+          </p>
+          <ul class="text-xs text-slate-400 space-y-2 font-mono">
+            <li class="flex items-start gap-2">
+              <span class="text-purple-400 font-bold">✔</span>
+              <span><strong class="text-slate-200">纯流式结构化输出</strong>：统一 <code class="text-purple-300">--json</code> 契约，输出精简 Directories-Only 树，节省宝贵 Token。</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-purple-400 font-bold">✔</span>
+              <span><strong class="text-slate-200">标准 skills 深度集成</strong>：全套件原生提供 agentskills.io 标准 <code class="text-purple-300">SKILL.md</code> 与权威 SPEC 契约。</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-purple-400 font-bold">✔</span>
+              <span><strong class="text-slate-200">非阻塞与语义退出码</strong>：管道自感知降级、绝不挂起卡死；0/1/2 三态退出码让自愈分支坚如磐石。</span>
+            </li>
+          </ul>
+        </div>
+      </div>
       <div class="grid sm:grid-cols-3 gap-6">
         <div class="glass-card p-6 rounded-xl">
           <div class="text-2xl mb-3">🧭</div>
