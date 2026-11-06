@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>dukit — 跨平台磁盘占用分析 CLI</title>
-  <meta name="description" content="找出磁盘空间去哪了。类 ncdu 的目录扫描,附带行式交互浏览与 JSON 导出,编译为单一原生二进制,macOS、Linux、Windows 行为一致。">
-  <meta name="keywords" content="磁盘占用, 磁盘分析, du, ncdu, ncdu替代, 目录大小, 磁盘空间分析, Java 25, GraalVM原生镜像, Windows磁盘分析, 跨平台">
+  <meta name="description" content="找出磁盘空间去哪了。类 ncdu 的极速目录扫描，附带现代化全屏交互 TUI 浏览、安全回收站删除与精简 JSON 树导出，编译为单一原生二进制，macOS、Linux、Windows 行为完全一致。">
+  <meta name="keywords" content="磁盘占用, 磁盘分析, du, ncdu, ncdu替代, 目录大小, 磁盘空间分析, Java 25, GraalVM原生镜像, Windows磁盘分析, 跨平台, TUI">
   <meta name="author" content="lihuu">
   <link rel="canonical" href="https://tools.lihu.me/dukit/index_zh.html">
   <link rel="alternate" hreflang="en" href="https://tools.lihu.me/dukit/">
@@ -20,7 +20,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://tools.lihu.me/dukit/index_zh.html">
   <meta property="og:title" content="dukit — 跨平台磁盘占用分析 CLI">
-  <meta property="og:description" content="扫描目录树、导出 JSON、逐行交互浏览。单一静态二进制,三个平台同一组数字。">
+  <meta property="og:description" content="极速扫描目录树、全屏 TUI 交互漫游、安全移入回收站、导出机器可读 JSON 树。单一原生二进制，三端系统平权。">
   <meta property="og:image" content="https://tools.lihu.me/assets/og-image.svg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -31,7 +31,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="dukit — 跨平台磁盘占用分析 CLI">
-  <meta name="twitter:description" content="类 ncdu 的磁盘占用分析,行式交互浏览。零运行时依赖。">
+  <meta name="twitter:description" content="类 ncdu 的极速磁盘占用分析，全屏交互 TUI，默认实际磁盘占用与安全回收站删除。零运行时依赖。">
   <meta name="twitter:image" content="https://tools.lihu.me/assets/og-image.svg">
   <meta name="twitter:image:alt" content="dukit — 跨平台磁盘占用分析">
 
@@ -49,7 +49,7 @@
         "programmingLanguage": "Java 25",
         "runtimePlatform": "GraalVM Native Image",
         "operatingSystem": "macOS, Linux, Windows 11",
-        "description": "跨平台磁盘占用分析工具:扫描报告、JSON 导出与行式交互浏览,编译为单一原生二进制。",
+        "description": "跨平台磁盘占用分析工具：扫描报告、精简 JSON 树导出、流式有界排行与现代化全屏交互 TUI 浏览，编译为单一原生二进制。",
         "url": "https://tools.lihu.me/dukit/index_zh.html",
         "image": "https://tools.lihu.me/assets/og-image.svg",
         "datePublished": "2026-11-05",
@@ -88,34 +88,34 @@
         "mainEntity": [
           {
             "@type": "Question",
-            "name": "dukit 是什么?",
+            "name": "dukit 是什么？",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "dukit 是一个受 ncdu 启发的跨平台磁盘占用分析工具。它一次性扫描目录树,输出按大小排序的报告,导出机器可读的 JSON,并提供行式交互浏览以便逐层下钻。发行物是 macOS、Linux、Windows 三平台的单一原生二进制。"
+              "text": "dukit 是一个受 ncdu 启发的跨平台磁盘占用分析工具。它单次遍历目录树，输出默认真实占用的流式 JSON 树，提供流式有界排行榜，并附带基于 JLine FFM 的全屏双缓冲交互浏览器。发行物是 macOS、Linux 与 Windows 11 三端系统的单一原生二进制。"
             }
           },
           {
             "@type": "Question",
-            "name": "dukit 报的是磁盘占用还是逻辑大小?",
+            "name": "dukit 报的是实际磁盘占用还是表观大小？",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Java 标准库没有跨平台的分配块指标(st_blocks 无法通过 java.nio.file 获取),逐平台 FFI 会破坏本项目的零依赖保证。dukit 因此报告逻辑文件大小,让 APFS、ext4 与 NTFS 上的数字完全可比。同一扫描内硬链接内容只计一次,符号链接永不跟随,目录 inode 本身不计入。"
+              "text": "默认报告实际磁盘占用（st_blocks）：通过 Java 25 Foreign Function & Memory (FFM) API 原生读取平台 struct stat，与 du 和 Finder 完全对齐。加 --apparent-size 可切换为逻辑大小，JSON 中两个数字并存。硬链接内容单次扫描只计一次，符号链接永不跟随，目录 inode 本身不额外计入。"
             }
           },
           {
             "@type": "Question",
-            "name": "dukit 的数字与 du、ncdu 相比如何?",
+            "name": "dukit 能安全删除大目录吗？",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "默认报告磁盘实际占用:通过 FFM 读取 st_blocks,与 du 和 Finder 一致。加 --apparent-size 可切换为逻辑大小(相当于 du --apparent-size),JSON 中两个数字都有。两者在 sparse 文件和 APFS 克隆上差异极大——实测一个容器卷映像逻辑 512GB、实际只占 477MB。Windows 不暴露块计数,两种口径在那里相同。"
+              "text": "可以，但仅限在交互式浏览器中。选中目录后按 d 会弹出全屏居中确认模态，看清路径和体积后按 y 移入系统回收站（macOS ~/.Trash、Linux freedesktop Trash、Windows 回收站），按 n 或 Esc 取消。dukit 绝不执行硬删除，也不提供 CLI 删除子命令，确保操作绝对安全。"
             }
           },
           {
             "@type": "Question",
-            "name": "交互浏览在 Windows 上可用吗?",
+            "name": "全屏交互浏览在 Windows 与 SSH 上可用吗？",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "可以。dukit browse 是行式 REPL(cd <n>、up、top、sort、q),不是全屏 curses 界面,因此在所有终端中都能工作,包括经典 Windows 控制台、Windows Terminal 与 SSH 会话。"
+              "text": "完全可用。dukit 基于 JLine 的 FFM 原生终端接入驱动备用屏幕，支持方向键上下移动、Enter 进入、Backspace 返回、s 排序、t 展开直属文件预览、d 安全移入回收站。在 Windows 11 控制台、Windows Terminal、tmux 面板与 SSH 会话中均保持一致体验。"
             }
           }
         ]
@@ -238,26 +238,30 @@
           <div class="text-slate-300">└──    4.1 GiB   22.3%  prototypes/</div>
         </div>
 
-        <!-- Step 2: Browse -->
+        <!-- Step 2: Full-screen interactive TUI -->
         <div class="flex items-center gap-2 text-slate-500 mb-2">
           <span class="text-amber-400">~</span>
           <span class="text-slate-400">$</span>
           <span class="text-white">dukit ~/Projects</span>
         </div>
         <div class="text-slate-400 mb-4 pl-4 border-l-2 border-orange-500/30">
-          <div class="text-slate-300">  1    14.2 GiB   77.2%  service/</div>
-          <div class="text-slate-300">  2     4.1 GiB   22.3%  prototypes/</div>
-          <div class="text-slate-500">cd 1 · up · top · sort size|name|count · q 退出</div>
+          <div class="text-slate-200 font-bold mb-1">dukit 0.4.0 — /Users/li/Projects [18.4 GiB · 45,892 files]</div>
+          <div class="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded my-1 font-semibold">▶  14.2 GiB [████████████████░░░░]  77.2%  service-backend/</div>
+          <div class="text-slate-300 px-2 py-0.5">   4.1 GiB [█████░░░░░░░░░░░░░░░]  22.3%  prototypes/</div>
+          <div class="text-slate-400 px-2 py-0.5"> 120.4 MiB [░░░░░░░░░░░░░░░░░░░░]   0.6%  docs/</div>
+          <div class="text-slate-500 text-xs mt-2 border-t border-slate-800 pt-1.5 flex flex-wrap gap-2">
+            <span>↑↓ 移动</span> • <span>Enter 下钻</span> • <span>Backspace 返回</span> • <span>s 排序</span> • <span>t 预览文件</span> • <span>d 移入回收站</span> • <span>q 退出</span>
+          </div>
         </div>
 
         <!-- Step 3: JSON export -->
         <div class="flex items-center gap-2 text-slate-500 mb-2">
           <span class="text-amber-400">~</span>
           <span class="text-slate-400">$</span>
-          <span class="text-white">dukit scan ~/Projects --json &gt; usage.json</span>
+          <span class="text-white">dukit scan ~/Projects &gt; usage.json</span>
         </div>
         <div class="text-slate-400 pl-4 border-l-2 border-emerald-500/30">
-          <div class="text-emerald-400">✔ 机器可读的完整目录树,直接对接 CI、Agent 与看板</div>
+          <div class="text-emerald-400">✔ 默认输出精简 JSON 树（仅含目录节点），直接对接 CI 与 Agent</div>
         </div>
       </div>
     </div>
@@ -284,11 +288,11 @@
         <!-- Feature 2 -->
         <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
           <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
-            🧹
+            ⚡
           </div>
-          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">纯 JDK 扫描引擎</h3>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">自适应并行扫描</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            扫描引擎只有 <code class="text-amber-300">Files.newDirectoryStream</code> 与 <code class="text-amber-300">BasicFileAttributes</code>,没有别的。整个工具只有一项依赖——JLine 的终端层,它也是全屏界面能在 Windows 上跑起来的原因。
+            ForkJoinPool 自适应分叉：子目录数达到阈值自动派发工作线程，小目录树直接在当前线程内联完成。实测 59 GB、66 万文件的目录树：<span class="text-amber-300">3.2 秒，而 ncdu 需要 8 秒</span>。
           </p>
         </div>
 
@@ -297,9 +301,9 @@
           <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
             🧭
           </div>
-          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">类 ncdu 交互浏览</h3>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">全屏交互 TUI 浏览</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            行式 REPL 而非 curses 全屏:<code class="text-amber-300">cd &lt;n&gt;</code>、<code class="text-amber-300">up</code>、<code class="text-amber-300">top</code>、<code class="text-amber-300">sort</code>。所有终端通用,包括经典 Windows 控制台与 SSH。
+            现代化全屏双缓冲界面：方向键移动、<code class="text-amber-300">Enter</code> 下钻、<code class="text-amber-300">Backspace</code> 返回、<code class="text-amber-300">s</code> 切换排序。基于 JLine FFM 原生接入，Windows 11 控制台、Terminal 与 SSH 会话完全平权。
           </p>
         </div>
 
@@ -308,9 +312,9 @@
           <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
             📤
           </div>
-          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">JSON 导出</h3>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">Directories-Only JSON 树</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            <code class="text-amber-300">--json</code> 输出完整子树与每层聚合,由零反射流式写出器生成——Agent 与 CI 可以直接消费。
+            树节点仅包含目录，常规文件汇总折叠为统计指标，体量只跟目录数相关而不随文件爆炸。零反射流式写出，Agent 与 CI 上下文可极速消费。
           </p>
         </div>
 
@@ -321,18 +325,18 @@
           </div>
           <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">诚实的尺寸语义</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            默认报告磁盘实际占用(FFM 读 <code class="text-amber-300">st_blocks</code>),与 du 和 Finder 一致;<code class="text-amber-300">--apparent-size</code> 切换为逻辑大小。sparse 文件会让两者相差几个数量级。符号链接永不跟随;不可读路径跳过并警告,不中断扫描。
+            默认报告磁盘实际占用（FFM 读 <code class="text-amber-300">st_blocks</code>），与 du 和 Finder 完全对齐；<code class="text-amber-300">--apparent-size</code> 可切换为表观大小。硬链接单次扫描只计一次，符号链接永不跟随。
           </p>
         </div>
 
         <!-- Feature 6 -->
         <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
           <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold mb-4">
-            ⚡
+            🛡️
           </div>
-          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">默认并行</h3>
+          <h3 class="text-lg font-bold text-white mb-2 group-hover:text-amber-300 transition">安全回收站与文件预览</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            某一层目录足够宽时分叉到工作线程,不够宽就留在当前线程串行处理,因此小目录树没有额外开销。实测 59 GB、66 万文件的目录树:<span class="text-amber-300">3.2 秒,而 ncdu 需要 8 秒</span>。
+            按 <code class="text-amber-300">d</code> 弹出模态确认后安全移入系统回收站（macOS ~/.Trash / Linux Trash / Windows 回收站），绝不硬删。按 <code class="text-amber-300">t</code> 展开当前目录直属最大文件预览。
           </p>
         </div>
       </div>
@@ -351,12 +355,12 @@
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
             <div class="font-mono text-amber-300 text-sm font-semibold flex items-center gap-2">
               <span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-xs">scan</span>
-              <span>dukit scan [路径] [--depth &lt;n&gt;] [--exclude &lt;glob&gt;...] [--text]</span>
+              <span>dukit scan [路径] [--depth &lt;n&gt;] [--apparent-size] [--exclude &lt;glob&gt;...] [--text]</span>
             </div>
             <span class="text-xs font-mono text-slate-500">完整目录树，默认 JSON</span>
           </div>
           <p class="text-xs text-slate-400 leading-relaxed">
-            一次遍历目录树,输出每个目录及其大小。树中<strong class="text-slate-200">只有目录</strong>——文件折叠进父目录的统计字段,因此体积只跟目录数相关,不再随文件数爆炸。<code class="text-slate-200">--depth</code> 裁剪层数,但聚合值始终覆盖完整子树:实测扫描 <code class="text-slate-200">/Applications</code>,全量 11 MB,<code class="text-slate-200">--depth 2</code> 只有 30 KB。<code class="text-slate-200">--text</code> 切换为人类可读树。
+            一次遍历目录树，输出每个目录及其真实占用。<strong class="text-slate-200">树中只有目录</strong>——文件折叠进父目录的统计字段，因此体积只跟目录数相关，不再随文件数爆炸。<code class="text-slate-200">--depth</code> 裁剪层数，但聚合值始终覆盖完整子树：实测扫描 <code class="text-slate-200">/Applications</code>，全量 11 MB，<code class="text-slate-200">--depth 2</code> 只有 30 KB。<code class="text-slate-200">--apparent-size</code> 切换为表观大小，<code class="text-slate-200">--text</code> 切换为人类可读文本树。
           </p>
         </div>
 
@@ -370,11 +374,11 @@
             <span class="text-xs font-mono text-slate-500">有界排行，流式计算</span>
           </div>
           <p class="text-xs text-slate-400 leading-relaxed">
-            不建树就能回答"哪里最大"。两个有界堆只保留最大的条目,内存只跟 <code class="text-slate-200">--limit</code> 相关,与磁盘体量无关。<code class="text-slate-200">--files</code> 排行单个文件而非目录;<code class="text-slate-200">--min-size 1G</code> 过滤掉更小的项。20 条结果的 JSON 约 2 KB。
+            不建树就能回答“哪里最大”。两个有界堆只保留最大的条目，内存只跟 <code class="text-slate-200">--limit</code> 相关，与磁盘体量无关。<code class="text-slate-200">--files</code> 排行单个文件而非目录；<code class="text-slate-200">--min-size 1G</code> 过滤掉更小的项。20 条结果的 JSON 约 2 KB。
           </p>
         </div>
 
-        <!-- Command 2 -->
+        <!-- Command 3: browse -->
         <div class="glass-card p-5 rounded-xl">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
             <div class="font-mono text-amber-300 text-sm font-semibold flex items-center gap-2">
@@ -384,7 +388,7 @@
             <span class="text-xs font-mono text-slate-500">全屏交互浏览</span>
           </div>
           <p class="text-xs text-slate-400 leading-relaxed">
-            先扫描,然后接管终端:备用屏幕、方向键选择、<span class="text-slate-200">Enter</span> 进入、<span class="text-slate-200">Backspace</span> 返回、<span class="text-slate-200">s</span> 循环切换 大小 → 名称 → 文件数、<span class="text-slate-200">t</span> 显示当前目录直属的最大文件。始终按大小降序、默认选中最大项。文件预览只为浏览器收集,JSON 仍保持只有目录的体积优势。需要交互终端——管道调用会快速失败并提示改用 <code class="text-slate-200">scan</code>。
+            极速扫描后接管终端进入备用屏幕：方向键选择、<span class="text-slate-200">Enter</span> 下钻、<span class="text-slate-200">Backspace</span> 返回、<span class="text-slate-200">s</span> 循环切换 大小 → 名称 → 文件数、<span class="text-slate-200">t</span> 展开直属前 10 大文件预览、<span class="text-slate-200">d</span> 弹出模态确认后安全移入系统回收站（绝不硬删）。始终按占用降序并默认选中首项。在非交互式管道中自动平滑降级为 JSON 树输出。
           </p>
         </div>
       </div>
@@ -453,30 +457,30 @@
       <h2 class="text-2xl font-bold tracking-tight text-white mb-8 text-center">常见问题</h2>
       <div class="space-y-4">
         <div class="glass-card p-6 rounded-xl">
-          <h3 class="font-bold text-base text-white mb-2">dukit 的数字与 du、ncdu 相比如何?</h3>
+          <h3 class="font-bold text-base text-white mb-2">dukit 报的是实际磁盘占用还是表观大小？</h3>
           <p class="text-sm text-slate-400 leading-relaxed">
-            dukit 报告表观大小——逻辑文件大小之和,相当于 <code class="text-amber-300">du --apparent-size</code>。同一扫描内硬链接内容只计一次,符号链接永不跟随,目录 inode 不额外计入。不可读路径以警告收集,扫描继续进行,一个加锁的目录不会遮住其余全貌。
+            默认报告实际磁盘占用（<code class="text-amber-300">diskSize</code>）：通过 Java 25 FFM API 读取平台原生 <code class="text-amber-300">st_blocks</code>，与 <code class="text-amber-300">du</code> 和 Finder 完全一致。使用 <code class="text-amber-300">--apparent-size</code> 可切换为逻辑大小，JSON 输出中两者同时并存。在 sparse 稀疏文件与 APFS 写时复制（CoW）克隆上，两者可相差几个数量级。Windows 环境下由于未暴露块计数，优雅回退为逻辑大小。
           </p>
         </div>
 
         <div class="glass-card p-6 rounded-xl">
-          <h3 class="font-bold text-base text-white mb-2">为什么用表观大小而不是磁盘分配块?</h3>
+          <h3 class="font-bold text-base text-white mb-2">dukit 的数字与 du、ncdu 相比如何？</h3>
           <p class="text-sm text-slate-400 leading-relaxed">
-            Java 标准库没有跨平台的分配块指标,而逐平台 FFI 会破坏本项目赖以成立的零依赖、零原生元数据保证。表观大小也是唯一在 APFS、ext4 与 NTFS 上含义一致的指标——这正是 dukit 跨平台的意义所在。
+            默认数字与 <code class="text-amber-300">du -s</code> 实际分配完全对齐。同一扫描内具有相同 inode/fileKey 的硬链接仅计算一次占用（所有硬链接仍计入文件总数），符号链接永不深入递归，目录 inode 自身不额外计入。不可读路径作为告警收集到 stderr，扫描继续完成，杜绝单点权限受阻。
           </p>
         </div>
 
         <div class="glass-card p-6 rounded-xl">
-          <h3 class="font-bold text-base text-white mb-2">dukit 能像 ncdu 一样删除文件吗?</h3>
+          <h3 class="font-bold text-base text-white mb-2">dukit 能安全删除目录吗？</h3>
           <p class="text-sm text-slate-400 leading-relaxed">
-            目录可以删——但只能在交互界面里。选中目录按 <code class="text-amber-300">d</code>,看过确认页再按 <code class="text-amber-300">y</code>,目录会移入系统回收站(macOS 的 <code class="text-amber-300">~/.Trash</code>、Linux 的 freedesktop Trash、Windows 的回收站)。dukit 绝不请求永久删除;Windows 上若回收站被禁用或已满,Shell 可能在自己警告后永久删除。这里刻意不提供 CLI 删除命令:只有当你能看见它来自哪棵树时,删除才是安全的。
+            可以，但只能在交互式浏览器中进行。选中目录按 <code class="text-amber-300">d</code> 会弹出全屏居中确认模态，核对完整路径与大小后按 <code class="text-amber-300">y</code> 移入系统回收站（macOS <code class="text-amber-300">~/.Trash</code>、Linux freedesktop Trash、Windows 回收站），按 <code class="text-amber-300">n</code> 或 <code class="text-amber-300">Esc</code> 取消。dukit 绝不执行不可逆的硬删除，也不提供 CLI 删除参数。
           </p>
         </div>
 
         <div class="glass-card p-6 rounded-xl">
-          <h3 class="font-bold text-base text-white mb-2">浏览模式支持 SSH 与 Windows 吗?</h3>
+          <h3 class="font-bold text-base text-white mb-2">全屏交互浏览支持 SSH 与 Windows 吗？</h3>
           <p class="text-sm text-slate-400 leading-relaxed">
-            支持。<code class="text-amber-300">dukit browse</code> 是行式 REPL 而非全屏 curses 界面,只需要可用的 stdin:经典 Windows 控制台、Windows Terminal、tmux 面板与 SSH 会话行为完全一致。
+            完全支持。<code class="text-amber-300">dukit browse</code> 采用 JLine 的 FFM 原生终端接入驱动备用屏幕，在经典 Windows 控制台、Windows Terminal、tmux 面板与 SSH 会话中均提供丝滑的全屏双缓冲交互与键盘上下选择体验。若在无法进入原始模式的受限管道中，会自动平滑降级。
           </p>
         </div>
       </div>

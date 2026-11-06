@@ -340,16 +340,17 @@
           <span class="text-slate-500 group-hover:text-amber-400 transition transform group-hover:translate-x-1">→</span>
         </div>
         <p class="text-slate-400 text-sm leading-relaxed mb-6">
-          Find what is eating your disk. ncdu-inspired scanning with a line-based browser and JSON export — identical numbers on macOS, Linux and Windows.
+          Find what is eating your disk. ncdu-inspired speed, full-screen TUI browsing, safe Trash deletion and directories-only JSON export — identical behavior on macOS, Linux and Windows 11.
         </p>
         <div class="bg-black/60 rounded-xl p-3.5 font-mono text-xs text-amber-300 border border-amber-950/60 mb-5 flex items-center justify-between">
-          <span>$ dukit scan ~/Projects --json</span>
-          <span class="text-emerald-400 text-[10px] font-semibold">✔ Machine-Readable Tree</span>
+          <span>$ dukit scan ~/Projects</span>
+          <span class="text-emerald-400 text-[10px] font-semibold">✔ Directories-Only JSON Tree</span>
         </div>
         <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
           <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">ncdu-Inspired</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Line Browser</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">JSON Export</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Full-Screen TUI</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Occupied Space</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60">Trash Deletion</span>
         </div>
       </a>
 
@@ -429,10 +430,10 @@
               </tr>
               <tr>
                 <td class="py-2.5 px-3 font-bold text-amber-400">dukit</td>
-                <td class="py-2.5 px-3">Apparent Sizes (du parity)</td>
-                <td class="py-2.5 px-3">Files.walkFileTree (POSIX)</td>
-                <td class="py-2.5 px-3">Files.walkFileTree (POSIX)</td>
-                <td class="py-2.5 px-3">Files.walkFileTree (NTFS)</td>
+                <td class="py-2.5 px-3">Occupied Space (st_blocks)</td>
+                <td class="py-2.5 px-3">FFM native stat + ~/.Trash</td>
+                <td class="py-2.5 px-3">FFM native stat + freedesktop</td>
+                <td class="py-2.5 px-3">JLine FFM TUI + Recycle Bin</td>
               </tr>
             </tbody>
           </table>

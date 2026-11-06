@@ -26,7 +26,7 @@
 | **[`certkit`](certkit/)** | Modern SSL/TLS certificate Swiss Army knife | Convention over configuration, trusted local Root CA, smart domain/IP SAN auto-sniffing, single-argument format conversion, triple-platform trust | `Active` |
 | **[`tokenkit`](tokenkit/)** | Modern cross-platform encrypted token manager | Embedded encrypted SQLite, AES-256-GCM + PBKDF2, sub-10ms terminal shell injection (`tokenkit env`), cross-machine encrypted migration bundles | `Active` |
 | **[`skillkit`](skillkit/)** | Local agent skill management | Local content + metadata-only upstreams, parallel install/update, personal repository pull/push, shared or selected agent targets | `Active` |
-| **[`dukit`](dukit/)** | Cross-platform disk usage analyzer | ncdu-inspired scan reports, apparent-size semantics with hardlink dedup, JSON export, line-based interactive browser | `Active` |
+| **[`dukit`](dukit/)** | Cross-platform disk usage analyzer | ncdu-inspired speed, occupied space by default via FFM `st_blocks`, full-screen TUI with Trash delete (`d`) & file preview (`t`), pure streaming JSON tree | `Active` |
 
 ---
 
@@ -60,7 +60,8 @@ li-tools/
 │   ├── gpgkit/index.html       # gpgkit landing page
 │   ├── certkit/index.html      # certkit landing page
 │   ├── tokenkit/index.html     # tokenkit landing page
-│   └── skillkit/index.html     # skillkit landing page
+│   ├── skillkit/index.html     # skillkit landing page
+│   └── dukit/index.html        # dukit landing page
 ├── gpgkit/                     # GPG key lifecycle manager (Pure JDK, zero runtime dependencies)
 │   ├── SPEC.md                 # Contract specifications
 │   ├── build-native.sh         # GraalVM Native Image compilation script
@@ -77,7 +78,8 @@ li-tools/
 │   ├── SPEC.md                 # Contract specifications
 │   ├── build-native.sh         # GraalVM Native Image compilation script
 │   └── src/
-├── dukit/                      # Cross-platform disk usage analyzer (Pure JDK filesystem scanning)
+├── dukit/                      # Cross-platform disk usage analyzer (Pure JDK parallel scanning & FFM st_blocks)
+│   ├── SPEC.md                 # Contract specifications
 │   ├── build-native.sh         # GraalVM Native Image compilation script
 │   └── src/
 ├── .github/workflows/          # CI/CD and GitHub Pages automation
