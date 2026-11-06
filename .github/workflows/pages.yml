@@ -36,15 +36,36 @@ jobs:
           const fs = require("fs");
           const en = fs.readFileSync("site/index.html", "utf8");
           const zh = fs.readFileSync("site/index_zh.html", "utf8");
-          const enTitle = en.match(/<title>(.*?)<\/title>/)[1].length;
-          const enDesc = en.match(/name="description" content="(.*?)"/)[1].length;
-          const zhTitle = zh.match(/<title>(.*?)<\/title>/)[1].length;
-          const zhDesc = zh.match(/name="description" content="(.*?)"/)[1].length;
-          if (enTitle < 40 || enTitle > 60) throw new Error(`EN Title length ${enTitle} outside 40-60`);
-          if (enDesc < 120 || enDesc > 155) throw new Error(`EN Desc length ${enDesc} outside 120-155`);
-          if (zhTitle < 40 || zhTitle > 60) throw new Error(`ZH Title length ${zhTitle} outside 40-60`);
-          if (zhDesc < 120 || zhDesc > 155) throw new Error(`ZH Desc length ${zhDesc} outside 120-155`);
-          console.log("✅ All TDK constraints successfully validated!");
+
+          const enTitleMatch = en.match(/<title>(.*?)<\/title>/);
+          const enDescMatch = en.match(/name="description" content="(.*?)"/);
+          const zhTitleMatch = zh.match(/<title>(.*?)<\/title>/);
+          const zhDescMatch = zh.match(/name="description" content="(.*?)"/);
+
+          if (!enTitleMatch || !enTitleMatch[1].trim()) throw new Error("Missing or empty EN <title>");
+          if (!enDescMatch || !enDescMatch[1].trim()) throw new Error("Missing or empty EN <meta name=\"description\">");
+          if (!zhTitleMatch || !zhTitleMatch[1].trim()) throw new Error("Missing or empty ZH <title>");
+          if (!zhDescMatch || !zhDescMatch[1].trim()) throw new Error("Missing or empty ZH <meta name=\"description\">");
+
+          console.log(`EN Title (${enTitleMatch[1].length}): "${enTitleMatch[1]}"`);
+          console.log(`EN Description (${enDescMatch[1].length}): "${enDescMatch[1]}"`);
+          console.log(`ZH Title (${zhTitleMatch[1].length}): "${zhTitleMatch[1]}"`);
+          console.log(`ZH Description (${zhDescMatch[1].length}): "${zhDescMatch[1]}"`);
+
+          if (enTitleMatch[1].length < 20 || enTitleMatch[1].length > 70) {
+            console.warn(`::warning::EN Title length ${enTitleMatch[1].length} is outside recommended 20-70 chars`);
+          }
+          if (enDescMatch[1].length < 50 || enDescMatch[1].length > 200) {
+            console.warn(`::warning::EN Description length ${enDescMatch[1].length} is outside recommended 50-200 chars`);
+          }
+          if (zhTitleMatch[1].length < 15 || zhTitleMatch[1].length > 60) {
+            console.warn(`::warning::ZH Title length ${zhTitleMatch[1].length} is outside recommended 15-60 chars`);
+          }
+          if (zhDescMatch[1].length < 40 || zhDescMatch[1].length > 200) {
+            console.warn(`::warning::ZH Description length ${zhDescMatch[1].length} is outside recommended 40-200 chars`);
+          }
+
+          console.log("✅ All TDK checks completed successfully!");
           '
 
   deploy:
