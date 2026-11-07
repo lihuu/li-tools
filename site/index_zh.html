@@ -509,6 +509,13 @@
                 <td class="py-2.5 px-3">GnuPG Win32 / Git GPG</td>
               </tr>
               <tr>
+                <td class="py-2.5 px-3 font-bold text-sky-400">jsonkit</td>
+                <td class="py-2.5 px-3">RFC 9535 (JSONPath) + RFC 8259</td>
+                <td class="py-2.5 px-3">FFM isatty + ANSI 终端着色</td>
+                <td class="py-2.5 px-3">FFM isatty + ANSI 终端着色</td>
+                <td class="py-2.5 px-3">FFM _isatty + VT100 / UTF-8</td>
+              </tr>
+              <tr>
                 <td class="py-2.5 px-3 font-bold text-cyan-400">skillkit</td>
                 <td class="py-2.5 px-3">agentskills.io 规范</td>
                 <td class="py-2.5 px-3">10+ Agents 目录广播</td>
@@ -579,6 +586,12 @@
           <h4 class="font-bold text-white mb-2">gpgkit 如何确保备份 100% 能还原成功？</h4>
           <p class="text-sm text-slate-400 leading-relaxed">
             gpgkit 在每次执行备份时，都会在独立的临时沙盒 Keyring 中当场还原解密，并用还原出来的私钥完成一次真实的签名与校验闭环。一旦检验未通过，备份当场终止且绝不落盘半成品。
+          </p>
+        </div>
+        <div class="glass-card p-6 rounded-xl">
+          <h4 class="font-bold text-white mb-2">jsonkit 是如何做到大整数与高精度小数零丢失的？</h4>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            传统工具容易将大数解析为 64 位双精度浮点数造成精度截断。jsonkit 底层直接以原始字符字面量流式传递数字 Token，无论是 30 位超大整数还是高精度浮点，格式化与 RFC 9535 取值输出均 100% 保真。
           </p>
         </div>
         <div class="glass-card p-6 rounded-xl">
