@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>jsonkit — JSON Formatter and JSONPath Query CLI</title>
+  <meta name="description" content="Format, highlight and query JSON with one command. Pretty-print files or pipes, select values with RFC 9535 JSONPath, and get plain parseable JSON on macOS, Linux and Windows 11.">
+  <meta name="keywords" content="json formatter, jsonpath, json query, json cli, json pretty print, rfc 9535, java 25, graalvm native image, cross-platform">
+  <meta name="author" content="lihuu">
+  <link rel="canonical" href="https://tools.lihu.me/jsonkit/">
+  <link rel="alternate" hreflang="en" href="https://tools.lihu.me/jsonkit/">
+  <link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/jsonkit/index_zh.html">
+  <link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/jsonkit/">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="agent-skill" type="text/markdown" href="https://tools.lihu.me/jsonkit/SKILL.md">
+  <link rel="help" type="text/plain" href="https://tools.lihu.me/llms.txt" title="LLM Context">
+  <meta name="google-site-verification" content="epNE0uQpK-nZdlM1cicMcKft0wK4cvnStftRZS5B8CU">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tools.lihu.me/jsonkit/">
+  <meta property="og:title" content="jsonkit — JSON Formatter and JSONPath Query CLI">
+  <meta property="og:description" content="One command to format, highlight and query JSON. RFC 9535 JSONPath, preserved number literals, terminal-aware color and plain output for automation.">
+  <meta property="og:image" content="https://tools.lihu.me/assets/og-image.svg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="jsonkit — JSON formatter and JSONPath query CLI">
+  <meta property="og:site_name" content="li-tools">
+  <meta property="og:locale" content="en_US">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="jsonkit — JSON Formatter and JSONPath Query CLI">
+  <meta name="twitter:description" content="Pretty-print JSON and select values with RFC 9535 JSONPath, in one zero-dependency native binary.">
+  <meta name="twitter:image" content="https://tools.lihu.me/assets/og-image.svg">
+  <meta name="twitter:image:alt" content="jsonkit — JSON formatter and JSONPath query CLI">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "jsonkit",
+        "applicationCategory": "DeveloperApplication",
+        "softwareVersion": "0.5.0",
+        "codeRepository": "https://github.com/lihuu/li-tools",
+        "programmingLanguage": "Java 25",
+        "runtimePlatform": "GraalVM Native Image",
+        "operatingSystem": "macOS, Linux, Windows 11",
+        "description": "JSON formatter and RFC 9535 JSONPath query CLI with terminal highlighting, preserved number literals and an automation-safe output contract.",
+        "url": "https://tools.lihu.me/jsonkit/",
+        "image": "https://tools.lihu.me/assets/og-image.svg",
+        "datePublished": "2026-11-06",
+        "dateModified": "2026-11-06",
+        "license": "https://opensource.org/licenses/Apache-2.0",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Person", "name": "lihuu", "url": "https://github.com/lihuu" }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "li-tools", "item": "https://tools.lihu.me/" },
+          { "@type": "ListItem", "position": 2, "name": "jsonkit", "item": "https://tools.lihu.me/jsonkit/" }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How do I query a JSON field with jsonkit?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Pass the path with -p or --path: jsonkit response.json -p user.name. The shorthand user.name is treated as $.user.name, and full RFC 9535 expressions work unchanged." }
+          },
+          {
+            "@type": "Question",
+            "name": "Why does a query print an array even though only one value matched?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Paths with a wildcard, slice, selector list, descendant segment or filter always return an array of matches, so the output shape never changes with the document. Only root, field and index paths return a single value." }
+          },
+          {
+            "@type": "Question",
+            "name": "Does jsonkit preserve large numbers?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Yes. Formatting and query output keep the original number literal, so big integers and high-precision decimals are never rounded." }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', accent: '#a855f7' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0b0f19; }
+    .glass-card {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(14, 165, 233, 0.15);
+      transition: all 0.25s ease-in-out;
+    }
+    .glass-card:hover { border-color: rgba(14, 165, 233, 0.35); transform: translateY(-2px); }
+    .hero-glow { background: radial-gradient(circle at 50% 20%, rgba(14, 165, 233, 0.16) 0%, rgba(168, 85, 247, 0.08) 45%, transparent 70%); }
+  </style>
+</head>
+<body class="text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-white relative">
+  <div class="absolute inset-0 hero-glow pointer-events-none h-[600px]"></div>
+
+  <header class="border-b border-slate-800/80 sticky top-0 z-50 bg-[#0b0f19]/80 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="../index.html" class="flex items-center space-x-3">
+        <span class="font-bold text-lg tracking-tight flex items-center gap-2">
+          <span class="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-500 flex items-center justify-center text-xs font-mono font-bold text-white shadow-lg">li</span>
+          li-tools
+        </span>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">jsonkit</span>
+      </a>
+      <nav class="flex items-center space-x-6 text-sm">
+        <a href="#usage" class="text-slate-400 hover:text-white transition">Usage</a>
+        <a href="#contract" class="text-slate-400 hover:text-white transition">Contract</a>
+        <a href="#install" class="text-slate-400 hover:text-white transition">Install</a>
+        <a href="index_zh.html" class="px-2.5 py-1 text-xs font-mono font-semibold rounded-md bg-slate-800 hover:bg-slate-700 text-sky-300 border border-sky-500/30 transition">🌐 中文</a>
+        <a href="https://github.com/lihuu/li-tools" target="_blank" rel="noopener" class="text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">GitHub ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 pt-20 pb-24">
+    <div class="text-center max-w-3xl mx-auto mb-14">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-800/80 border border-slate-700 text-slate-300 text-xs font-mono mb-6 backdrop-blur">
+        <span>⚡</span> Java 25 • GraalVM Native Image • RFC 9535
+      </div>
+      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+        JSON, readable.<br>
+        <span class="bg-gradient-to-r from-sky-400 via-cyan-300 to-indigo-400 bg-clip-text text-transparent">And queryable.</span>
+      </h1>
+      <p class="text-lg text-slate-400 leading-relaxed">
+        One command to format a file, highlight it in the terminal, and select exactly the value you need.
+        No jq dependency, no subcommand, no second tool.
+      </p>
+      <div class="mt-8 bg-black/70 rounded-xl p-4 font-mono text-sm text-sky-300 border border-sky-950/70 text-left max-w-xl mx-auto">
+        <div><span class="text-slate-500">$</span> jsonkit response.json</div>
+        <div><span class="text-slate-500">$</span> jsonkit response.json -p user.name</div>
+        <div><span class="text-slate-500">$</span> curl -s "$API" | jsonkit -p 'items[*].id'</div>
+      </div>
+    </div>
+
+    <section id="usage" class="mb-20">
+      <h2 class="text-2xl font-bold mb-6">One gesture, two questions</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="glass-card rounded-2xl p-7">
+          <h3 class="font-bold text-lg text-sky-300 mb-3">“Show me this JSON”</h3>
+          <p class="text-sm text-slate-400 leading-relaxed mb-4">Pretty-print with two-space indentation, preserve member order and number literals, and highlight keys, strings, numbers and literals only when stdout is a terminal.</p>
+          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-slate-300 overflow-x-auto"><code>$ jsonkit package.json
+{
+  "name": "example",
+  "version": "1.0.0"
+}</code></pre>
+        </div>
+        <div class="glass-card rounded-2xl p-7">
+          <h3 class="font-bold text-lg text-cyan-300 mb-3">“Give me this value”</h3>
+          <p class="text-sm text-slate-400 leading-relaxed mb-4">Add <code class="text-cyan-300">-p</code> and use standard JSONPath. A field/index path prints one value; wildcards, slices, descendant queries and filters print an array.</p>
+          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-slate-300 overflow-x-auto"><code>$ jsonkit -p "items[?@.status == 'failed'].id" response.json
+[
+  1,
+  3
+]</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-20">
+      <h2 class="text-2xl font-bold mb-6">Shorthand fits the common case</h2>
+      <div class="glass-card rounded-2xl overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-900/80 text-slate-400 font-mono text-xs">
+            <tr><th class="text-left px-5 py-3">You write</th><th class="text-left px-5 py-3">The engine receives</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/80 font-mono text-xs">
+            <tr><td class="px-5 py-3 text-sky-300">user.name</td><td class="px-5 py-3 text-slate-300">$.user.name</td></tr>
+            <tr><td class="px-5 py-3 text-sky-300">.user.name</td><td class="px-5 py-3 text-slate-300">$.user.name</td></tr>
+            <tr><td class="px-5 py-3 text-sky-300">[0].id</td><td class="px-5 py-3 text-slate-300">$[0].id</td></tr>
+            <tr><td class="px-5 py-3 text-sky-300">['a.b']</td><td class="px-5 py-3 text-slate-300">$['a.b']</td></tr>
+            <tr><td class="px-5 py-3 text-sky-300">items[?@.status == 'failed'].id</td><td class="px-5 py-3 text-slate-300">$.items[?@.status == 'failed'].id</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-slate-500 mt-3">After the root is added, the expression follows RFC 9535: field names, indexes, wildcards, slices, selector lists, recursive descent, filters and standard functions.</p>
+    </section>
+
+    <section id="contract" class="mb-20">
+      <h2 class="text-2xl font-bold mb-6">An output contract agents can trust</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="font-bold text-base text-white mb-2">Single value</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">Root, field and index paths print the selected JSON value. A missing path exits <code class="text-sky-300">1</code>.</p>
+        </div>
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="font-bold text-base text-white mb-2">Array result</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">Wildcard, slice, selector list, descendant and filter paths always print an array. No match prints <code class="text-sky-300">[]</code> with exit <code class="text-sky-300">0</code>.</p>
+        </div>
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="font-bold text-base text-white mb-2">Plain by default</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">Redirection, <code class="text-sky-300">--no-color</code> and <code class="text-sky-300">NO_COLOR</code> produce plain UTF-8 JSON. Color depends only on stdout being a terminal.</p>
+        </div>
+      </div>
+      <div class="glass-card rounded-2xl overflow-hidden mt-6">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-900/80 text-slate-400 font-mono text-xs">
+            <tr><th class="text-left px-5 py-3">Exit</th><th class="text-left px-5 py-3">Meaning</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/80 text-slate-300">
+            <tr><td class="px-5 py-3 font-mono text-emerald-400">0</td><td class="px-5 py-3">Success, help, version, or multi-value query with <code>[]</code></td></tr>
+            <tr><td class="px-5 py-3 font-mono text-amber-400">1</td><td class="px-5 py-3">Read failure, invalid JSON, duplicate keys in query input, missing single value, or a resource limit</td></tr>
+            <tr><td class="px-5 py-3 font-mono text-rose-400">2</td><td class="px-5 py-3">CLI usage error or invalid JSONPath expression</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-slate-500 mt-3">Formatting preserves number literals exactly, accepts UTF-8 BOM, and rejects empty, truncated or trailing content. Query input with duplicate object keys fails instead of silently choosing one.</p>
+    </section>
+
+    <section id="install" class="mb-20">
+      <h2 class="text-2xl font-bold mb-6">Install the single command</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="glass-card rounded-2xl p-7">
+          <h3 class="font-bold text-base mb-3">Shell installer</h3>
+          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-sky-300 overflow-x-auto"><code>curl -fsSL https://tools.lihu.me/install.sh | bash -s jsonkit
+jsonkit --version</code></pre>
+        </div>
+        <div class="glass-card rounded-2xl p-7">
+          <h3 class="font-bold text-base mb-3">Package managers</h3>
+          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-sky-300 overflow-x-auto"><code>brew install lihuu/tap/jsonkit
+scoop install jsonkit</code></pre>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500 mt-3">The official command is <code class="text-sky-300">jsonkit</code>. A shorter <code class="text-sky-300">jk</code> is intentionally a personal shell alias, not something the installer creates.</p>
+    </section>
+
+    <section class="mb-20">
+      <h2 class="text-2xl font-bold mb-6">FAQ</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="font-bold text-base text-white mb-2">Why not just use jq?</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">If jq is already installed, it is excellent. jsonkit exists so the formatting step and the query step are one dependency-free native command on all three platforms, with an explicit automation output contract.</p>
+        </div>
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="font-bold text-base text-white mb-2">Can it read stdin?</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">Yes. With no file, it reads stdin when it is piped or redirected. In a terminal it shows help instead of waiting. Use <code class="text-sky-300">-</code> to read a terminal until EOF.</p>
+        </div>
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="font-bold text-base text-white mb-2">Does it preserve huge integers?</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">Yes. Numbers are written from their original literals, so a 30-digit integer or a decimal with trailing zeros survives formatting and query selection unchanged.</p>
+        </div>
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="font-bold text-base text-white mb-2">What are the query limits?</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">10,000,000 visited nodes, 1,000,000 result nodes and 1,000 levels of nesting. Exceeding a limit exits <code class="text-sky-300">1</code> with a diagnostic instead of exhausting the process.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-800/80 bg-[#070b13] py-12 text-slate-400 text-xs font-mono">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-2">
+        <span class="text-white font-bold">li-tools</span><span>•</span><span>jsonkit</span><span>•</span><span>Apache 2.0 License</span>
+      </div>
+      <div class="flex items-center space-x-6">
+        <a href="https://github.com/lihuu/li-tools" target="_blank" rel="noopener" class="hover:text-white transition">GitHub</a>
+        <a href="../llms.txt" class="hover:text-sky-400 transition">llms.txt</a>
+        <a href="SKILL.md" class="hover:text-sky-400 transition">Agent Skill</a>
+        <a href="../sitemap.xml" class="hover:text-white transition">Sitemap</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -25,6 +25,7 @@
 | **[`certkit`](certkit/)** | 现代 SSL/TLS 证书瑞士军刀，告别反人类的 OpenSSL 参数 | 约定大于配置、一键受信任本地 Root CA、智能域名/IP SAN 嗅探、单参数互转、三端系统受信 | `Active` |
 | **[`dukit`](dukit/)** | 现代跨平台磁盘占用分析利器，终结“磁盘空间去哪了”的迷茫 | 类 ncdu 极速分析、默认真实磁盘占用 (FFM `st_blocks`)、全屏交互 TUI 浏览、安全回收站删除 (`d`)、直属大文件预览 (`t`)、纯流式无反射 JSON 导出 | `Active` |
 | **[`gpgkit`](gpgkit/)** | GPG 密钥全生命周期管理，终结“换机器丢密钥” | 零运行时依赖、强制回环可验证性校验、一键备份/还原/续期/自检 | `Active` |
+| **[`jsonkit`](jsonkit/)** | JSON 格式化与 RFC 9535 查询 CLI | 一条命令完成格式化与 `-p` 取值、终端感知高亮、保留数字字面量、单值与数组输出形状稳定 | `Active` |
 | **[`skillkit`](skillkit/)** | 本地 Agent skills 管理 | 本地内容与上游元数据订阅、并行安装/更新、个人仓库拉取/发布、公共或指定 Agent 分发 | `Active` |
 | **[`tokenkit`](tokenkit/)** | 现代通用敏感 Token/API Key 加密管理器，终结明文密钥泄露 | 内嵌强加密 SQLite、AES-256-GCM + PBKDF2、<10ms 终端极速环境变量注入 (`tokenkit env`)、跨系统安全加密迁移包 | `Active` |
 
@@ -60,6 +61,7 @@ li-tools/
 │   ├── certkit/index.html      # certkit 专属落地页
 │   ├── dukit/index.html        # dukit 专属落地页
 │   ├── gpgkit/index.html       # gpgkit 专属落地页
+│   ├── jsonkit/index.html      # jsonkit 专属落地页
 │   ├── skillkit/index.html     # skillkit 专属落地页
 │   └── tokenkit/index.html     # tokenkit 专属落地页
 ├── certkit/                    # SSL/TLS 证书管理工具 (Picocli + OpenSSL 现代化编排)
@@ -71,6 +73,10 @@ li-tools/
 │   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
 │   └── src/
 ├── gpgkit/                     # GPG 密钥生命周期管理工具 (纯 JDK 原生标准库，零第三方运行时依赖)
+│   ├── SPEC.md                 # 接口与行为规格契约
+│   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
+│   └── src/
+├── jsonkit/                    # JSON 格式化与 RFC 9535 JSONPath 查询 CLI
 │   ├── SPEC.md                 # 接口与行为规格契约
 │   ├── build-native.sh         # GraalVM Native Image 原生编译脚本
 │   └── src/
@@ -96,7 +102,7 @@ li-tools/
 - **终端排版工具套件**：冒号自动对齐的键值排版器 (`KeyValueFormatter`)、ANSI 安全且支持 Unicode 边框的表格格式化器 (`TableFormatter`)、密钥智能脱敏掩码 (`TextMasker`)。
 - **跨平台操作系统交互桥**：各平台原生剪贴板无缝写入 (`ClipboardUtil`)、POSIX / PowerShell / Fish 安全环境变量转义 (`ShellFormatter`) 与操作系统智能嗅探 (`Platform`)。
 
-JSON 由各子命令声明。常用入口包括 `certkit check --json`、`dukit scan`、`gpgkit status --json`、`skillkit list --json` 和 `tokenkit list --json`。
+JSON 由各子命令声明。常用入口包括 `certkit check --json`、`dukit scan`、`gpgkit status --json`、`skillkit list --json`、`tokenkit list --json`，以及用 `jsonkit -p <path>` 从这些输出中取值。
 
 
 ## 🚀 极速安装方式
@@ -109,12 +115,13 @@ JSON 由各子命令声明。常用入口包括 `certkit check --json`、`dukit 
 brew tap lihuu/tap
 
 # 安装全部工具
-brew install certkit dukit gpgkit skillkit tokenkit
+brew install certkit dukit gpgkit jsonkit skillkit tokenkit
 
 # 或者不预先 Tap，直接按需单行安装：
 brew install lihuu/tap/certkit
 brew install lihuu/tap/dukit
 brew install lihuu/tap/gpgkit
+brew install lihuu/tap/jsonkit
 brew install lihuu/tap/skillkit
 brew install lihuu/tap/tokenkit
 ```
@@ -125,7 +132,7 @@ brew install lihuu/tap/tokenkit
 scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket
 
 # 安装全部工具
-scoop install certkit dukit gpgkit skillkit tokenkit
+scoop install certkit dukit gpgkit jsonkit skillkit tokenkit
 ```
 
 ### 3. 一行 Shell / PowerShell 脚本安装 (macOS, Linux & Windows 11)

@@ -17,6 +17,7 @@
         <module>certkit</module>
         <module>tokenkit</module>
         <module>skillkit</module>
+        <module>jsonkit</module>
         <module>dukit</module>
     </modules>
 
@@ -26,6 +27,7 @@
             <maven.compiler.release>25</maven.compiler.release>
             <junit.jupiter.version>5.11.4</junit.jupiter.version>
             <picocli.version>4.7.6</picocli.version>
+            <jackson.version>2.20.1</jackson.version>
             <annotations.version>26.0.2</annotations.version>
             <notnull-maven-plugin.version>1.0.0</notnull-maven-plugin.version>
             <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
@@ -51,6 +53,11 @@
                 <artifactId>picocli-codegen</artifactId>
                 <version>${picocli.version}</version>
                 <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jetbrains</groupId>

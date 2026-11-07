@@ -44,10 +44,10 @@
 ./build-native.sh
 ```
 
-根脚本先执行一次 `mvn -q -DskipTests package -pl gpgkit,certkit,tokenkit -am`，
-然后顺序调用三个工具脚本的 `--skip-package` 模式。发布工作流使用同一个入口，
-无需先向本地仓库 `install` 公共模块，也不再由三个子脚本重复执行 Maven 生命周期。
-已在无 target 的独立工作区用真实入口验证：一次 Maven 调用成功生成三个 O2 原生产物。
+根脚本先执行一次 `mvn -q -DskipTests package -pl gpgkit,certkit,tokenkit,skillkit,jsonkit,dukit -am`，
+然后顺序调用六个工具脚本的 `--skip-package` 模式。发布工作流使用同一个入口，
+无需先向本地仓库 `install` 公共模块，也不再由六个子脚本重复执行 Maven 生命周期。
+已在无 target 的独立工作区用真实入口验证：一次 Maven 调用成功生成六个 O2 原生产物。
 七个脚本行为测试还覆盖带空格路径、独立构建、缺少 JAR 和失败时停止后续构建，
 仅替代 Maven、Native Image 两个外部命令边界。
 

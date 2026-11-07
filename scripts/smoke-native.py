@@ -13,10 +13,10 @@ import xml.etree.ElementTree as ET
 REPOSITORY = Path(__file__).resolve().parents[1]
 
 
-def run(command, directory, environment, expected=0):
+def run(command, directory, environment, expected=0, input_text=None):
     result = subprocess.run(
         [str(argument) for argument in command],
-        cwd=directory, env=environment, capture_output=True,
+        cwd=directory, env=environment, capture_output=True, input=input_text,
         text=True, encoding="utf-8", errors="replace", timeout=30,
     )
     if result.returncode != expected:
@@ -38,7 +38,7 @@ def main():
     suffix = ".exe" if os.name == "nt" else ""
     binaries = {
         tool: REPOSITORY / tool / "target" / (tool + suffix)
-        for tool in ("gpgkit", "certkit", "tokenkit", "skillkit", "dukit")
+        for tool in ("gpgkit", "certkit", "tokenkit", "skillkit", "jsonkit", "dukit")
     }
     for binary in binaries.values():
         if not binary.is_file():
@@ -166,6 +166,40 @@ def main():
         assert remote[0]["status"] == "unverified", remote
         assert not (skills_home / ".agents").exists()
         print("skillkit: skills list and offline preview PASS", flush=True)
+
+        jsonkit = binaries["jsonkit"]
+        fixture = directory / "json kit fixture.json"
+        fixture.write_text(
+            '{"user":{"name":"Alice"},"items":[{"id":1,"status":"failed"},'
+            '{"id":2,"status":"ok"},{"id":3,"status":"failed"}],'
+            '"big":123456789012345678901234567890,"unicode":{"键":"值"}}',
+            encoding="utf-8",
+        )
+        formatted = run([jsonkit, fixture], directory, environment)
+        assert json.loads(formatted)["user"]["name"] == "Alice", formatted
+        assert '"big": 123456789012345678901234567890' in formatted, formatted
+        assert '"键": "值"' in formatted, formatted
+        assert run([jsonkit, "-p", "user.name", fixture], directory, environment) == '"Alice"\n'
+        assert json.loads(run([jsonkit, "-p", "items[*].id", fixture], directory, environment)) == [1, 2, 3]
+        assert json.loads(run([jsonkit, "-p", "items[?@.status == 'failed'].id", fixture],
+                              directory, environment)) == [1, 3]
+        assert run([jsonkit, "-p", "big", fixture], directory, environment) == "123456789012345678901234567890\n"
+        run([jsonkit, "-p", "missing", fixture], directory, environment, expected=1)
+        assert run([jsonkit, "-p", "items[*].missing", fixture], directory, environment) == "[]\n"
+        run([jsonkit, "-p", "$[", fixture], directory, environment, expected=2)
+        piped = run([jsonkit], directory, environment, input_text='{"a":1}')
+        assert json.loads(piped) == {"a": 1}, piped
+        explicit = run([jsonkit, "-"], directory, environment, input_text='{"a":1}')
+        assert json.loads(explicit) == {"a": 1}, explicit
+        piped_query = run([jsonkit, "-p", "a"], directory, environment, input_text='{"a":1}')
+        assert json.loads(piped_query) == 1, piped_query
+        duplicate = directory / "duplicate.json"
+        duplicate.write_text('{"a":1,"a":2}', encoding="utf-8")
+        duplicate_view = run([jsonkit, duplicate], directory, environment)
+        assert duplicate_view.count('"a":') == 2, duplicate_view
+        assert json.loads(duplicate_view) == {"a": 2}, duplicate_view
+        run([jsonkit, "-p", "a", duplicate], directory, environment, expected=1)
+        print("jsonkit: format, JSONPath, stdin and duplicate-key contract PASS", flush=True)
 
         dukit = binaries["dukit"]
         scan_root = directory / "dukit-tree" / "inner"

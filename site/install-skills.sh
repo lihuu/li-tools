@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # li-tools AI Agent Skill Installer (macOS & Linux)
-# Installs gpgkit, certkit, tokenkit, skillkit & dukit skills into AI agent skill directories.
+# Installs gpgkit, certkit, tokenkit, skillkit, jsonkit & dukit skills into AI agent skill directories.
 set -euo pipefail
 
 BASE_URL="https://tools.lihu.me"
@@ -142,9 +142,9 @@ while IFS= read -r dir; do
     UNIQUE_DIRS+=("$dir")
 done < <(printf '%s\n' "${TARGET_DIRS[@]}" | sort -u)
 
-echo "🤖 Installing li-tools Agent Skills (gpgkit, certkit, tokenkit, skillkit & dukit)..."
+echo "🤖 Installing li-tools Agent Skills (gpgkit, certkit, tokenkit, skillkit, jsonkit & dukit)..."
 
-SKILLS=("gpgkit" "certkit" "tokenkit" "skillkit" "dukit")
+SKILLS=("gpgkit" "certkit" "tokenkit" "skillkit" "jsonkit" "dukit")
 
 failed=0
 for dir in "${UNIQUE_DIRS[@]}"; do
@@ -198,4 +198,4 @@ if (( failed > 0 )); then
     exit 1
 fi
 echo "✅ All skills installed successfully!"
-echo "AI coding agents will now automatically recognize and operate gpgkit, certkit, tokenkit, skillkit & dukit."
+echo "AI coding agents will now automatically recognize and operate gpgkit, certkit, tokenkit, skillkit, jsonkit & dukit."

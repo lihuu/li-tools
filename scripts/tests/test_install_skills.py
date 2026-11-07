@@ -8,7 +8,7 @@ import unittest
 
 
 INSTALLER = Path(__file__).resolve().parents[2] / "site" / "install-skills.sh"
-SKILLS = {"certkit", "dukit", "gpgkit", "skillkit", "tokenkit"}
+SKILLS = {"certkit", "dukit", "gpgkit", "jsonkit", "skillkit", "tokenkit"}
 
 
 @unittest.skipUnless(os.name == "posix", "requires a POSIX bash environment")

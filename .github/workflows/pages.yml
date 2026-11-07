@@ -116,7 +116,9 @@ jobs:
                   "https://tools.lihu.me/certkit/",
                   "https://tools.lihu.me/certkit/index_zh.html",
                   "https://tools.lihu.me/dukit/",
-                  "https://tools.lihu.me/dukit/index_zh.html"
+                  "https://tools.lihu.me/dukit/index_zh.html",
+                  "https://tools.lihu.me/jsonkit/",
+                  "https://tools.lihu.me/jsonkit/index_zh.html"
               ]
           }
           data = json.dumps(payload).encode("utf-8")

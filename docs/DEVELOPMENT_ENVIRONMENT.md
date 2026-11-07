@@ -98,7 +98,7 @@ certkit/target/certkit --help
 certkit/target/certkit --version
 ```
 
-也可用同样方式构建 gpgkit/tokenkit；构建全部工具使用根目录的 `./build-native.sh`，
+也可用同样方式构建 gpgkit/tokenkit/jsonkit；构建全部工具使用根目录的 `./build-native.sh`，
 它只执行一次 Maven 打包。Windows 的二进制带 `.exe` 后缀。
 当前构建使用默认 O2，取舍见[原生构建说明](NATIVE_BUILD.md)。环境升级时所做的
 版本对照使用 O3，保留独立可执行文件构建方式及项目安全配置；

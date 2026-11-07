@@ -39,6 +39,11 @@ DEFAULT_TOOL_METADATA = {
         "homepage": "https://tools.lihu.me/skillkit",
         "license": "Apache-2.0",
     },
+    "jsonkit": {
+        "desc": "Format, highlight and query JSON with RFC 9535 JSONPath.",
+        "homepage": "https://tools.lihu.me/jsonkit",
+        "license": "Apache-2.0",
+    },
     "dukit": {
         "desc": "Cross-platform disk usage analyzer: scan directory trees, export JSON, browse line by line.",
         "homepage": "https://tools.lihu.me/dukit",
