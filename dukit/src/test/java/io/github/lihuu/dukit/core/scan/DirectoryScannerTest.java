@@ -334,6 +334,60 @@ class DirectoryScannerTest {
         assertThrows(IOException.class, () -> new DirectoryScanner(List.of()).top(missing, 5, (files, bytes, dir) -> { }));
     }
 
+    @Test
+    void scanSkipsADirectoryWhoseListingStallsAndKeepsItsSiblings() throws IOException {
+        Path realRoot = tree("stallskip");
+        for (int index = 1; index <= 4; index++) {
+            Path fine = realRoot.resolve("fine" + index);
+            Files.createDirectories(fine);
+            Files.writeString(fine.resolve("f.bin"), "x".repeat(100 * index), StandardCharsets.US_ASCII);
+        }
+        Files.createDirectories(realRoot.resolve("cloud"));
+
+        StallFileSystem stallSystem = StallFileSystemProvider.mount();
+        Path stallRoot = stallSystem.getPath(realRoot.toString());
+        StallFileSystemProvider.stallDirectory(stallRoot.resolve("cloud"));
+        try {
+            // A listing that blocks must not hold the scan hostage: after the per-directory
+            // budget the directory is recorded as an error and its siblings are kept.
+            ScanResult result = assertTimeoutPreemptively(java.time.Duration.ofSeconds(3), () ->
+                    new DirectoryScanner(List.of(), 0, java.util.concurrent.TimeUnit.SECONDS.toNanos(1))
+                            .scan(stallRoot, (files, bytes, dir) -> { }));
+
+            assertEquals(1, result.errors().size());
+            assertEquals(stallRoot.resolve("cloud"), result.errors().get(0).path());
+            assertTrue(result.errors().get(0).message().contains("timed out"),
+                    "the error names the timeout: " + result.errors().get(0).message());
+            assertEquals(1000, result.root().size(), "the readable siblings are still aggregated");
+            assertEquals(4, result.root().dirCount());
+            assertEquals(1, result.root().errorCount());
+            assertEquals(List.of("fine4", "fine3", "fine2", "fine1"), names(result.root()),
+                    "the stalled directory is not part of the tree");
+        } finally {
+            StallFileSystemProvider.unstallAll();
+        }
+    }
+
+    @Test
+    void scanAbortsWhenTheRootListingStalls() throws IOException {
+        Path realRoot = Files.createDirectories(temporary.resolve("stallroot"));
+        Files.writeString(realRoot.resolve("never-listed.txt"), "x", StandardCharsets.US_ASCII);
+
+        StallFileSystem stallSystem = StallFileSystemProvider.mount();
+        Path stallRoot = stallSystem.getPath(realRoot.toString());
+        StallFileSystemProvider.stallDirectory(stallRoot);
+        try {
+            IOException failure = assertThrows(IOException.class, () ->
+                    assertTimeoutPreemptively(java.time.Duration.ofSeconds(3), () ->
+                            new DirectoryScanner(List.of(), 0, java.util.concurrent.TimeUnit.SECONDS.toNanos(1))
+                                    .scan(stallRoot, (files, bytes, dir) -> { })));
+            assertTrue(failure.getMessage().contains("timed out"),
+                    "the abort names the timeout: " + failure.getMessage());
+        } finally {
+            StallFileSystemProvider.unstallAll();
+        }
+    }
+
     private Path tree(String name) throws IOException {
         Path root = temporary.resolve(name);
         Files.createDirectories(root.resolve("a/sub"));

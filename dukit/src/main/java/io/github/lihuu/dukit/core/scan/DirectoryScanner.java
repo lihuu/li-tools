@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveTask;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -56,6 +57,7 @@ public final class DirectoryScanner {
 
     private final List<String> excludePatterns;
     private final int parallelism;
+    private final long directoryTimeoutNanos;
 
     public DirectoryScanner(@NotNull List<String> excludePatterns) {
         this(excludePatterns, 0);
@@ -67,8 +69,20 @@ public final class DirectoryScanner {
      *                    error ordering.
      */
     DirectoryScanner(@NotNull List<String> excludePatterns, int parallelism) {
+        this(excludePatterns, parallelism, TimeUnit.SECONDS.toNanos(10));
+    }
+
+    /**
+     * @param directoryTimeoutNanos budget for one directory's bounded wait and for the
+     *                              no-progress watchdog; must be positive
+     */
+    DirectoryScanner(@NotNull List<String> excludePatterns, int parallelism, long directoryTimeoutNanos) {
+        if (directoryTimeoutNanos <= 0) {
+            throw new IllegalArgumentException("directoryTimeoutNanos must be positive: " + directoryTimeoutNanos);
+        }
         this.excludePatterns = List.copyOf(excludePatterns);
         this.parallelism = parallelism;
+        this.directoryTimeoutNanos = directoryTimeoutNanos;
     }
 
     public @NotNull ScanResult scan(@NotNull Path root, @NotNull ProgressListener listener) throws IOException {
