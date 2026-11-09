@@ -336,11 +336,12 @@ class DirectoryScannerTest {
 
     @Test
     void scanSkipsADirectoryWhoseListingStallsAndKeepsItsSiblings() throws IOException {
-        Path realRoot = tree("stallskip");
+        Path realRoot = Files.createDirectories(temporary.resolve("stallskip"));
+        // Sizes differ by at least one block so the children sort by occupied size.
         for (int index = 1; index <= 4; index++) {
             Path fine = realRoot.resolve("fine" + index);
             Files.createDirectories(fine);
-            Files.writeString(fine.resolve("f.bin"), "x".repeat(100 * index), StandardCharsets.US_ASCII);
+            Files.writeString(fine.resolve("f.bin"), "x".repeat(index * 4096), StandardCharsets.US_ASCII);
         }
         Files.createDirectories(realRoot.resolve("cloud"));
 
@@ -358,7 +359,7 @@ class DirectoryScannerTest {
             assertEquals(stallRoot.resolve("cloud"), result.errors().get(0).path());
             assertTrue(result.errors().get(0).message().contains("timed out"),
                     "the error names the timeout: " + result.errors().get(0).message());
-            assertEquals(1000, result.root().size(), "the readable siblings are still aggregated");
+            assertEquals(40960, result.root().size(), "the readable siblings are still aggregated");
             assertEquals(4, result.root().dirCount());
             assertEquals(1, result.root().errorCount());
             assertEquals(List.of("fine4", "fine3", "fine2", "fine1"), names(result.root()),

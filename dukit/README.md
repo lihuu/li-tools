@@ -100,6 +100,7 @@ Run `dukit` or `dukit browse` in any interactive terminal:
 - **Hardlinks**: Shared content is counted once per scan; all hardlinks still contribute to file counts.
 - **Symlinks**: Never followed recursively; symlinked scan root is resolved before traversal.
 - **Unreadable paths**: Warned on stderr, never aborted silently, counted in metadata `errors`.
+- **Stalled directories**: A listing that stops answering (cloud-drive mount whose file provider daemon hangs, stale network share) is skipped as an error after 10 seconds so the scan cannot hang; a scan with no progress at all is aborted the same way. The process itself finishes once the OS releases the blocked syscall.
 
 ---
 

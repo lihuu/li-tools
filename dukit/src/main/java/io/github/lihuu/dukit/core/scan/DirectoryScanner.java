@@ -21,9 +21,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -49,11 +52,22 @@ import java.util.concurrent.atomic.AtomicLong;
  * readable directory aborts. Hardlinked regular files count their sizes once per scan (first
  * occurrence wins) while still counting toward the file totals. Directories contribute only
  * their contents, never their own inode size.
+ *
+ * <p>A filesystem that stops answering — a cloud-drive mount whose file provider daemon is
+ * unresponsive, a stale network share — blocks directory listings in uninterruptible kernel
+ * syscalls, which no Java timeout can cancel. The scan therefore bounds its waits: a forked
+ * subdirectory whose work exceeds the directory budget is recorded as an error and skipped,
+ * and a scan that makes no progress at all for one budget is aborted instead of hanging
+ * forever. The abandoned thread drains whenever the kernel returns; it is never waited on.
  */
 public final class DirectoryScanner {
     /** Forks only once a directory holds this many subdirectories. */
     private static final int FORK_THRESHOLD = 4;
     private static final long PROGRESS_INTERVAL_MASK = 0x3FF;
+    /** Default budget for one directory's bounded wait (and for the no-progress watchdog). */
+    private static final long DEFAULT_DIRECTORY_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(10);
+    /** Watchdog poll cadence for the whole-scan root future. */
+    private static final long ROOT_POLL_MILLIS = 200;
 
     private final List<String> excludePatterns;
     private final int parallelism;
@@ -69,7 +83,7 @@ public final class DirectoryScanner {
      *                    error ordering.
      */
     DirectoryScanner(@NotNull List<String> excludePatterns, int parallelism) {
-        this(excludePatterns, parallelism, TimeUnit.SECONDS.toNanos(10));
+        this(excludePatterns, parallelism, DEFAULT_DIRECTORY_TIMEOUT_NANOS);
     }
 
     /**
@@ -133,7 +147,8 @@ public final class DirectoryScanner {
             }
         }
 
-        Run run = new Run(absolute, nameMatchers, relativeMatchers, listener, buildTree, topLimit, topFiles);
+        Run run = new Run(absolute, nameMatchers, relativeMatchers, listener, buildTree, topLimit, topFiles,
+                directoryTimeoutNanos);
         if (!Files.isDirectory(absolute)) {
             return run;
         }
@@ -141,12 +156,49 @@ public final class DirectoryScanner {
         if (workers == 1) {
             run.node = new DirectoryTask(absolute, run).compute();
         } else {
-            try (ForkJoinPool pool = new ForkJoinPool(workers)) {
-                run.node = pool.invoke(new DirectoryTask(absolute, run));
+            ForkJoinPool pool = new ForkJoinPool(workers);
+            try {
+                run.node = awaitRoot(pool.submit(new DirectoryTask(absolute, run)), run);
+            } finally {
+                // Never waits: threads wedged in a kernel syscall must not hold the scan.
+                pool.shutdownNow();
             }
         }
         listener.onUpdate(run.fileCount.get(), run.bytesSeen.get(), absolute);
         return run;
+    }
+
+    /**
+     * Waits for the root task and aborts the scan when nothing has been read for one directory
+     * budget — the case when the root's own listing, or every worker, is stuck in a filesystem
+     * that never answers. Returns {@code null} when the scan is abandoned.
+     */
+    private @Nullable Node awaitRoot(@NotNull Future<Node> rootTask, @NotNull Run run) {
+        try {
+            while (true) {
+                try {
+                    return rootTask.get(ROOT_POLL_MILLIS, TimeUnit.MILLISECONDS);
+                } catch (TimeoutException tick) {
+                    long idle = System.nanoTime() - run.lastActivityNanos();
+                    if (idle >= run.directoryTimeoutNanos()) {
+                        run.recordError(run.root, new IOException("timed out after "
+                                + describeSeconds(run.directoryTimeoutNanos()) + " without progress, scan aborted"));
+                        return null;
+                    }
+                }
+            }
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            run.recordError(run.root, interrupted);
+            return null;
+        } catch (ExecutionException failure) {
+            run.recordError(run.root, failure.getCause() != null ? failure.getCause() : failure);
+            return null;
+        }
+    }
+
+    private static @NotNull String describeSeconds(long nanos) {
+        return (nanos + 999_999_999) / 1_000_000_000 + "s";
     }
 
     private static final class Run {
@@ -156,6 +208,7 @@ public final class DirectoryScanner {
         private final ProgressListener listener;
         private final boolean buildTree;
         private final int topFiles;
+        private final long directoryTimeoutNanos;
         private final StatReader statReader = StatReader.create();
         private final HardlinkSet seenHardlinks = new HardlinkSet();
         private final Set<Object> seenFileKeys = ConcurrentHashMap.newKeySet();
@@ -164,19 +217,34 @@ public final class DirectoryScanner {
         private final AtomicLong bytesSeen = new AtomicLong();
         private final TopCollector largestFiles;
         private final TopCollector largestDirectories;
+        private volatile long activityNanos = System.nanoTime();
         private @Nullable Node node;
 
         Run(@NotNull Path root, @NotNull List<PathMatcher> nameMatchers,
                 @NotNull List<PathMatcher> relativeMatchers, @NotNull ProgressListener listener,
-                boolean buildTree, int topLimit, int topFiles) {
+                boolean buildTree, int topLimit, int topFiles, long directoryTimeoutNanos) {
             this.root = root;
             this.nameMatchers = nameMatchers;
             this.relativeMatchers = relativeMatchers;
             this.listener = listener;
             this.buildTree = buildTree;
             this.topFiles = topFiles;
+            this.directoryTimeoutNanos = directoryTimeoutNanos;
             this.largestFiles = topLimit > 0 ? new TopCollector(topLimit) : null;
             this.largestDirectories = topLimit > 0 ? new TopCollector(topLimit) : null;
+        }
+
+        long directoryTimeoutNanos() {
+            return directoryTimeoutNanos;
+        }
+
+        long lastActivityNanos() {
+            return activityNanos;
+        }
+
+        /** Marks the scan as making progress; the root watchdog resets on it. */
+        void touch() {
+            activityNanos = System.nanoTime();
         }
 
         @NotNull List<ScanError> errors() {
@@ -214,6 +282,7 @@ public final class DirectoryScanner {
         }
 
         void progress(@NotNull Path current) {
+            touch();
             long seen = fileCount.incrementAndGet();
             if ((seen & PROGRESS_INTERVAL_MASK) == 0) {
                 listener.onUpdate(seen, bytesSeen.get(), current);
@@ -236,6 +305,7 @@ public final class DirectoryScanner {
 
         @Override
         protected @Nullable Node compute() {
+            run.touch();
             Node node = new Node(run.topFiles);
             List<Path> subdirectories = new ArrayList<>();
             FileStat stat = new FileStat();
@@ -316,7 +386,7 @@ public final class DirectoryScanner {
                     tasks.add(task);
                 }
                 for (int i = 0; i < tasks.size(); i++) {
-                    Node child = tasks.get(i).join();
+                    Node child = tasks.get(i).joinBounded(node, subdirectories.get(i));
                     if (child != null) {
                         merge(node, child, subdirectories.get(i));
                     }
@@ -328,6 +398,35 @@ public final class DirectoryScanner {
                 if (result != null) {
                     merge(node, result, child);
                 }
+            }
+        }
+
+        /**
+         * Joins this task, but stops waiting after one directory budget: a listing stuck in a
+         * filesystem that never answers (cloud-drive mount, stale network share) would
+         * otherwise hold the whole scan forever. The wedged task is abandoned on its worker
+         * thread; the scan records the directory as an error and keeps its siblings.
+         */
+        private @Nullable Node joinBounded(@NotNull Node parent, @NotNull Path path) {
+            if (isDone()) {
+                return join();
+            }
+            try {
+                return get(run.directoryTimeoutNanos(), TimeUnit.NANOSECONDS);
+            } catch (TimeoutException timedOut) {
+                run.recordError(path, new IOException("timed out after "
+                        + describeSeconds(run.directoryTimeoutNanos()) + ", skipped"));
+                parent.errorCount++;
+                return null;
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                run.recordError(path, interrupted);
+                parent.errorCount++;
+                return null;
+            } catch (ExecutionException failure) {
+                run.recordError(path, failure.getCause() != null ? failure.getCause() : failure);
+                parent.errorCount++;
+                return null;
             }
         }
 
