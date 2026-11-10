@@ -18,18 +18,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Job counts are per-runner, measured on the v0.6.0 release: four-core
+          # Linux is slower with concurrent builds because Native Image already
+          # saturates the cores, while four-core Windows and the self-hosted Mac
+          # mini still gain from overlap.
           - runs-on: ubuntu-latest
             platform: linux
             arch: amd64
             binary-ext: ""
+            native-jobs: 1
           - runs-on: [self-hosted, macOS, ARM64]
             platform: darwin
             arch: arm64
             binary-ext: ""
+            native-jobs: 4
           - runs-on: windows-latest
             platform: windows
             arch: amd64
             binary-ext: ".exe"
+            native-jobs: 2
 
     steps:
       - name: Checkout Repository
@@ -40,6 +47,8 @@ jobs:
 
       - name: Build Native Binaries
         shell: bash
+        env:
+          NATIVE_BUILD_JOBS: ${{ matrix.native-jobs }}
         run: ./build-native.sh
 
       - name: Smoke Test Native Binaries
