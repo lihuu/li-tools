@@ -403,6 +403,37 @@ class DirectoryScannerTest {
     }
 
     @Test
+    void scanKeepsHealthySiblingsWhenWorkersAreScarce() throws IOException {
+        // Regression: with few workers, the thread that waits for a child could end up running
+        // the stalled child itself, and queued siblings could be judged by a stamp that never
+        // moved because their turn had not come. Both reported healthy directories as stalled.
+        Path realRoot = Files.createDirectories(temporary.resolve("scarce"));
+        for (int index = 1; index <= 4; index++) {
+            Path fine = realRoot.resolve("fine" + index);
+            Files.createDirectories(fine);
+            Files.writeString(fine.resolve("f.bin"), "x".repeat(index * 4096), StandardCharsets.US_ASCII);
+        }
+        Files.createDirectories(realRoot.resolve("cloud"));
+
+        StallFileSystem stallSystem = StallFileSystemProvider.mount();
+        Path stallRoot = stallSystem.getPath(realRoot.toString());
+        StallFileSystemProvider.stallDirectory(stallRoot.resolve("cloud"));
+        try {
+            ScanResult result = assertTimeoutPreemptively(java.time.Duration.ofSeconds(10), () ->
+                    new DirectoryScanner(List.of(), 2, java.util.concurrent.TimeUnit.SECONDS.toNanos(1))
+                            .scan(stallRoot, (files, bytes, dir) -> { }));
+
+            assertEquals(1, result.errors().size(), "only the stalled directory fails: " + result.errors());
+            assertEquals(stallRoot.resolve("cloud"), result.errors().get(0).path());
+            assertEquals(40960, result.root().size(), "every healthy sibling is counted");
+            assertEquals(4, result.root().dirCount());
+            assertEquals(List.of("fine4", "fine3", "fine2", "fine1"), names(result.root()));
+        } finally {
+            StallFileSystemProvider.unstallAll();
+        }
+    }
+
+    @Test
     void scanAbortsWhenTheRootListingStalls() throws IOException {
         Path realRoot = Files.createDirectories(temporary.resolve("stallroot"));
         Files.writeString(realRoot.resolve("never-listed.txt"), "x", StandardCharsets.US_ASCII);
