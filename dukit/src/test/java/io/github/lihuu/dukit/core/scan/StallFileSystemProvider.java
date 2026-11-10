@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 public final class StallFileSystemProvider extends FileSystemProvider {
 
     /** How long a "stalled" listing blocks before giving up with an error. */
-    private static final long STALL_MILLIS = TimeUnit.SECONDS.toMillis(5);
+    private static final long STALL_MILLIS = TimeUnit.SECONDS.toMillis(3);
 
     private static final Set<String> STALLED_DIRECTORIES = ConcurrentHashMap.newKeySet();
     private static final Map<String, Long> TRICKLING_DIRECTORIES = new ConcurrentHashMap<>();
@@ -138,11 +138,21 @@ public final class StallFileSystemProvider extends FileSystemProvider {
         return new WrappingDirectoryStream(fileSystem, inner);
     }
 
+    /**
+     * Blocks for the whole stall window even when interrupted: a thread inside an
+     * uninterruptible kernel syscall cannot be woken, which is exactly why the scan cannot
+     * cancel it and has to abandon it instead.
+     */
     private static void blockLikeAStalledMount() {
-        try {
-            TimeUnit.MILLISECONDS.sleep(STALL_MILLIS);
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(STALL_MILLIS);
+        long remaining = deadline - System.nanoTime();
+        while (remaining > 0) {
+            try {
+                TimeUnit.NANOSECONDS.sleep(remaining);
+            } catch (InterruptedException uncancellable) {
+                // Deliberate: the caller models a syscall that no signal can break out of.
+            }
+            remaining = deadline - System.nanoTime();
         }
     }
 

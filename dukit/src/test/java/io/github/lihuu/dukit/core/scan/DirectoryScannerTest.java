@@ -355,7 +355,7 @@ class DirectoryScannerTest {
                     new DirectoryScanner(List.of(), 0, java.util.concurrent.TimeUnit.SECONDS.toNanos(1))
                             .scan(stallRoot, (files, bytes, dir) -> { }));
 
-            assertEquals(1, result.errors().size());
+            assertEquals(1, result.errors().size(), "one stalled directory, one error: " + result.errors());
             assertEquals(stallRoot.resolve("cloud"), result.errors().get(0).path());
             assertTrue(result.errors().get(0).message().contains("stalled"),
                     "the error names the timeout: " + result.errors().get(0).message());

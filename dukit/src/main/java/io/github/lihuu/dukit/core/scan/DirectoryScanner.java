@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.Future;
 import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -58,9 +57,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * syscalls, which no Java timeout can cancel. The scan therefore watches for <em>silence</em>,
  * not for elapsed time: a subtree that yields no entry at all for one budget is recorded as an
  * error and skipped, while a directory that keeps producing entries is walked to the end no
- * matter how long it takes. A scan with no progress anywhere for twice that budget — the root
- * listing itself stuck, or every worker wedged — is aborted instead of hanging forever. The
- * abandoned thread drains whenever the kernel returns; it is never waited on.
+ * matter how long it takes. Every directory, the scan root included, is waited on with that one
+ * rule, so a root whose own listing is stuck aborts the scan the same way instead of hanging
+ * forever. The abandoned thread drains whenever the kernel returns; it is never waited on.
  */
 public final class DirectoryScanner {
     /** Forks only once a directory holds this many subdirectories. */
@@ -73,13 +72,8 @@ public final class DirectoryScanner {
      * microseconds to milliseconds; a couple of silent seconds already means the mount is gone.
      */
     private static final long DEFAULT_STALL_BUDGET_NANOS = TimeUnit.SECONDS.toNanos(2);
-    /** Poll cadence while waiting for a child subtree and for the whole-scan root future. */
+    /** Poll cadence while waiting for a subtree. */
     private static final long POLL_MILLIS = 100;
-    /**
-     * The whole-scan watchdog fires later than a single directory does, so the scan gets the
-     * chance to abandon one stalled subtree before the whole walk is declared dead.
-     */
-    private static final int WATCHDOG_MULTIPLE = 2;
 
     private final List<String> excludePatterns;
     private final int parallelism;
@@ -165,12 +159,16 @@ public final class DirectoryScanner {
             return run;
         }
         int workers = parallelism > 0 ? parallelism : Math.max(1, Runtime.getRuntime().availableProcessors() * 2);
+        DirectoryTask rootTask = new DirectoryTask(absolute, run);
         if (workers == 1) {
-            run.node = new DirectoryTask(absolute, run).compute();
+            run.node = rootTask.compute();
         } else {
             ForkJoinPool pool = new ForkJoinPool(workers);
             try {
-                run.node = awaitRoot(pool.submit(new DirectoryTask(absolute, run)), run);
+                pool.submit(rootTask);
+                // The root is a subtree like any other: the caller waits on it with the same
+                // rule, so a root whose own listing is stuck is abandoned like any other subtree.
+                run.node = rootTask.awaitSubtree(absolute, null);
             } finally {
                 // Never waits: threads wedged in a kernel syscall must not hold the scan.
                 pool.shutdownNow();
@@ -178,36 +176,6 @@ public final class DirectoryScanner {
         }
         listener.onUpdate(run.fileCount.get(), run.bytesSeen.get(), absolute);
         return run;
-    }
-
-    /**
-     * Waits for the root task and aborts the scan when nothing has been read for one directory
-     * budget — the case when the root's own listing, or every worker, is stuck in a filesystem
-     * that never answers. Returns {@code null} when the scan is abandoned.
-     */
-    private @Nullable Node awaitRoot(@NotNull Future<Node> rootTask, @NotNull Run run) {
-        try {
-            while (true) {
-                try {
-                    return rootTask.get(POLL_MILLIS, TimeUnit.MILLISECONDS);
-                } catch (TimeoutException tick) {
-                    long idle = System.nanoTime() - run.lastActivityNanos();
-                    long watchdogNanos = run.stallBudgetNanos() * WATCHDOG_MULTIPLE;
-                    if (idle >= watchdogNanos) {
-                        run.recordError(run.root, new IOException("stalled after "
-                                + describeSeconds(watchdogNanos) + " without a single entry, scan aborted"));
-                        return null;
-                    }
-                }
-            }
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
-            run.recordError(run.root, interrupted);
-            return null;
-        } catch (ExecutionException failure) {
-            run.recordError(run.root, failure.getCause() != null ? failure.getCause() : failure);
-            return null;
-        }
     }
 
     private static @NotNull String describeSeconds(long nanos) {
@@ -230,7 +198,6 @@ public final class DirectoryScanner {
         private final AtomicLong bytesSeen = new AtomicLong();
         private final TopCollector largestFiles;
         private final TopCollector largestDirectories;
-        private volatile long activityNanos = System.nanoTime();
         private @Nullable Node node;
 
         Run(@NotNull Path root, @NotNull List<PathMatcher> nameMatchers,
@@ -249,15 +216,6 @@ public final class DirectoryScanner {
 
         long stallBudgetNanos() {
             return stallBudgetNanos;
-        }
-
-        long lastActivityNanos() {
-            return activityNanos;
-        }
-
-        /** Marks the scan as making progress; the root watchdog resets on it. */
-        void touch() {
-            activityNanos = System.nanoTime();
         }
 
         @NotNull List<ScanError> errors() {
@@ -295,7 +253,6 @@ public final class DirectoryScanner {
         }
 
         void progress(@NotNull Path current) {
-            touch();
             long seen = fileCount.incrementAndGet();
             if ((seen & PROGRESS_INTERVAL_MASK) == 0) {
                 listener.onUpdate(seen, bytesSeen.get(), current);
@@ -329,14 +286,17 @@ public final class DirectoryScanner {
             progressNanos.set(System.nanoTime());
         }
 
-        /** Bumps this subtree's stamp without claiming an entry was seen elsewhere. */
+        /**
+         * Heartbeat: this task is running, not wedged in a syscall. Its watcher treats a frozen
+         * stamp as a dead subtree, so a task that is busy abandoning a stalled child must keep
+         * its own stamp fresh or its parent would abandon it for the same reason.
+         */
         private void markAlive() {
             progressNanos.set(System.nanoTime());
         }
 
         @Override
         protected @Nullable Node compute() {
-            run.touch();
             markProgress(dir);
             Node node = new Node(run.topFiles);
             List<Path> subdirectories = new ArrayList<>();
@@ -420,9 +380,11 @@ public final class DirectoryScanner {
                     tasks.add(task);
                 }
                 for (int i = 0; i < tasks.size(); i++) {
-                    Node child = tasks.get(i).joinBounded(node, subdirectories.get(i));
+                    Node child = tasks.get(i).awaitSubtree(subdirectories.get(i), this);
                     if (child != null) {
                         merge(node, child, subdirectories.get(i));
+                    } else {
+                        node.errorCount++;
                     }
                 }
                 return;
@@ -438,14 +400,21 @@ public final class DirectoryScanner {
         }
 
         /**
-         * Joins this task for as long as it keeps making progress, and gives up once it has been
-         * silent for one budget: a listing stuck in a filesystem that never answers (cloud-drive
-         * mount, stale network share) would otherwise hold the whole scan forever. Total running
-         * time is deliberately irrelevant — only silence counts — so a large directory on a slow
-         * mount is walked to the end. The wedged task is abandoned on its worker thread; the scan
-         * records where it stopped and keeps its siblings.
+         * Waits for this subtree for as long as it keeps producing entries, and gives up once it
+         * has been silent for one budget — the shape of a listing stuck in a filesystem that
+         * never answers. Total running time is deliberately irrelevant, so a large directory on
+         * a slow mount is walked to the end.
+         *
+         * <p>This is the only waiting primitive in the scan, and every directory in the tree is
+         * waited on with it, the scan root included. A waiter heartbeats while it waits, so its
+         * own watcher can tell a thread that is busy abandoning a dead child from a thread that
+         * is itself wedged in a syscall; only the latter stops the heartbeat and gets abandoned
+         * in turn. That is what removes the need for a separate whole-scan watchdog.
+         *
+         * @param waiter the task doing the waiting, or {@code null} on the calling thread
+         * @return the subtree's node, or {@code null} when it was abandoned
          */
-        private @Nullable Node joinBounded(@NotNull Node parent, @NotNull Path path) {
+        private @Nullable Node awaitSubtree(@NotNull Path path, @Nullable DirectoryTask waiter) {
             long lastSeen = progressNanos.get();
             while (true) {
                 if (isDone()) {
@@ -454,25 +423,27 @@ public final class DirectoryScanner {
                     } catch (InterruptedException interrupted) {
                         Thread.currentThread().interrupt();
                         run.recordError(path, interrupted);
-                        parent.errorCount++;
                         return null;
                     } catch (ExecutionException failure) {
                         run.recordError(path, failure.getCause() != null ? failure.getCause() : failure);
-                        parent.errorCount++;
                         return null;
                     }
                 }
                 long seen = progressNanos.get();
                 if (seen != lastSeen) {
                     lastSeen = seen;
-                    // The subtree is alive; its liveness is this task's liveness too.
-                    markAlive();
                 } else if (System.nanoTime() - lastSeen >= run.stallBudgetNanos()) {
+                    // A parent skips one dead directory; the caller of the root has nothing to
+                    // fall back to, so the whole scan ends there.
+                    String outcome = waiter == null ? ", scan aborted" : ", skipped";
                     run.recordError(path, new IOException("stalled after "
                             + describeSeconds(run.stallBudgetNanos()) + " without a single entry"
-                            + lastVisitedSuffix() + ", skipped"));
-                    parent.errorCount++;
+                            + lastVisitedSuffix() + outcome));
                     return null;
+                }
+                if (waiter != null) {
+                    // Still working, not wedged: keep our own watcher from abandoning us.
+                    waiter.markAlive();
                 }
                 try {
                     return get(POLL_MILLIS, TimeUnit.MILLISECONDS);
@@ -481,11 +452,9 @@ public final class DirectoryScanner {
                 } catch (InterruptedException interrupted) {
                     Thread.currentThread().interrupt();
                     run.recordError(path, interrupted);
-                    parent.errorCount++;
                     return null;
                 } catch (ExecutionException failure) {
                     run.recordError(path, failure.getCause() != null ? failure.getCause() : failure);
-                    parent.errorCount++;
                     return null;
                 }
             }
