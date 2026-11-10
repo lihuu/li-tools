@@ -34,21 +34,46 @@ public final class RunCommand extends CliCommand.Action {
     @Option(names = "--trust-local", description = "Trust loopback upstreams (127.0.0.1, localhost) without verification")
     boolean trustLocal;
 
-    @Option(names = "--rewrite", description = "Rewrite rule: method:url:replaceUrl:reqHeader:resHeader:replaceBody. "
-            + "Repeatable. Values use -> for replacements, e.g. --rewrite 'url:/v1/->/v2/'")
+    @Option(names = "--rewrite", description = "Advanced rewrite rule (semicolon-separated key:value pairs). "
+            + "Repeatable. For simple whole-value replacement prefer --url/--header/--body.")
     List<String> rewriteFlags;
+
+    @Option(names = "--match", description = "Only apply the simple rewrite flags to URLs containing this substring")
+    String match;
+
+    @Option(names = "--url", description = "Replace the request URL with this whole value")
+    String url;
+
+    @Option(names = "--header", description = "Append or replace a request header, e.g. --header 'X-Debug:1'")
+    List<String> rewriteRequestHeaders;
+
+    @Option(names = "--cookie", description = "Append or replace a cookie, e.g. --cookie 'session=abc'")
+    List<String> cookies;
+
+    @Option(names = "--body", description = "Replace the request body with this whole value")
+    String requestBody;
+
+    @Option(names = "--response-header", description = "Append or replace a response header")
+    List<String> rewriteResponseHeaders;
+
+    @Option(names = "--response-body", description = "Replace the response body with this whole value")
+    String responseBody;
 
     @Option(names = "--system-proxy", description = "Set the OS system proxy while running and restore on exit")
     boolean systemProxy;
 
-    @Option(names = "--body", description = "Record request and response bodies")
+    @Option(names = "--record-body", description = "Record request and response bodies in the output")
     boolean body;
 
-    @Option(names = "--headers", description = "Record request and response headers")
+    @Option(names = "--record-headers", description = "Record request and response headers in the output")
     boolean headers;
 
     @Option(names = "--jsonl", description = "Emit newline-delimited JSON instead of human-readable lines")
     boolean jsonl;
+
+    private static String first(List<String> values) {
+        return values == null || values.isEmpty() ? null : values.get(0);
+    }
 
     @Override
     int execute() throws Exception {
@@ -65,7 +90,16 @@ public final class RunCommand extends CliCommand.Action {
                 err().println("Install trust once with: certkit trust install " + caDir.resolve("ca.crt"));
             }
 
-            List<RewriteRule> rules = RewriteRule.parse(rewriteFlags == null ? List.of() : rewriteFlags);
+            List<RewriteRule> rules = new java.util.ArrayList<>(
+                    RewriteRule.parse(rewriteFlags == null ? List.of() : rewriteFlags));
+            if (url != null || rewriteRequestHeaders != null || cookies != null || requestBody != null
+                    || rewriteResponseHeaders != null || responseBody != null) {
+                String requestHeader = first(rewriteRequestHeaders);
+                String responseHeader = first(rewriteResponseHeaders);
+                String cookie = first(cookies);
+                rules.add(RewriteRule.simple("*", match, url, requestHeader, responseHeader,
+                        cookie, requestBody, responseBody));
+            }
 
             FlowRecorder recorder = new FlowRecorder(spec.commandLine().getOut(), jsonl, body);
             ProxyServer server = new ProxyServer(host, port, authority, recorder, insecure,

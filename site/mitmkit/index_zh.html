@@ -194,13 +194,38 @@
             <tr><td class="px-5 py-3 font-mono text-sky-300">status</td><td class="px-5 py-3">响应状态码，失败时为 null</td></tr>
             <tr><td class="px-5 py-3 font-mono text-sky-300">durationMs</td><td class="px-5 py-3">往返耗时（毫秒）</td></tr>
             <tr><td class="px-5 py-3 font-mono text-sky-300">reqBytes, resBytes</td><td class="px-5 py-3">请求体与响应体大小</td></tr>
-            <tr><td class="px-5 py-3 font-mono text-sky-300">reqHeaders, resHeaders</td><td class="px-5 py-3">请求头与响应头，仅 <code class="text-cyan-300">--headers</code> 时输出</td></tr>
-            <tr><td class="px-5 py-3 font-mono text-sky-300">reqBody, resBody</td><td class="px-5 py-3">请求体与响应体，仅 <code class="text-cyan-300">--body</code> 时输出</td></tr>
+            <tr><td class="px-5 py-3 font-mono text-sky-300">reqHeaders, resHeaders</td><td class="px-5 py-3">请求头与响应头，仅 <code class="text-cyan-300">--record-headers</code> 时输出</td></tr>
+            <tr><td class="px-5 py-3 font-mono text-sky-300">reqBody, resBody</td><td class="px-5 py-3">请求体与响应体，仅 <code class="text-cyan-300">--record-body</code> 时输出</td></tr>
             <tr><td class="px-5 py-3 font-mono text-sky-300">error</td><td class="px-5 py-3">失败信息，仅失败时输出</td></tr>
           </tbody>
         </table>
       </div>
       <p class="text-xs text-slate-500 mt-3">字段在 macOS、Linux、Windows 上完全一致。错误记为 status 为 null 的 flow，输出始终可机器解析。</p>
+    </section>
+
+    <section class="mb-20">
+      <h2 class="text-2xl font-bold mb-6">改写流量</h2>
+      <p class="text-slate-400 leading-relaxed mb-6">
+        抓包工具的意义在于改，而不只是看。简单 flag 都是整体替换——同名头有则替换、无则追加，Cookie 合并进现有 Cookie 头。
+      </p>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="glass-card rounded-2xl p-7">
+          <h3 class="font-bold text-base mb-3">简单 flag</h3>
+          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-sky-300 overflow-x-auto"><code>mitmkit run --url https://staging.example.com
+mitmkit run --header 'X-Debug:1'
+mitmkit run --cookie 'session=abc'
+mitmkit run --body '{"user":"admin"}'
+mitmkit run --response-header 'X-Mitm:yes'
+mitmkit run --response-body '{"ok":true}'</code></pre>
+        </div>
+        <div class="glass-card rounded-2xl p-7">
+          <h3 class="font-bold text-base mb-3">高级规则</h3>
+          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-sky-300 overflow-x-auto"><code>mitmkit run --rewrite 'url:/v1->/v2'
+mitmkit run --rewrite 'method:POST;reqHeader:X-Debug:1'
+mitmkit run --rewrite 'resBody:{"ok":true}'</code></pre>
+          <p class="text-xs text-slate-500 mt-3">用 <code class="text-cyan-300">--match SUBSTR</code> 把简单 flag 限定到匹配的 URL。</p>
+        </div>
+      </div>
     </section>
 
     <section id="contract" class="mb-20">

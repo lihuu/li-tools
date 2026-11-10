@@ -76,6 +76,22 @@ curl -x http://127.0.0.1:8080 --cacert ~/.mitmkit/ca/ca.crt https://example.com/
 
 Any client that honors an explicit HTTP proxy setting can be pointed at `127.0.0.1:8080`.
 
+### 5. Rewrite traffic
+
+Simple flags replace whole values; headers are appended when absent and replaced when
+present, cookies merge into the existing Cookie header:
+
+```bash
+mitmkit run --url https://staging.example.com
+mitmkit run --header 'X-Debug:1' --cookie 'session=abc'
+mitmkit run --body '{"user":"admin"}'
+mitmkit run --response-header 'X-Mitm:yes' --response-body '{"ok":true}'
+mitmkit run --match /api/login --header 'X-Debug:1'
+```
+
+For advanced control, `--rewrite` takes a semicolon-separated rule with `method`, `url`,
+`setUrl`, `reqHeader`, `resHeader`, `cookie`, `body` and `resBody` keys.
+
 ## JSONL Fields
 
 Each flow is one JSON object per line:

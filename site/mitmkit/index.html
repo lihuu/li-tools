@@ -194,13 +194,40 @@
             <tr><td class="px-5 py-3 font-mono text-sky-300">status</td><td class="px-5 py-3">Response status, or null when the exchange failed</td></tr>
             <tr><td class="px-5 py-3 font-mono text-sky-300">durationMs</td><td class="px-5 py-3">Round-trip time in milliseconds</td></tr>
             <tr><td class="px-5 py-3 font-mono text-sky-300">reqBytes, resBytes</td><td class="px-5 py-3">Request and response body sizes</td></tr>
-            <tr><td class="px-5 py-3 font-mono text-sky-300">reqHeaders, resHeaders</td><td class="px-5 py-3">Headers, only with <code class="text-cyan-300">--headers</code></td></tr>
-            <tr><td class="px-5 py-3 font-mono text-sky-300">reqBody, resBody</td><td class="px-5 py-3">Bodies, only with <code class="text-cyan-300">--body</code></td></tr>
+            <tr><td class="px-5 py-3 font-mono text-sky-300">reqHeaders, resHeaders</td><td class="px-5 py-3">Headers, only with <code class="text-cyan-300">--record-headers</code></td></tr>
+            <tr><td class="px-5 py-3 font-mono text-sky-300">reqBody, resBody</td><td class="px-5 py-3">Bodies, only with <code class="text-cyan-300">--record-body</code></td></tr>
             <tr><td class="px-5 py-3 font-mono text-sky-300">error</td><td class="px-5 py-3">Failure message, only when the flow failed</td></tr>
           </tbody>
         </table>
       </div>
       <p class="text-xs text-slate-500 mt-3">Fields are stable across macOS, Linux and Windows. Errors are recorded as flows with a null status, so the output stays machine-parseable.</p>
+    </section>
+
+    <section class="mb-20">
+      <h2 class="text-2xl font-bold mb-6">Rewrite traffic</h2>
+      <p class="text-slate-400 leading-relaxed mb-6">
+        The point of an interception proxy is to change traffic, not just watch it. The simple
+        flags replace whole values — headers are appended when absent and replaced when present,
+        cookies merge into the existing Cookie header.
+      </p>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="glass-card rounded-2xl p-7">
+          <h3 class="font-bold text-base mb-3">Simple flags</h3>
+          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-sky-300 overflow-x-auto"><code>mitmkit run --url https://staging.example.com
+mitmkit run --header 'X-Debug:1'
+mitmkit run --cookie 'session=abc'
+mitmkit run --body '{"user":"admin"}'
+mitmkit run --response-header 'X-Mitm:yes'
+mitmkit run --response-body '{"ok":true}'</code></pre>
+        </div>
+        <div class="glass-card rounded-2xl p-7">
+          <h3 class="font-bold text-base mb-3">Advanced rules</h3>
+          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-sky-300 overflow-x-auto"><code>mitmkit run --rewrite 'url:/v1->/v2'
+mitmkit run --rewrite 'method:POST;reqHeader:X-Debug:1'
+mitmkit run --rewrite 'resBody:{"ok":true}'</code></pre>
+          <p class="text-xs text-slate-500 mt-3">Use <code class="text-cyan-300">--match SUBSTR</code> to scope the simple flags to matching URLs.</p>
+        </div>
+      </div>
     </section>
 
     <section id="contract" class="mb-20">

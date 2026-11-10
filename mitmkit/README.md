@@ -61,27 +61,43 @@ curl -x http://127.0.0.1:8080 --cacert ~/.mitmkit/ca/ca.crt https://example.com/
 | `--insecure` | Skip upstream certificate verification (self-signed upstreams) |
 | `--trust-local` | Trust loopback upstreams (127.0.0.1, localhost) without verification |
 | `--system-proxy` | Set the OS system proxy while running, restore on exit |
-| `--rewrite RULE` | Rewrite rule, repeatable (see below) |
-| `--body` | Record request and response bodies |
-| `--headers` | Record request and response headers |
+| `--url URL` | Replace the request URL with this whole value |
+| `--header NAME:VALUE` | Append or replace a request header (repeatable) |
+| `--cookie NAME=VALUE` | Append or replace a cookie (repeatable) |
+| `--body BODY` | Replace the request body with this whole value |
+| `--response-header NAME:VALUE` | Append or replace a response header (repeatable) |
+| `--response-body BODY` | Replace the response body with this whole value |
+| `--match SUBSTR` | Only apply the simple rewrite flags to URLs containing this substring |
+| `--rewrite RULE` | Advanced rewrite rule, repeatable (see below) |
+| `--record-body` | Record request and response bodies in the output |
+| `--record-headers` | Record request and response headers in the output |
 | `--jsonl` | Emit newline-delimited JSON instead of human-readable lines |
 
-### Rewrite rules
+### Rewriting traffic
 
-`--rewrite` takes a semicolon-separated rule, repeatable:
+The simple flags replace whole values — headers are appended when absent and replaced
+when present, cookies merge into the existing Cookie header:
 
 ```bash
-mitmkit run --rewrite 'url:/v1->/v2;reqHeader:X-Debug:1'
-mitmkit run --rewrite 'replaceBody:hello->goodbye'
+mitmkit run --url https://staging.example.com
+mitmkit run --header 'X-Debug:1' --cookie 'session=abc'
+mitmkit run --body '{"user":"admin"}'
+mitmkit run --response-header 'X-Mitm:yes' --response-body '{"ok":true}'
+mitmkit run --match /api/login --header 'X-Debug:1'
 ```
+
+For advanced control, `--rewrite` takes a semicolon-separated rule, repeatable:
 
 | Key | Meaning | Example |
 | --- | --- | --- |
 | `method` | Only rewrite matching method (default `*`) | `method:POST` |
 | `url` | URL substring; with `->` also replaces | `url:/v1->/v2` |
-| `reqHeader` | Inject a request header | `reqHeader:X-Debug:1` |
-| `resHeader` | Inject a response header | `resHeader:X-Mitm:yes` |
-| `replaceBody` | Replace a body substring | `replaceBody:hello->goodbye` |
+| `setUrl` | Replace the whole URL | `setUrl:https://staging.example.com` |
+| `reqHeader` | Request header (append or replace) | `reqHeader:X-Debug:1` |
+| `resHeader` | Response header | `resHeader:X-Mitm:yes` |
+| `cookie` | Cookie (merged into the Cookie header) | `cookie:session=abc` |
+| `body` | Replace the whole request body | `body:{"user":"admin"}` |
+| `resBody` | Replace the whole response body | `resBody:{"ok":true}` |
 
 ## 📤 Output
 

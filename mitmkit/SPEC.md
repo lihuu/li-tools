@@ -14,7 +14,9 @@
 
 ```text
 mitmkit [run] [--port PORT] [--host HOST] [--insecure] [--trust-local] [--system-proxy]
-                [--rewrite RULE]... [--body] [--headers] [--jsonl] [--json] [--no-color]
+                [--url URL] [--header NAME:VALUE]... [--cookie NAME=VALUE]... [--body BODY]
+                [--response-header NAME:VALUE]... [--response-body BODY] [--match SUBSTR]
+                [--rewrite RULE]... [--record-body] [--record-headers] [--jsonl] [--json] [--no-color]
 mitmkit ca [--force] [--json]
 mitmkit --help
 mitmkit --version
@@ -29,7 +31,15 @@ mitmkit --version
 - `--system-proxy` 在运行期间设置 OS 系统代理（macOS networksetup / Windows 注册表 / Linux gsettings），
   退出时恢复；设置失败不阻止启动。
 - `--trust-local` 对回环上游（127.0.0.1、localhost、::1）跳过证书校验，其他上游仍校验。
-- `--rewrite RULE` 可重复，声明请求/响应改写规则（见下）。
+- `--rewrite RULE` 可重复，声明高级改写规则（见下）。
+- 简单改写 flag（整体替换，人工调用首选）：
+  - `--url URL` 把请求 URL 整体替换为 URL
+  - `--header NAME:VALUE` 请求头，可重复；同名头有则替换、无则追加
+  - `--cookie NAME=VALUE` Cookie，可重复；合并进现有 Cookie 头
+  - `--body BODY` 把请求体整体替换为 BODY
+  - `--response-header NAME:VALUE` 响应头，可重复
+  - `--response-body BODY` 把响应体整体替换为 BODY
+  - `--match SUBSTR` 只对 URL 包含 SUBSTR 的请求应用上述简单 flag
 
 ## 2. 输出
 
@@ -63,11 +73,14 @@ mitmkit --version
 | --- | --- | --- |
 | `method` | 只改写匹配方法的请求（默认 `*`） | `method:POST` |
 | `url` | URL 包含匹配串；带 `->` 时同时声明替换 | `url:/v1->/v2` |
-| `reqHeader` | 注入请求头（会覆盖同名头） | `reqHeader:X-Debug:1` |
-| `resHeader` | 注入响应头 | `resHeader:X-Mitm:yes` |
-| `replaceBody` | 替换请求/响应体中的子串 | `replaceBody:hello->goodbye` |
+| `setUrl` | 把 URL 整体替换 | `setUrl:https://staging.example.com` |
+| `reqHeader` | 请求头（有则替换、无则追加） | `reqHeader:X-Debug:1` |
+| `resHeader` | 响应头 | `resHeader:X-Mitm:yes` |
+| `cookie` | Cookie（合并进现有 Cookie 头） | `cookie:session=abc` |
+| `body` | 请求体整体替换 | `body:{"user":"admin"}` |
+| `resBody` | 响应体整体替换 | `resBody:{"ok":true}` |
 
-规则按声明顺序应用；`url` 替换会影响上游 host/port 的解析。
+规则按声明顺序应用；`url`/`setUrl` 替换会影响上游 host/port 的解析。
 
 ## 4. CA
 

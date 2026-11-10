@@ -61,27 +61,42 @@ curl -x http://127.0.0.1:8080 --cacert ~/.mitmkit/ca/ca.crt https://example.com/
 | `--insecure` | 跳过上游证书校验（自签上游场景） |
 | `--trust-local` | 对回环上游（127.0.0.1、localhost）跳过校验 |
 | `--system-proxy` | 运行期间设置系统代理，退出时恢复 |
-| `--rewrite RULE` | 改写规则，可重复（见下） |
-| `--body` | 记录请求/响应体 |
-| `--headers` | 记录请求/响应头 |
+| `--url URL` | 把请求 URL 整体替换为 URL |
+| `--header NAME:VALUE` | 追加或替换请求头（可重复） |
+| `--cookie NAME=VALUE` | 追加或替换 Cookie（可重复） |
+| `--body BODY` | 把请求体整体替换为 BODY |
+| `--response-header NAME:VALUE` | 追加或替换响应头（可重复） |
+| `--response-body BODY` | 把响应体整体替换为 BODY |
+| `--match SUBSTR` | 只对 URL 包含 SUBSTR 的请求应用上述简单 flag |
+| `--rewrite RULE` | 高级改写规则，可重复（见下） |
+| `--record-body` | 在输出中记录请求/响应体 |
+| `--record-headers` | 在输出中记录请求/响应头 |
 | `--jsonl` | 输出 JSONL 而非人类可读行 |
 
-### 改写规则
+### 改写流量
 
-`--rewrite` 接受分号分隔的规则，可重复：
+简单 flag 都是整体替换——同名头有则替换、无则追加，Cookie 合并进现有 Cookie 头：
 
 ```bash
-mitmkit run --rewrite 'url:/v1->/v2;reqHeader:X-Debug:1'
-mitmkit run --rewrite 'replaceBody:hello->goodbye'
+mitmkit run --url https://staging.example.com
+mitmkit run --header 'X-Debug:1' --cookie 'session=abc'
+mitmkit run --body '{"user":"admin"}'
+mitmkit run --response-header 'X-Mitm:yes' --response-body '{"ok":true}'
+mitmkit run --match /api/login --header 'X-Debug:1'
 ```
+
+需要更精细控制时，`--rewrite` 接受分号分隔的规则，可重复：
 
 | 键 | 含义 | 示例 |
 | --- | --- | --- |
 | `method` | 只改写匹配方法的请求（默认 `*`） | `method:POST` |
 | `url` | URL 子串匹配；带 `->` 时同时声明替换 | `url:/v1->/v2` |
-| `reqHeader` | 注入请求头 | `reqHeader:X-Debug:1` |
-| `resHeader` | 注入响应头 | `resHeader:X-Mitm:yes` |
-| `replaceBody` | 替换请求/响应体子串 | `replaceBody:hello->goodbye` |
+| `setUrl` | 整体替换 URL | `setUrl:https://staging.example.com` |
+| `reqHeader` | 请求头（追加或替换） | `reqHeader:X-Debug:1` |
+| `resHeader` | 响应头 | `resHeader:X-Mitm:yes` |
+| `cookie` | Cookie（合并进 Cookie 头） | `cookie:session=abc` |
+| `body` | 整体替换请求体 | `body:{"user":"admin"}` |
+| `resBody` | 整体替换响应体 | `resBody:{"ok":true}` |
 
 ## 📤 输出
 

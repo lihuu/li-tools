@@ -71,7 +71,7 @@ class RewriteRoundTripTest {
         FlowRecorder recorder = new FlowRecorder(new PrintWriter(buffer, true, StandardCharsets.UTF_8), true, false);
 
         List<RewriteRule> rules = RewriteRule.parse(List.of(
-                "replaceBody:hello->goodbye"
+                "resBody:goodbye"
         ));
 
         ProxyServer proxy = new ProxyServer("127.0.0.1", 0, authority, recorder, true,

@@ -170,7 +170,7 @@ public final class ProxyServer {
         byte[] body = readBody(head, tunnel.inputStream());
 
         RewriteContext rewrite = new RewriteContext();
-        String effectiveUrl = rewrite.applyRequest(fullUrl, head.method(), head.headers(), decodeText(body));
+        String effectiveUrl = rewrite.applyRequest(fullUrl, head.method());
         if (!effectiveUrl.equals(fullUrl)) {
             fullUrl = effectiveUrl;
             URI uri = URI.create(fullUrl);
@@ -181,12 +181,12 @@ public final class ProxyServer {
         byte[] effectiveBody = body;
 
         try (Socket upstream = openUpstream(upstreamHost, upstreamPort, uriScheme(head, fullUrl))) {
-            writeRequest(upstream.getOutputStream(), head, effectiveBody, fullUrl, upstreamHost, upstreamPort, rewrite);
+            writeRequest(upstream.getOutputStream(), head, effectiveBody, fullUrl, head.url(), upstreamHost, upstreamPort, rewrite);
             ResponseHead response = readResponseHead(upstream.getInputStream());
             byte[] responseBody = readBody(response, upstream.getInputStream());
-            responseBody = rewrite.applyResponse(head.method(), fullUrl, response, responseBody);
+            responseBody = rewrite.applyResponse(head.method(), fullUrl, responseBody);
 
-            writeResponse(tunnel.outputStream(), response, responseBody, rewrite);
+            writeResponse(tunnel.outputStream(), response, responseBody, head.method(), head.url(), rewrite);
 
             long duration = System.currentTimeMillis() - start;
             recorder.record(new FlowRecorder.Flow(id, head.method(), fullUrl,
@@ -203,7 +203,8 @@ public final class ProxyServer {
             try {
                 byte[] errorBody = message(failure).getBytes(StandardCharsets.UTF_8);
                 writeResponse(tunnel.outputStream(),
-                        new ResponseHead(502, "Bad Gateway", Map.of()), errorBody, new RewriteContext());
+                        new ResponseHead(502, "Bad Gateway", Map.of()), errorBody,
+                        head.method(), head.url(), new RewriteContext());
             } catch (IOException ignored) {
                 // The client may already have gone away.
             }
@@ -218,13 +219,11 @@ public final class ProxyServer {
             this.rules = ProxyServer.this.rewriteRules;
         }
 
-        @NotNull String applyRequest(@NotNull String url, @NotNull String method,
-                                     @NotNull Map<String, List<String>> headers,
-                                     @NotNull String body) {
+        @NotNull String applyRequest(@NotNull String url, @NotNull String method) {
             String result = url;
             for (RewriteRule rule : rules) {
                 if (!rule.matches(method, url)) continue;
-                if (rule.replaceUrl() != null) {
+                if (rule.newUrl() != null) {
                     result = rule.applyUrl(result);
                 }
             }
@@ -235,47 +234,97 @@ public final class ProxyServer {
             byte[] result = body;
             for (RewriteRule rule : rules) {
                 if (!rule.matches(method, url)) continue;
-                if (rule.replaceBody() != null) {
-                    String replaced = rule.applyBody(decodeText(result));
-                    if (replaced != null) result = replaced.getBytes(StandardCharsets.UTF_8);
+                if (rule.replacesRequestBody()) {
+                    result = rule.requestBody(result);
                 }
             }
             return result;
         }
 
-        byte[] applyResponse(@NotNull String method, @NotNull String url,
-                             @NotNull ResponseHead response, byte[] body) {
+        byte[] applyResponse(@NotNull String method, @NotNull String url, byte[] body) {
             byte[] result = body;
             for (RewriteRule rule : rules) {
                 if (!rule.matches(method, url)) continue;
-                if (rule.replaceBody() != null) {
-                    String replaced = rule.applyBody(decodeText(result));
-                    if (replaced != null) result = replaced.getBytes(StandardCharsets.UTF_8);
+                if (rule.replacesResponseBody()) {
+                    result = rule.responseBody(result);
                 }
             }
             return result;
         }
 
-        void applyRequestHeaders(@NotNull Map<String, List<String>> headers) {
+        /**
+         * Returns a new header map with the matching rules applied: headers are
+         * appended when absent and replaced when present, cookies are merged the
+         * same way.
+         */
+        @NotNull Map<String, List<String>> applyRequestHeaders(
+                @NotNull String method, @NotNull String url,
+                @NotNull Map<String, List<String>> original) {
+            Map<String, List<String>> headers = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            headers.putAll(original);
             for (RewriteRule rule : rules) {
-                String header = rule.requestHeaderValue();
-                if (header == null) continue;
-                int colon = header.indexOf(':');
-                if (colon <= 0) continue;
-                headers.put(header.substring(0, colon).trim(),
-                        List.of(header.substring(colon + 1).trim()));
+                if (!rule.matches(method, url)) continue;
+                applyHeader(headers, rule.requestHeaderValue());
+                applyCookie(headers, rule.cookieValue());
             }
+            return headers;
         }
 
-        void applyResponseHeaders(@NotNull Map<String, List<String>> headers) {
+        @NotNull Map<String, List<String>> applyResponseHeaders(
+                @NotNull String method, @NotNull String url,
+                @NotNull Map<String, List<String>> original) {
+            Map<String, List<String>> headers = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            headers.putAll(original);
             for (RewriteRule rule : rules) {
-                String header = rule.responseHeaderValue();
-                if (header == null) continue;
-                int colon = header.indexOf(':');
-                if (colon <= 0) continue;
-                headers.put(header.substring(0, colon).trim(),
-                        List.of(header.substring(colon + 1).trim()));
+                if (!rule.matches(method, url)) continue;
+                applyHeader(headers, rule.responseHeaderValue());
             }
+            return headers;
+        }
+
+        private static void applyHeader(@NotNull Map<String, List<String>> headers, @Nullable String header) {
+            if (header == null) return;
+            int colon = header.indexOf(':');
+            if (colon <= 0) return;
+            headers.put(header.substring(0, colon).trim(), List.of(header.substring(colon + 1).trim()));
+        }
+
+        private static void applyCookie(@NotNull Map<String, List<String>> headers, @Nullable String cookie) {
+            if (cookie == null) return;
+            int equals = cookie.indexOf('=');
+            if (equals <= 0) return;
+            String name = cookie.substring(0, equals).trim();
+            String value = cookie.substring(equals + 1).trim();
+            List<String> existing = headers.get("cookie");
+            if (existing == null || existing.isEmpty()) {
+                headers.put("cookie", List.of(name + "=" + value));
+                return;
+            }
+            String merged = mergeCookie(existing.get(0), name, value);
+            headers.put("cookie", List.of(merged));
+        }
+
+        private static @NotNull String mergeCookie(@NotNull String header, @NotNull String name,
+                                                  @NotNull String value) {
+            String[] pairs = header.split(";");
+            StringBuilder builder = new StringBuilder();
+            boolean replaced = false;
+            for (String pair : pairs) {
+                String trimmed = pair.trim();
+                if (trimmed.isEmpty()) continue;
+                if (builder.length() > 0) builder.append("; ");
+                if (trimmed.startsWith(name + "=")) {
+                    builder.append(name).append('=').append(value);
+                    replaced = true;
+                } else {
+                    builder.append(trimmed);
+                }
+            }
+            if (!replaced) {
+                if (builder.length() > 0) builder.append("; ");
+                builder.append(name).append('=').append(value);
+            }
+            return builder.toString();
         }
     }
 
@@ -356,27 +405,22 @@ public final class ProxyServer {
     }
 
     private void writeRequest(@NotNull OutputStream out, @NotNull RequestHead head,
-                              byte[] body, @NotNull String fullUrl, @NotNull String host, int port,
+                              byte[] body, @NotNull String sendUrl, @NotNull String matchUrl,
+                              @NotNull String host, int port,
                               @NotNull RewriteContext rewrite) throws IOException {
+        Map<String, List<String>> headers = rewrite.applyRequestHeaders(
+                head.method(), matchUrl, head.headers());
         StringBuilder builder = new StringBuilder();
-        builder.append(head.method()).append(' ').append(requestTarget(fullUrl)).append(" HTTP/1.1\r\n");
+        builder.append(head.method()).append(' ').append(requestTarget(sendUrl)).append(" HTTP/1.1\r\n");
         builder.append("Host: ").append(host);
         if (port != 80 && port != 443) builder.append(':').append(port);
         builder.append("\r\n");
-        for (Map.Entry<String, List<String>> entry : head.headers().entrySet()) {
+        for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
             String name = entry.getKey();
             if (name.equalsIgnoreCase("host") || name.equalsIgnoreCase("proxy-connection")) continue;
             for (String value : entry.getValue()) {
                 builder.append(name).append(": ").append(value).append("\r\n");
             }
-        }
-        for (RewriteRule rule : rewriteRules) {
-            String header = rule.requestHeaderValue();
-            if (header == null) continue;
-            int colon = header.indexOf(':');
-            if (colon <= 0) continue;
-            builder.append(header.substring(0, colon).trim()).append(": ")
-                    .append(header.substring(colon + 1).trim()).append("\r\n");
         }
         builder.append("Connection: close\r\n");
         if (body.length > 0) builder.append("Content-Length: ").append(body.length).append("\r\n");
@@ -387,24 +431,18 @@ public final class ProxyServer {
     }
 
     private void writeResponse(@NotNull OutputStream out, @NotNull ResponseHead response,
-                               byte[] body, @NotNull RewriteContext rewrite) throws IOException {
+                               byte[] body, @NotNull String method, @NotNull String matchUrl,
+                               @NotNull RewriteContext rewrite) throws IOException {
+        Map<String, List<String>> headers = rewrite.applyResponseHeaders(method, matchUrl, response.headers());
         StringBuilder builder = new StringBuilder();
         builder.append("HTTP/1.1 ").append(response.statusCode()).append(' ')
                 .append(response.reasonPhrase()).append("\r\n");
-        for (Map.Entry<String, List<String>> entry : response.headers().entrySet()) {
+        for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
             String name = entry.getKey();
             if (name.equalsIgnoreCase("transfer-encoding") || name.equalsIgnoreCase("connection")) continue;
             for (String value : entry.getValue()) {
                 builder.append(name).append(": ").append(value).append("\r\n");
             }
-        }
-        for (RewriteRule rule : rewriteRules) {
-            String header = rule.responseHeaderValue();
-            if (header == null) continue;
-            int colon = header.indexOf(':');
-            if (colon <= 0) continue;
-            builder.append(header.substring(0, colon).trim()).append(": ")
-                    .append(header.substring(colon + 1).trim()).append("\r\n");
         }
         builder.append("Content-Length: ").append(body.length).append("\r\n");
         builder.append("Connection: close\r\n\r\n");

@@ -5,23 +5,23 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * A declarative request/response rewrite rule supplied on the command line.
  *
- * <p>Supported operations, applied in order: replace a URL substring, set a request
- * header, set a response header, or replace a body substring. Matching is by method
- * and an optional URL substring.
+ * <p>Operations: replace the whole URL, append-or-replace a request/response header,
+ * replace a cookie, or replace the whole body. Matching is by method and an optional
+ * URL substring. Rules are applied in declaration order.
  */
 public record RewriteRule(
         @NotNull String method,
         @Nullable String urlContains,
-        @Nullable String replaceUrl,
-        @Nullable String setRequestHeader,
-        @Nullable String setResponseHeader,
-        @Nullable String replaceBody,
-        @Nullable String replaceBodyWith
+        @Nullable String newUrl,
+        @Nullable String requestHeader,
+        @Nullable String responseHeader,
+        @Nullable String cookie,
+        @Nullable String newBody,
+        @Nullable String newResponseBody
 ) {
     public static @NotNull List<RewriteRule> parse(@NotNull List<String> flags) {
         List<RewriteRule> rules = new ArrayList<>();
@@ -31,14 +31,27 @@ public record RewriteRule(
         return rules;
     }
 
+    /**
+     * Builds one rule from the simple CLI flags: a whole new body replaces the body,
+     * a whole new URL replaces the URL, headers are appended or replaced.
+     */
+    public static @NotNull RewriteRule simple(
+            @NotNull String method, @Nullable String urlContains, @Nullable String newUrl,
+            @Nullable String requestHeader, @Nullable String responseHeader,
+            @Nullable String cookie, @Nullable String newBody, @Nullable String newResponseBody) {
+        return new RewriteRule(method, urlContains, newUrl, requestHeader, responseHeader,
+                cookie, newBody, newResponseBody);
+    }
+
     private static @NotNull RewriteRule parseOne(@NotNull String flag) {
         String method = "*";
         String urlContains = null;
-        String replaceUrl = null;
-        String setRequestHeader = null;
-        String setResponseHeader = null;
-        String replaceBody = null;
-        String replaceBodyWith = null;
+        String newUrl = null;
+        String requestHeader = null;
+        String responseHeader = null;
+        String cookie = null;
+        String newBody = null;
+        String newResponseBody = null;
 
         for (String token : flag.split(";")) {
             String trimmed = token.trim();
@@ -53,27 +66,23 @@ public record RewriteRule(
                     int arrow = value.indexOf("->");
                     if (arrow > 0) {
                         urlContains = value.substring(0, arrow).trim();
-                        replaceUrl = value.substring(arrow + 2).trim();
+                        newUrl = value.substring(arrow + 2).trim();
                     } else {
                         urlContains = value;
                     }
                 }
-                case "replaceUrl" -> replaceUrl = value;
-                case "reqHeader" -> setRequestHeader = value;
-                case "resHeader" -> setResponseHeader = value;
-                case "replaceBody" -> {
-                    int arrow = value.indexOf("->");
-                    if (arrow > 0) {
-                        replaceBody = value.substring(0, arrow).trim();
-                        replaceBodyWith = value.substring(arrow + 2).trim();
-                    }
-                }
+                case "setUrl" -> newUrl = value;
+                case "reqHeader" -> requestHeader = value;
+                case "resHeader" -> responseHeader = value;
+                case "cookie" -> cookie = value;
+                case "body" -> newBody = value;
+                case "resBody" -> newResponseBody = value;
                 default -> {
                 }
             }
         }
-        return new RewriteRule(method, urlContains, replaceUrl, setRequestHeader,
-                setResponseHeader, replaceBody, replaceBodyWith);
+        return new RewriteRule(method, urlContains, newUrl, requestHeader, responseHeader,
+                cookie, newBody, newResponseBody);
     }
 
     public boolean matches(@NotNull String requestMethod, @NotNull String url) {
@@ -82,20 +91,36 @@ public record RewriteRule(
     }
 
     public @NotNull String applyUrl(@NotNull String url) {
-        if (replaceUrl == null) return url;
-        return url.replace(urlContains, replaceUrl);
+        if (newUrl == null) return url;
+        if (urlContains == null) return newUrl;
+        return url.replace(urlContains, newUrl);
     }
 
     public @Nullable String requestHeaderValue() {
-        return setRequestHeader;
+        return requestHeader;
     }
 
     public @Nullable String responseHeaderValue() {
-        return setResponseHeader;
+        return responseHeader;
     }
 
-    public @Nullable String applyBody(@NotNull String body) {
-        if (replaceBody == null) return null;
-        return body.replace(replaceBody, replaceBodyWith == null ? "" : replaceBodyWith);
+    public @Nullable String cookieValue() {
+        return cookie;
+    }
+
+    public boolean replacesRequestBody() {
+        return newBody != null;
+    }
+
+    public boolean replacesResponseBody() {
+        return newResponseBody != null;
+    }
+
+    public byte[] requestBody(byte[] original) {
+        return newBody == null ? original : newBody.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    public byte[] responseBody(byte[] original) {
+        return newResponseBody == null ? original : newResponseBody.getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
 }
