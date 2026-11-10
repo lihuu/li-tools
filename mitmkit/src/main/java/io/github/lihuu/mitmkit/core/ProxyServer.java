@@ -54,18 +54,21 @@ public final class ProxyServer {
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     private final boolean recordHeaders;
     private final boolean recordBody;
+    private final boolean trustLocal;
+    private final List<RewriteRule> rewriteRules;
 
     private ServerSocket serverSocket;
     private int port;
 
     public ProxyServer(@NotNull String host, int requestedPort, @NotNull CertAuthority authority,
                        @NotNull FlowRecorder recorder, boolean insecureUpstream) {
-        this(host, requestedPort, authority, recorder, insecureUpstream, false, false);
+        this(host, requestedPort, authority, recorder, insecureUpstream, false, false, false, List.of());
     }
 
     public ProxyServer(@NotNull String host, int requestedPort, @NotNull CertAuthority authority,
                        @NotNull FlowRecorder recorder, boolean insecureUpstream,
-                       boolean recordHeaders, boolean recordBody) {
+                       boolean recordHeaders, boolean recordBody, boolean trustLocal,
+                       @NotNull List<RewriteRule> rewriteRules) {
         this.host = host;
         this.requestedPort = requestedPort;
         this.authority = authority;
@@ -73,6 +76,8 @@ public final class ProxyServer {
         this.insecureUpstream = insecureUpstream;
         this.recordHeaders = recordHeaders;
         this.recordBody = recordBody;
+        this.trustLocal = trustLocal;
+        this.rewriteRules = rewriteRules;
     }
 
     public void start() throws IOException {
@@ -164,31 +169,120 @@ public final class ProxyServer {
         long start = System.currentTimeMillis();
         byte[] body = readBody(head, tunnel.inputStream());
 
+        RewriteContext rewrite = new RewriteContext();
+        String effectiveUrl = rewrite.applyRequest(fullUrl, head.method(), head.headers(), decodeText(body));
+        if (!effectiveUrl.equals(fullUrl)) {
+            fullUrl = effectiveUrl;
+            URI uri = URI.create(fullUrl);
+            upstreamHost = uri.getHost();
+            upstreamPort = uri.getPort() > 0 ? uri.getPort() : upstreamPort;
+        }
+        body = rewrite.applyRequestBody(head.method(), fullUrl, body);
+        byte[] effectiveBody = body;
+
         try (Socket upstream = openUpstream(upstreamHost, upstreamPort, uriScheme(head, fullUrl))) {
-            writeRequest(upstream.getOutputStream(), head, body, upstreamHost, upstreamPort);
+            writeRequest(upstream.getOutputStream(), head, effectiveBody, fullUrl, upstreamHost, upstreamPort, rewrite);
             ResponseHead response = readResponseHead(upstream.getInputStream());
             byte[] responseBody = readBody(response, upstream.getInputStream());
+            responseBody = rewrite.applyResponse(head.method(), fullUrl, response, responseBody);
 
-            writeResponse(tunnel.outputStream(), response, responseBody);
+            writeResponse(tunnel.outputStream(), response, responseBody, rewrite);
 
             long duration = System.currentTimeMillis() - start;
             recorder.record(new FlowRecorder.Flow(id, head.method(), fullUrl,
-                    response.statusCode(), duration, body.length, responseBody.length,
+                    response.statusCode(), duration, effectiveBody.length, responseBody.length,
                     recordHeaders ? head.headers() : null,
                     recordHeaders ? response.headers() : null,
-                    recordBody ? decodeText(body) : null,
+                    recordBody ? decodeText(effectiveBody) : null,
                     recordBody ? decodeText(responseBody) : null,
                     null));
         } catch (Exception failure) {
             long duration = System.currentTimeMillis() - start;
             recorder.record(new FlowRecorder.Flow(id, head.method(), fullUrl, null, duration,
-                    body.length, 0, null, null, null, null, message(failure)));
+                    effectiveBody.length, 0, null, null, null, null, message(failure)));
+            try {
+                byte[] errorBody = message(failure).getBytes(StandardCharsets.UTF_8);
+                writeResponse(tunnel.outputStream(),
+                        new ResponseHead(502, "Bad Gateway", Map.of()), errorBody, new RewriteContext());
+            } catch (IOException ignored) {
+                // The client may already have gone away.
+            }
+        }
+    }
+
+    /** Applies matching rewrite rules to requests and responses for one exchange. */
+    private final class RewriteContext {
+        private final java.util.List<RewriteRule> rules;
+
+        RewriteContext() {
+            this.rules = ProxyServer.this.rewriteRules;
+        }
+
+        @NotNull String applyRequest(@NotNull String url, @NotNull String method,
+                                     @NotNull Map<String, List<String>> headers,
+                                     @NotNull String body) {
+            String result = url;
+            for (RewriteRule rule : rules) {
+                if (!rule.matches(method, url)) continue;
+                if (rule.replaceUrl() != null) {
+                    result = rule.applyUrl(result);
+                }
+            }
+            return result;
+        }
+
+        byte[] applyRequestBody(@NotNull String method, @NotNull String url, byte[] body) {
+            byte[] result = body;
+            for (RewriteRule rule : rules) {
+                if (!rule.matches(method, url)) continue;
+                if (rule.replaceBody() != null) {
+                    String replaced = rule.applyBody(decodeText(result));
+                    if (replaced != null) result = replaced.getBytes(StandardCharsets.UTF_8);
+                }
+            }
+            return result;
+        }
+
+        byte[] applyResponse(@NotNull String method, @NotNull String url,
+                             @NotNull ResponseHead response, byte[] body) {
+            byte[] result = body;
+            for (RewriteRule rule : rules) {
+                if (!rule.matches(method, url)) continue;
+                if (rule.replaceBody() != null) {
+                    String replaced = rule.applyBody(decodeText(result));
+                    if (replaced != null) result = replaced.getBytes(StandardCharsets.UTF_8);
+                }
+            }
+            return result;
+        }
+
+        void applyRequestHeaders(@NotNull Map<String, List<String>> headers) {
+            for (RewriteRule rule : rules) {
+                String header = rule.requestHeaderValue();
+                if (header == null) continue;
+                int colon = header.indexOf(':');
+                if (colon <= 0) continue;
+                headers.put(header.substring(0, colon).trim(),
+                        List.of(header.substring(colon + 1).trim()));
+            }
+        }
+
+        void applyResponseHeaders(@NotNull Map<String, List<String>> headers) {
+            for (RewriteRule rule : rules) {
+                String header = rule.responseHeaderValue();
+                if (header == null) continue;
+                int colon = header.indexOf(':');
+                if (colon <= 0) continue;
+                headers.put(header.substring(0, colon).trim(),
+                        List.of(header.substring(colon + 1).trim()));
+            }
         }
     }
 
     private @NotNull Socket openUpstream(@NotNull String host, int port, String scheme) throws Exception {
         if ("https".equals(scheme)) {
-            SSLSocketFactory factory = insecureUpstream
+            boolean skipVerification = insecureUpstream || (trustLocal && isLoopback(host));
+            SSLSocketFactory factory = skipVerification
                     ? insecureContext().getSocketFactory()
                     : SSLContext.getDefault().getSocketFactory();
             SSLSocket socket = (SSLSocket) factory.createSocket();
@@ -199,6 +293,11 @@ public final class ProxyServer {
         Socket socket = new Socket();
         socket.connect(new InetSocketAddress(host, port), CONNECT_TIMEOUT_MS);
         return socket;
+    }
+
+    private static boolean isLoopback(@NotNull String host) {
+        return "localhost".equalsIgnoreCase(host) || "127.0.0.1".equals(host)
+                || "::1".equals(host) || "[::1]".equals(host);
     }
 
     private static @NotNull String requestTarget(@NotNull String url) {
@@ -256,10 +355,11 @@ public final class ProxyServer {
         return context;
     }
 
-    private static void writeRequest(@NotNull OutputStream out, @NotNull RequestHead head,
-                                     byte[] body, @NotNull String host, int port) throws IOException {
+    private void writeRequest(@NotNull OutputStream out, @NotNull RequestHead head,
+                              byte[] body, @NotNull String fullUrl, @NotNull String host, int port,
+                              @NotNull RewriteContext rewrite) throws IOException {
         StringBuilder builder = new StringBuilder();
-        builder.append(head.method()).append(' ').append(requestTarget(head.url())).append(" HTTP/1.1\r\n");
+        builder.append(head.method()).append(' ').append(requestTarget(fullUrl)).append(" HTTP/1.1\r\n");
         builder.append("Host: ").append(host);
         if (port != 80 && port != 443) builder.append(':').append(port);
         builder.append("\r\n");
@@ -270,6 +370,14 @@ public final class ProxyServer {
                 builder.append(name).append(": ").append(value).append("\r\n");
             }
         }
+        for (RewriteRule rule : rewriteRules) {
+            String header = rule.requestHeaderValue();
+            if (header == null) continue;
+            int colon = header.indexOf(':');
+            if (colon <= 0) continue;
+            builder.append(header.substring(0, colon).trim()).append(": ")
+                    .append(header.substring(colon + 1).trim()).append("\r\n");
+        }
         builder.append("Connection: close\r\n");
         if (body.length > 0) builder.append("Content-Length: ").append(body.length).append("\r\n");
         builder.append("\r\n");
@@ -278,8 +386,8 @@ public final class ProxyServer {
         out.flush();
     }
 
-    private static void writeResponse(@NotNull OutputStream out, @NotNull ResponseHead response,
-                                      byte[] body) throws IOException {
+    private void writeResponse(@NotNull OutputStream out, @NotNull ResponseHead response,
+                               byte[] body, @NotNull RewriteContext rewrite) throws IOException {
         StringBuilder builder = new StringBuilder();
         builder.append("HTTP/1.1 ").append(response.statusCode()).append(' ')
                 .append(response.reasonPhrase()).append("\r\n");
@@ -289,6 +397,14 @@ public final class ProxyServer {
             for (String value : entry.getValue()) {
                 builder.append(name).append(": ").append(value).append("\r\n");
             }
+        }
+        for (RewriteRule rule : rewriteRules) {
+            String header = rule.responseHeaderValue();
+            if (header == null) continue;
+            int colon = header.indexOf(':');
+            if (colon <= 0) continue;
+            builder.append(header.substring(0, colon).trim()).append(": ")
+                    .append(header.substring(colon + 1).trim()).append("\r\n");
         }
         builder.append("Content-Length: ").append(body.length).append("\r\n");
         builder.append("Connection: close\r\n\r\n");

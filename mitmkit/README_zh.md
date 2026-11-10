@@ -59,9 +59,29 @@ curl -x http://127.0.0.1:8080 --cacert ~/.mitmkit/ca/ca.crt https://example.com/
 | `--host HOST` | 监听地址（默认 `127.0.0.1`；`0.0.0.0` 允许局域网设备） |
 | `--port PORT` | 监听端口（默认 `8080`） |
 | `--insecure` | 跳过上游证书校验（自签上游场景） |
+| `--trust-local` | 对回环上游（127.0.0.1、localhost）跳过校验 |
+| `--system-proxy` | 运行期间设置系统代理，退出时恢复 |
+| `--rewrite RULE` | 改写规则，可重复（见下） |
 | `--body` | 记录请求/响应体 |
 | `--headers` | 记录请求/响应头 |
 | `--jsonl` | 输出 JSONL 而非人类可读行 |
+
+### 改写规则
+
+`--rewrite` 接受分号分隔的规则，可重复：
+
+```bash
+mitmkit run --rewrite 'url:/v1->/v2;reqHeader:X-Debug:1'
+mitmkit run --rewrite 'replaceBody:hello->goodbye'
+```
+
+| 键 | 含义 | 示例 |
+| --- | --- | --- |
+| `method` | 只改写匹配方法的请求（默认 `*`） | `method:POST` |
+| `url` | URL 子串匹配；带 `->` 时同时声明替换 | `url:/v1->/v2` |
+| `reqHeader` | 注入请求头 | `reqHeader:X-Debug:1` |
+| `resHeader` | 注入响应头 | `resHeader:X-Mitm:yes` |
+| `replaceBody` | 替换请求/响应体子串 | `replaceBody:hello->goodbye` |
 
 ## 📤 输出
 

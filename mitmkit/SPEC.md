@@ -13,7 +13,8 @@
 ## 1. 命令接口
 
 ```text
-mitmkit [run] [--port PORT] [--host HOST] [--insecure] [--body] [--jsonl] [--json] [--no-color]
+mitmkit [run] [--port PORT] [--host HOST] [--insecure] [--trust-local] [--system-proxy]
+                [--rewrite RULE]... [--body] [--headers] [--jsonl] [--json] [--no-color]
 mitmkit ca [--force] [--json]
 mitmkit --help
 mitmkit --version
@@ -24,7 +25,11 @@ mitmkit --version
 - CA 目录默认 `~/.mitmkit/ca/`（`ca.crt` + `ca.key`），env `MITMKIT_CA_DIR` 覆盖。
   CA 独立于 certkit（不共用 `~/.certkit`），卸载互不影响。
 - `ca` 子命令生成/检查 CA，不装系统信任；已存在时默认拒绝（返回 `1` 并提示），`--force` 重建。
-- `run` 启动时若 CA 不存在则自动生成（但不装信任），打印提示行到 stderr。
+- `run` 启动时若 CA 不存在则自动生成，打印提示行到 stderr（信任安装仍由 certkit 负责）。
+- `--system-proxy` 在运行期间设置 OS 系统代理（macOS networksetup / Windows 注册表 / Linux gsettings），
+  退出时恢复；设置失败不阻止启动。
+- `--trust-local` 对回环上游（127.0.0.1、localhost、::1）跳过证书校验，其他上游仍校验。
+- `--rewrite RULE` 可重复，声明请求/响应改写规则（见下）。
 
 ## 2. 输出
 
@@ -50,6 +55,20 @@ mitmkit --version
 - 上游不可达、证书校验失败、客户端中断：记一条 ERROR flow（或仅 stderr 诊断），不崩溃。
 - 并发连接用虚拟线程（thread-per-connection），无连接数硬上限。
 
+## 3.1 改写规则
+
+`--rewrite RULE` 用分号分隔的键值对声明一条规则，可重复：
+
+| 键 | 含义 | 示例 |
+| --- | --- | --- |
+| `method` | 只改写匹配方法的请求（默认 `*`） | `method:POST` |
+| `url` | URL 包含匹配串；带 `->` 时同时声明替换 | `url:/v1->/v2` |
+| `reqHeader` | 注入请求头（会覆盖同名头） | `reqHeader:X-Debug:1` |
+| `resHeader` | 注入响应头 | `resHeader:X-Mitm:yes` |
+| `replaceBody` | 替换请求/响应体中的子串 | `replaceBody:hello->goodbye` |
+
+规则按声明顺序应用；`url` 替换会影响上游 host/port 的解析。
+
 ## 4. CA
 
 - `mitmkit ca`：生成 ECDSA P-256 根 CA（CN=`mitmkit local CA`，有效期 10 年），
@@ -58,6 +77,14 @@ mitmkit --version
 - 信任安装不在 mitmkit 范围：用 `certkit trust install ~/.mitmkit/ca/ca.crt`。
 
 ## 5. 退出码
+
+| 退出码 | 含义 |
+| --- | --- |
+| `0` | 成功（含 `--help`/`--version`、代理正常退出） |
+| `1` | 业务失败：CA 生成失败、端口占用、上游/证书错误 flow |
+| `2` | 用法错误（参数解析失败由 CliRunner 统一处理） |
+
+交换失败时代理向客户端返回 `502 Bad Gateway`，并记录一条 error flow。
 
 | 退出码 | 含义 |
 | --- | --- |

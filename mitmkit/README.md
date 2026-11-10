@@ -59,9 +59,29 @@ curl -x http://127.0.0.1:8080 --cacert ~/.mitmkit/ca/ca.crt https://example.com/
 | `--host HOST` | Listen address (default `127.0.0.1`; `0.0.0.0` for LAN devices) |
 | `--port PORT` | Listen port (default `8080`) |
 | `--insecure` | Skip upstream certificate verification (self-signed upstreams) |
+| `--trust-local` | Trust loopback upstreams (127.0.0.1, localhost) without verification |
+| `--system-proxy` | Set the OS system proxy while running, restore on exit |
+| `--rewrite RULE` | Rewrite rule, repeatable (see below) |
 | `--body` | Record request and response bodies |
 | `--headers` | Record request and response headers |
 | `--jsonl` | Emit newline-delimited JSON instead of human-readable lines |
+
+### Rewrite rules
+
+`--rewrite` takes a semicolon-separated rule, repeatable:
+
+```bash
+mitmkit run --rewrite 'url:/v1->/v2;reqHeader:X-Debug:1'
+mitmkit run --rewrite 'replaceBody:hello->goodbye'
+```
+
+| Key | Meaning | Example |
+| --- | --- | --- |
+| `method` | Only rewrite matching method (default `*`) | `method:POST` |
+| `url` | URL substring; with `->` also replaces | `url:/v1->/v2` |
+| `reqHeader` | Inject a request header | `reqHeader:X-Debug:1` |
+| `resHeader` | Inject a response header | `resHeader:X-Mitm:yes` |
+| `replaceBody` | Replace a body substring | `replaceBody:hello->goodbye` |
 
 ## 📤 Output
 
