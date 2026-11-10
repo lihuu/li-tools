@@ -1,6 +1,6 @@
 # ==============================================================================
 # li-tools installer for Windows 11 (PowerShell)
-# Installs gpgkit.exe, certkit.exe, tokenkit.exe, skillkit.exe, jsonkit.exe, and dukit.exe to $HOME\.local\bin
+# Installs gpgkit.exe, certkit.exe, tokenkit.exe, skillkit.exe, jsonkit.exe, dukit.exe, and mitmkit.exe to $HOME\.local\bin
 # Usage in PowerShell:
 #   irm https://tools.lihu.me/install.ps1 | iex
 #   .\install.ps1 -Target skillkit -Force
@@ -23,7 +23,7 @@ Usage:
   irm https://tools.lihu.me/install.ps1 | iex
 
 Options:
-  -Target <tool>  Install specific tool (all, gpgkit, certkit, tokenkit, skillkit, jsonkit, dukit) [Default: all]
+  -Target <tool>  Install specific tool (all, gpgkit, certkit, tokenkit, skillkit, jsonkit, dukit, mitmkit) [Default: all]
   -Force          Force reinstallation even if already installed and up to date
   -Help           Show this help message
 "@
@@ -101,6 +101,7 @@ switch ($Target.ToLower()) {
     "skillkit" { Install-Tool "skillkit" }
     "jsonkit" { Install-Tool "jsonkit" }
     "dukit" { Install-Tool "dukit" }
+    "mitmkit" { Install-Tool "mitmkit" }
     default  {
         Install-Tool "gpgkit"
         Install-Tool "certkit"
@@ -108,6 +109,7 @@ switch ($Target.ToLower()) {
         Install-Tool "skillkit"
         Install-Tool "jsonkit"
         Install-Tool "dukit"
+        Install-Tool "mitmkit"
     }
 }
 

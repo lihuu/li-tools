@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # li-tools installer (macOS & Linux)
-# Installs gpgkit, certkit, tokenkit, skillkit, jsonkit, and dukit to ~/.local/bin
+# Installs gpgkit, certkit, tokenkit, skillkit, jsonkit, dukit, and mitmkit to ~/.local/bin
 # Usage:
 #   curl -fsSL https://tools.lihu.me/install.sh | bash
 #   curl -fsSL https://tools.lihu.me/install.sh | bash -s -- gpgkit
@@ -23,13 +23,14 @@ Usage:
   curl -fsSL https://tools.lihu.me/install.sh | bash -s -- [target] [options]
 
 Targets:
-  all                 Install all tools (gpgkit, certkit, tokenkit, skillkit, jsonkit, dukit) [Default]
+  all                 Install all tools (gpgkit, certkit, tokenkit, skillkit, jsonkit, dukit, mitmkit) [Default]
   gpgkit              Install GPG key & signature management CLI
   certkit             Install TLS certificate & local CA management CLI
   tokenkit            Install encrypted universal token manager CLI
   skillkit            Install AI agent skills distribution CLI
   jsonkit             Install JSON formatter and JSONPath query CLI
   dukit               Install cross-platform disk usage analyzer CLI
+  mitmkit             Install local HTTPS MITM proxy CLI
 
 Options:
   --force, -f         Force reinstallation even if already installed and up to date
@@ -48,7 +49,7 @@ while [[ $# -gt 0 ]]; do
       show_help
       exit 0
       ;;
-    gpgkit|certkit|tokenkit|skillkit|jsonkit|dukit|all)
+    gpgkit|certkit|tokenkit|skillkit|jsonkit|dukit|mitmkit|all)
       TARGET="$1"
       shift
       ;;
@@ -150,6 +151,8 @@ case "${TARGET}" in
     ;;
   dukit)
     install_tool "dukit"
+  mitmkit)
+    install_tool "mitmkit"
     ;;
   all)
     install_tool "gpgkit"
@@ -158,6 +161,7 @@ case "${TARGET}" in
     install_tool "skillkit"
     install_tool "jsonkit"
     install_tool "dukit"
+    install_tool "mitmkit"
     ;;
 esac
 

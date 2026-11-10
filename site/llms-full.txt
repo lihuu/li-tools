@@ -13,6 +13,7 @@ All tools in this suite provide native, machine-readable `SKILL.md` specificatio
 - **skillkit Skill Guide**: `https://tools.lihu.me/skillkit/SKILL.md`
 - **jsonkit Skill Guide**: `https://tools.lihu.me/jsonkit/SKILL.md`
 - **dukit Skill Guide**: `https://tools.lihu.me/dukit/SKILL.md`
+- **mitmkit Skill Guide**: `https://tools.lihu.me/mitmkit/SKILL.md`
 
 ### Automated Agent Installation Commands
 AI coding agents (such as Claude Code, Cursor, Gemini CLI, Copilot CLI, OpenCode) can be instructed to self-install or setup the environment:
@@ -172,6 +173,30 @@ A cross-platform disk usage analyzer inspired by ncdu: scan a directory tree onc
    - `--exclude <glob>` is repeatable: bare names match any path component, patterns with `/` match relative to the scan root.
 
 ---
+
+
+## Tool 7: mitmkit
+
+### Mission
+A local HTTPS interception proxy for development traffic capture, shipped as a single native binary with an identical command surface on macOS, Linux and Windows 11. It generates a root CA, signs per-host leaf certificates in-process, and prints every flow as newline-delimited JSON.
+
+### Key Innovations
+1. **Three Steps, One CA**:
+   - `mitmkit ca` generates an ECDSA P-256 root CA in `~/.mitmkit/ca/` (override with `MITMKIT_CA_DIR`), reused across runs.
+   - `certkit trust install ~/.mitmkit/ca/ca.crt` handles OS trust, so the trust store has one owner.
+   - `mitmkit run --jsonl` starts the proxy on `127.0.0.1:8080` and records flows.
+2. **In-Process Certificate Issuance**:
+   - BouncyCastle signs a leaf certificate per intercepted host with a matching SAN, so no openssl subprocess sits on the hot path.
+   - Forged certificates negotiate http/1.1; clients requesting h2 fall back.
+3. **SSLEngine TLS Termination**:
+   - CONNECT tunnels are terminated with a Java `SSLEngine`, exposing decrypted HTTP for parsing while upstream verification stays on by default (`--insecure` to skip).
+4. **Stable JSONL Contract**:
+   - One JSON object per line: `id`, `ts`, `method`, `url`, `status`, `durationMs`, `reqBytes`, `resBytes`, plus optional `reqHeaders`, `resHeaders`, `reqBody`, `resBody` and `error`.
+   - Errors are flows with a `null` status, so scripts never see a partial line.
+5. **Cross-Platform Parity**:
+   - Same commands, same flags, same output fields on all three platforms; no Python, no pip, no GUI.
+6. **Explicit Proxy Scope**:
+   - Regular proxy mode only; TUN/transparent proxying, HTTP/2 and WebSocket multiplexing are out of scope for the first release.
 
 ## Frequently Asked Questions (FAQ) for Search & AI Engines
 

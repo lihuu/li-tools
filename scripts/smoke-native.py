@@ -38,7 +38,7 @@ def main():
     suffix = ".exe" if os.name == "nt" else ""
     binaries = {
         tool: REPOSITORY / tool / "target" / (tool + suffix)
-        for tool in ("gpgkit", "certkit", "tokenkit", "skillkit", "jsonkit", "dukit")
+        for tool in ("gpgkit", "certkit", "tokenkit", "skillkit", "jsonkit", "dukit", "mitmkit")
     }
     for binary in binaries.values():
         if not binary.is_file():
@@ -218,6 +218,42 @@ def main():
         run([dukit, "scan", scan_root, "--text", "--json"], directory, environment, expected=2)
         run([dukit, "browse", str(scan_root)], directory, environment, expected=2)
         print("dukit: scan JSON, depth cut and top ranking PASS", flush=True)
+
+        mitmkit = binaries["mitmkit"]
+        mitmkit_env = dict(environment, MITMKIT_CA_DIR=str(directory / "mitmkit-ca"))
+        ca = json.loads(run([mitmkit, "ca", "--json"], directory, mitmkit_env))
+        assert Path(ca["caCert"]).is_file() and Path(ca["caKey"]).is_file(), ca
+        run([mitmkit, "ca"], directory, mitmkit_env, expected=1)
+        run([mitmkit, "ca", "--force"], directory, mitmkit_env)
+        print("mitmkit: CA generation, JSON metadata and overwrite guard PASS", flush=True)
+
+        import time
+        proxy_port = 18080
+        proxy = subprocess.Popen(
+            [str(mitmkit), "run", "--port", str(proxy_port), "--insecure", "--jsonl"],
+            cwd=directory, env=mitmkit_env, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace",
+        )
+        try:
+            time.sleep(2)
+            result = subprocess.run(
+                ["curl", "-s", "-x", f"http://127.0.0.1:{proxy_port}",
+                 "--cacert", ca["caCert"], "https://example.com/",
+                 "-o", os.devnull, "-w", "%{http_code}", "--max-time", "15"],
+                cwd=directory, env=mitmkit_env, capture_output=True, text=True, timeout=30,
+            )
+            assert result.stdout.strip() == "200", result.stdout + result.stderr
+            proxy.terminate()
+            proxy.wait(timeout=10)
+            flows = [line for line in (proxy.stdout.read() or "").splitlines() if line.startswith("{")]
+            assert flows, "mitmkit should emit at least one JSONL flow"
+            record = json.loads(flows[0])
+            assert record["method"] == "GET" and record["status"] == 200, record
+        finally:
+            if proxy.poll() is None:
+                proxy.terminate()
+                proxy.wait(timeout=10)
+        print("mitmkit: HTTPS interception and JSONL flow PASS", flush=True)
 
 
 if __name__ == "__main__":

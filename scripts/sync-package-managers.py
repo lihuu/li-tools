@@ -49,6 +49,11 @@ DEFAULT_TOOL_METADATA = {
         "homepage": "https://tools.lihu.me/dukit",
         "license": "Apache-2.0",
     },
+    "mitmkit": {
+        "desc": "Local HTTPS MITM proxy for development traffic capture with JSONL output.",
+        "homepage": "https://tools.lihu.me/mitmkit",
+        "license": "Apache-2.0",
+    },
 }
 
 
