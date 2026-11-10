@@ -254,13 +254,15 @@ def main():
         )
         try:
             time.sleep(2)
-            result = subprocess.run(
-                ["curl", "-s", "-x", f"http://127.0.0.1:{proxy_port}", "--noproxy", "",
-                 f"http://127.0.0.1:{upstream_port}/hello",
-                 "-o", os.devnull, "-w", "%{http_code}", "--max-time", "15"],
-                cwd=directory, env=mitmkit_env, capture_output=True, text=True, timeout=30,
-            )
-            assert result.stdout.strip() == "200", result.stdout + result.stderr
+            # Issue the proxied request at the socket level so no machine-level
+            # proxy or no_proxy setting can bypass mitmkit.
+            import http.client
+            connection = http.client.HTTPConnection("127.0.0.1", proxy_port, timeout=15)
+            connection.request("GET", f"http://127.0.0.1:{upstream_port}/hello")
+            response = connection.getresponse()
+            response.read()
+            connection.close()
+            assert response.status == 200, response.status
             proxy.terminate()
             proxy.wait(timeout=10)
             flows = [line for line in (proxy.stdout.read() or "").splitlines() if line.startswith("{")]
