@@ -55,23 +55,35 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * <p>A filesystem that stops answering — a cloud-drive mount whose file provider daemon is
  * unresponsive, a stale network share — blocks directory listings in uninterruptible kernel
- * syscalls, which no Java timeout can cancel. The scan therefore bounds its waits: a forked
- * subdirectory whose work exceeds the directory budget is recorded as an error and skipped,
- * and a scan that makes no progress at all for one budget is aborted instead of hanging
- * forever. The abandoned thread drains whenever the kernel returns; it is never waited on.
+ * syscalls, which no Java timeout can cancel. The scan therefore watches for <em>silence</em>,
+ * not for elapsed time: a subtree that yields no entry at all for one budget is recorded as an
+ * error and skipped, while a directory that keeps producing entries is walked to the end no
+ * matter how long it takes. A scan with no progress anywhere for twice that budget — the root
+ * listing itself stuck, or every worker wedged — is aborted instead of hanging forever. The
+ * abandoned thread drains whenever the kernel returns; it is never waited on.
  */
 public final class DirectoryScanner {
     /** Forks only once a directory holds this many subdirectories. */
     private static final int FORK_THRESHOLD = 4;
     private static final long PROGRESS_INTERVAL_MASK = 0x3FF;
-    /** Default budget for one directory's bounded wait (and for the no-progress watchdog). */
-    private static final long DEFAULT_DIRECTORY_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(10);
-    /** Watchdog poll cadence for the whole-scan root future. */
-    private static final long ROOT_POLL_MILLIS = 200;
+    /**
+     * Default silence tolerated before a subtree is declared stalled. Measured against the last
+     * entry that actually arrived, never against total time, so a large directory on a slow
+     * mount is scanned to the end however long that takes. A healthy listing answers in
+     * microseconds to milliseconds; a couple of silent seconds already means the mount is gone.
+     */
+    private static final long DEFAULT_STALL_BUDGET_NANOS = TimeUnit.SECONDS.toNanos(2);
+    /** Poll cadence while waiting for a child subtree and for the whole-scan root future. */
+    private static final long POLL_MILLIS = 100;
+    /**
+     * The whole-scan watchdog fires later than a single directory does, so the scan gets the
+     * chance to abandon one stalled subtree before the whole walk is declared dead.
+     */
+    private static final int WATCHDOG_MULTIPLE = 2;
 
     private final List<String> excludePatterns;
     private final int parallelism;
-    private final long directoryTimeoutNanos;
+    private final long stallBudgetNanos;
 
     public DirectoryScanner(@NotNull List<String> excludePatterns) {
         this(excludePatterns, 0);
@@ -83,20 +95,20 @@ public final class DirectoryScanner {
      *                    error ordering.
      */
     DirectoryScanner(@NotNull List<String> excludePatterns, int parallelism) {
-        this(excludePatterns, parallelism, DEFAULT_DIRECTORY_TIMEOUT_NANOS);
+        this(excludePatterns, parallelism, DEFAULT_STALL_BUDGET_NANOS);
     }
 
     /**
-     * @param directoryTimeoutNanos budget for one directory's bounded wait and for the
-     *                              no-progress watchdog; must be positive
+     * @param stallBudgetNanos silence tolerated before a subtree counts as stalled, also used
+     *                         as the whole-scan no-progress watchdog; must be positive
      */
-    DirectoryScanner(@NotNull List<String> excludePatterns, int parallelism, long directoryTimeoutNanos) {
-        if (directoryTimeoutNanos <= 0) {
-            throw new IllegalArgumentException("directoryTimeoutNanos must be positive: " + directoryTimeoutNanos);
+    DirectoryScanner(@NotNull List<String> excludePatterns, int parallelism, long stallBudgetNanos) {
+        if (stallBudgetNanos <= 0) {
+            throw new IllegalArgumentException("stallBudgetNanos must be positive: " + stallBudgetNanos);
         }
         this.excludePatterns = List.copyOf(excludePatterns);
         this.parallelism = parallelism;
-        this.directoryTimeoutNanos = directoryTimeoutNanos;
+        this.stallBudgetNanos = stallBudgetNanos;
     }
 
     public @NotNull ScanResult scan(@NotNull Path root, @NotNull ProgressListener listener) throws IOException {
@@ -148,7 +160,7 @@ public final class DirectoryScanner {
         }
 
         Run run = new Run(absolute, nameMatchers, relativeMatchers, listener, buildTree, topLimit, topFiles,
-                directoryTimeoutNanos);
+                stallBudgetNanos);
         if (!Files.isDirectory(absolute)) {
             return run;
         }
@@ -177,12 +189,13 @@ public final class DirectoryScanner {
         try {
             while (true) {
                 try {
-                    return rootTask.get(ROOT_POLL_MILLIS, TimeUnit.MILLISECONDS);
+                    return rootTask.get(POLL_MILLIS, TimeUnit.MILLISECONDS);
                 } catch (TimeoutException tick) {
                     long idle = System.nanoTime() - run.lastActivityNanos();
-                    if (idle >= run.directoryTimeoutNanos()) {
-                        run.recordError(run.root, new IOException("timed out after "
-                                + describeSeconds(run.directoryTimeoutNanos()) + " without progress, scan aborted"));
+                    long watchdogNanos = run.stallBudgetNanos() * WATCHDOG_MULTIPLE;
+                    if (idle >= watchdogNanos) {
+                        run.recordError(run.root, new IOException("stalled after "
+                                + describeSeconds(watchdogNanos) + " without a single entry, scan aborted"));
                         return null;
                     }
                 }
@@ -208,7 +221,7 @@ public final class DirectoryScanner {
         private final ProgressListener listener;
         private final boolean buildTree;
         private final int topFiles;
-        private final long directoryTimeoutNanos;
+        private final long stallBudgetNanos;
         private final StatReader statReader = StatReader.create();
         private final HardlinkSet seenHardlinks = new HardlinkSet();
         private final Set<Object> seenFileKeys = ConcurrentHashMap.newKeySet();
@@ -222,20 +235,20 @@ public final class DirectoryScanner {
 
         Run(@NotNull Path root, @NotNull List<PathMatcher> nameMatchers,
                 @NotNull List<PathMatcher> relativeMatchers, @NotNull ProgressListener listener,
-                boolean buildTree, int topLimit, int topFiles, long directoryTimeoutNanos) {
+                boolean buildTree, int topLimit, int topFiles, long stallBudgetNanos) {
             this.root = root;
             this.nameMatchers = nameMatchers;
             this.relativeMatchers = relativeMatchers;
             this.listener = listener;
             this.buildTree = buildTree;
             this.topFiles = topFiles;
-            this.directoryTimeoutNanos = directoryTimeoutNanos;
+            this.stallBudgetNanos = stallBudgetNanos;
             this.largestFiles = topLimit > 0 ? new TopCollector(topLimit) : null;
             this.largestDirectories = topLimit > 0 ? new TopCollector(topLimit) : null;
         }
 
-        long directoryTimeoutNanos() {
-            return directoryTimeoutNanos;
+        long stallBudgetNanos() {
+            return stallBudgetNanos;
         }
 
         long lastActivityNanos() {
@@ -297,15 +310,34 @@ public final class DirectoryScanner {
     private static final class DirectoryTask extends RecursiveTask<Node> {
         private final Path dir;
         private final Run run;
+        /**
+         * When this subtree last produced an entry. A parent decides that the subtree stalled
+         * from this stamp, never from how long the subtree has been running: a big directory on
+         * a slow mount may legitimately take minutes as long as entries keep arriving.
+         */
+        private final AtomicLong progressNanos = new AtomicLong(System.nanoTime());
+        /** Deepest entry seen, so a stall is reported where it actually happened. */
+        private volatile @Nullable Path lastVisited;
 
         DirectoryTask(@NotNull Path dir, @NotNull Run run) {
             this.dir = dir;
             this.run = run;
         }
 
+        private void markProgress(@NotNull Path viewed) {
+            lastVisited = viewed;
+            progressNanos.set(System.nanoTime());
+        }
+
+        /** Bumps this subtree's stamp without claiming an entry was seen elsewhere. */
+        private void markAlive() {
+            progressNanos.set(System.nanoTime());
+        }
+
         @Override
         protected @Nullable Node compute() {
             run.touch();
+            markProgress(dir);
             Node node = new Node(run.topFiles);
             List<Path> subdirectories = new ArrayList<>();
             FileStat stat = new FileStat();
@@ -332,10 +364,12 @@ public final class DirectoryScanner {
             try {
                 cursor.read(child, stat);
             } catch (IOException failure) {
+                markProgress(child);
                 run.recordError(child, failure);
                 node.errorCount++;
                 return;
             }
+            markProgress(child);
             switch (stat.kind) {
                 case SYMBOLIC_LINK -> {
                     return;
@@ -395,6 +429,8 @@ public final class DirectoryScanner {
             }
             for (Path child : subdirectories) {
                 Node result = new DirectoryTask(child, run).compute();
+                // An inline child reports to its own stamp; pass its liveness up to ours.
+                markAlive();
                 if (result != null) {
                     merge(node, result, child);
                 }
@@ -402,32 +438,62 @@ public final class DirectoryScanner {
         }
 
         /**
-         * Joins this task, but stops waiting after one directory budget: a listing stuck in a
-         * filesystem that never answers (cloud-drive mount, stale network share) would
-         * otherwise hold the whole scan forever. The wedged task is abandoned on its worker
-         * thread; the scan records the directory as an error and keeps its siblings.
+         * Joins this task for as long as it keeps making progress, and gives up once it has been
+         * silent for one budget: a listing stuck in a filesystem that never answers (cloud-drive
+         * mount, stale network share) would otherwise hold the whole scan forever. Total running
+         * time is deliberately irrelevant — only silence counts — so a large directory on a slow
+         * mount is walked to the end. The wedged task is abandoned on its worker thread; the scan
+         * records where it stopped and keeps its siblings.
          */
         private @Nullable Node joinBounded(@NotNull Node parent, @NotNull Path path) {
-            if (isDone()) {
-                return join();
+            long lastSeen = progressNanos.get();
+            while (true) {
+                if (isDone()) {
+                    try {
+                        return get();
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        run.recordError(path, interrupted);
+                        parent.errorCount++;
+                        return null;
+                    } catch (ExecutionException failure) {
+                        run.recordError(path, failure.getCause() != null ? failure.getCause() : failure);
+                        parent.errorCount++;
+                        return null;
+                    }
+                }
+                long seen = progressNanos.get();
+                if (seen != lastSeen) {
+                    lastSeen = seen;
+                    // The subtree is alive; its liveness is this task's liveness too.
+                    markAlive();
+                } else if (System.nanoTime() - lastSeen >= run.stallBudgetNanos()) {
+                    run.recordError(path, new IOException("stalled after "
+                            + describeSeconds(run.stallBudgetNanos()) + " without a single entry"
+                            + lastVisitedSuffix() + ", skipped"));
+                    parent.errorCount++;
+                    return null;
+                }
+                try {
+                    return get(POLL_MILLIS, TimeUnit.MILLISECONDS);
+                } catch (TimeoutException tick) {
+                    // Not done yet, and not silent yet: keep watching the stamp.
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    run.recordError(path, interrupted);
+                    parent.errorCount++;
+                    return null;
+                } catch (ExecutionException failure) {
+                    run.recordError(path, failure.getCause() != null ? failure.getCause() : failure);
+                    parent.errorCount++;
+                    return null;
+                }
             }
-            try {
-                return get(run.directoryTimeoutNanos(), TimeUnit.NANOSECONDS);
-            } catch (TimeoutException timedOut) {
-                run.recordError(path, new IOException("timed out after "
-                        + describeSeconds(run.directoryTimeoutNanos()) + ", skipped"));
-                parent.errorCount++;
-                return null;
-            } catch (InterruptedException interrupted) {
-                Thread.currentThread().interrupt();
-                run.recordError(path, interrupted);
-                parent.errorCount++;
-                return null;
-            } catch (ExecutionException failure) {
-                run.recordError(path, failure.getCause() != null ? failure.getCause() : failure);
-                parent.errorCount++;
-                return null;
-            }
+        }
+
+        private @NotNull String lastVisitedSuffix() {
+            Path visited = lastVisited;
+            return visited == null || visited.equals(dir) ? "" : " (last entry seen: " + visited + ")";
         }
 
         private void merge(@NotNull Node parent, @NotNull Node child, @NotNull Path childPath) {

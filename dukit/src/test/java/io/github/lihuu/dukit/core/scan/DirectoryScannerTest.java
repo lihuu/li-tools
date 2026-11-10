@@ -357,7 +357,7 @@ class DirectoryScannerTest {
 
             assertEquals(1, result.errors().size());
             assertEquals(stallRoot.resolve("cloud"), result.errors().get(0).path());
-            assertTrue(result.errors().get(0).message().contains("timed out"),
+            assertTrue(result.errors().get(0).message().contains("stalled"),
                     "the error names the timeout: " + result.errors().get(0).message());
             assertEquals(40960, result.root().size(), "the readable siblings are still aggregated");
             assertEquals(4, result.root().dirCount());
@@ -415,7 +415,7 @@ class DirectoryScannerTest {
                     assertTimeoutPreemptively(java.time.Duration.ofSeconds(3), () ->
                             new DirectoryScanner(List.of(), 0, java.util.concurrent.TimeUnit.SECONDS.toNanos(1))
                                     .scan(stallRoot, (files, bytes, dir) -> { })));
-            assertTrue(failure.getMessage().contains("timed out"),
+            assertTrue(failure.getMessage().contains("stalled"),
                     "the abort names the timeout: " + failure.getMessage());
         } finally {
             StallFileSystemProvider.unstallAll();
