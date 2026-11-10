@@ -1,8 +1,8 @@
 # li-tools Suite
 
-> li-tools 是一套基于 Java 25 与 GraalVM Native Image 构建的零运行时依赖开发者安全 CLI 套件，原生提供 certkit、dukit、gpgkit、jsonkit、skillkit 与 tokenkit 六个工具，在 macOS、Linux 与 Windows 11 上保持命令级行为一致。
+> li-tools 是一套基于 Java 25 与 GraalVM Native Image 构建的零运行时依赖开发者安全 CLI 套件，原生提供 certkit、dukit、gpgkit、jsonkit、mitmkit、skillkit 与 tokenkit 七个工具，在 macOS、Linux 与 Windows 11 上保持命令级行为一致。
 
-li-tools 由六个可独立安装的原生命令行工具组成，全部以 GraalVM Native Image 编译，发行物为单文件可执行程序，无需安装 JVM、Node.js 或 Python 运行时，冷启动耗时低于 50 毫秒。项目采用 Apache-2.0 开源协议，当前发行版本 0.5.0，源码托管于 GitHub。项目遵循 "Convention over Configuration"（约定优于配置）设计原则与 "Triple-Platform Parity"（三平台一致性）工程目标。
+li-tools 由七个可独立安装的原生命令行工具组成，全部以 GraalVM Native Image 编译，发行物为单文件可执行程序，无需安装 JVM、Node.js 或 Python 运行时，冷启动耗时低于 50 毫秒。项目采用 Apache-2.0 开源协议，当前发行版本 0.5.0，源码托管于 GitHub。项目遵循 "Convention over Configuration"（约定优于配置）设计原则与 "Triple-Platform Parity"（三平台一致性）工程目标。
 
 ## AI Agent Skills (agentskills.io Standard)
 
@@ -13,6 +13,7 @@ All tools in this suite provide native, machine-readable `SKILL.md` documents fo
 - [dukit Skill](https://tools.lihu.me/dukit/SKILL.md): Agent reference for cross-platform disk usage analysis, JSON export, and interactive browsing.
 - [gpgkit Skill](https://tools.lihu.me/gpgkit/SKILL.md): Comprehensive agent reference for GPG key generation, commit signing, and encrypted backup.
 - [jsonkit Skill](https://tools.lihu.me/jsonkit/SKILL.md): Agent reference for JSON formatting, terminal highlighting, RFC 9535 JSONPath selection, and automation-safe output.
+- [mitmkit Skill](https://tools.lihu.me/mitmkit/SKILL.md): Agent reference for local HTTPS interception, automatic root CA, per-host leaf certificates, and JSONL flow capture.
 - [skillkit Skill](https://tools.lihu.me/skillkit/SKILL.md): Comprehensive agent reference for personal skills repository management, 10+ AI agent parallel distribution, and scoped remote Git publishing.
 - [tokenkit Skill](https://tools.lihu.me/tokenkit/SKILL.md): Comprehensive agent reference for encrypted API keys, sub-10ms terminal shell injection, and process isolation.
 
@@ -28,6 +29,7 @@ All tools in this suite provide native, machine-readable `SKILL.md` documents fo
 - [dukit](https://tools.lihu.me/dukit/): Cross-platform disk usage analyzer. ncdu-inspired scanning with actual occupied disk space by default via FFM st_blocks, hardlink deduplication, adaptive ForkJoinPool parallel scan, a directories-only JSON tree by default, bounded streaming top-N rankings, and a full-screen interactive TUI browser with safe Trash deletion and direct file previews across macOS, Linux, and Windows 11.
 - [gpgkit](https://tools.lihu.me/gpgkit/): One command for the whole life of a GPG key. Eliminates key loss during machine migration through automated round-trip loopback verification.
 - [jsonkit](https://tools.lihu.me/jsonkit/): JSON formatter and RFC 9535 JSONPath query CLI. Pretty-prints files or pipes with terminal highlighting, preserves object order and number literals, selects single values or arrays with wildcards, slices, descendant queries and filters, and emits plain JSON whenever stdout is redirected.
+- [mitmkit](https://tools.lihu.me/mitmkit/): Local HTTPS MITM proxy. Automatic root CA, per-host leaf certificate signing, CONNECT tunnel interception, upstream verification with `--insecure` opt-out, and newline-delimited JSON flow capture, identical across macOS, Linux and Windows 11.
 - [skillkit](https://tools.lihu.me/skillkit/): Personal skills repository and parallel multi-agent distribution CLI. Dual content architecture (`skills/` drafts + `skillkit.json` upstream metadata), Java 25 virtual-thread parallel fanout to 10+ AI coding agents, scoped Git push protection, and local customization safeguards with zero npm/npx overhead.
 - [tokenkit](https://tools.lihu.me/tokenkit/): Modern encrypted universal token manager with embedded SQLite. Sub-10ms terminal shell injection (`tokenkit env`), AES-256-GCM + PBKDF2 encryption, child process injection (`tokenkit run`), profile isolation, and password-protected cross-machine migration bundles (`.tkbundle`).
 

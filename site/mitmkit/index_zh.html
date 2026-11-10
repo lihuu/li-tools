@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-Hans" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mitmkit — 本地 HTTPS 抓包代理 CLI</title>
+  <meta name="description" content="一个 native 命令拦截并检查本地 HTTPS 流量。自动生成根 CA、按 host 签发叶子证书，并以 JSONL 记录流量，macOS、Linux、Windows 11 行为一致。">
+  <meta name="keywords" content="mitm 代理, https 抓包, 本地 ca, 开发代理, 流量捕获, jsonl, java 25, graalvm native image, 跨平台">
+  <meta name="author" content="lihuu">
+  <link rel="canonical" href="https://tools.lihu.me/mitmkit/index_zh.html">
+  <link rel="alternate" hreflang="en" href="https://tools.lihu.me/mitmkit/">
+  <link rel="alternate" hreflang="zh-Hans" href="https://tools.lihu.me/mitmkit/index_zh.html">
+  <link rel="alternate" hreflang="x-default" href="https://tools.lihu.me/mitmkit/">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="agent-skill" type="text/markdown" href="https://tools.lihu.me/mitmkit/SKILL.md">
+  <link rel="help" type="text/plain" href="https://tools.lihu.me/llms.txt" title="LLM Context">
+  <meta name="google-site-verification" content="epNE0uQpK-nZdlM1cicMcKft0wK4cvnStftRZS5B8CU">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tools.lihu.me/mitmkit/index_zh.html">
+  <meta property="og:title" content="mitmkit — 本地 HTTPS 抓包代理 CLI">
+  <meta property="og:description" content="native 单文件 HTTPS 抓包代理。自动根 CA、按 host 签发叶子证书、JSONL 流量记录，三平台一致。">
+  <meta property="og:image" content="https://tools.lihu.me/assets/og-image.svg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="mitmkit — 本地 HTTPS 抓包代理 CLI">
+  <meta property="og:site_name" content="li-tools">
+  <meta property="og:locale" content="zh_CN">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="mitmkit — 本地 HTTPS 抓包代理 CLI">
+  <meta name="twitter:description" content="一个 native 命令拦截本地 HTTPS 流量：自动 CA、按 host 签发证书、JSONL 记录。">
+  <meta name="twitter:image" content="https://tools.lihu.me/assets/og-image.svg">
+  <meta name="twitter:image:alt" content="mitmkit — 本地 HTTPS 抓包代理 CLI">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "mitmkit",
+        "applicationCategory": "DeveloperApplication",
+        "softwareVersion": "0.5.0",
+        "codeRepository": "https://github.com/lihuu/li-tools",
+        "programmingLanguage": "Java 25",
+        "runtimePlatform": "GraalVM Native Image",
+        "operatingSystem": "macOS, Linux, Windows 11",
+        "description": "本地 HTTPS 抓包代理，自动根 CA、按 host 签发叶子证书、JSONL 流量记录，三平台一致。",
+        "url": "https://tools.lihu.me/mitmkit/",
+        "image": "https://tools.lihu.me/assets/og-image.svg",
+        "datePublished": "2026-11-10",
+        "dateModified": "2026-11-10",
+        "license": "https://opensource.org/licenses/Apache-2.0",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Person", "name": "lihuu", "url": "https://github.com/lihuu" }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "li-tools", "item": "https://tools.lihu.me/" },
+          { "@type": "ListItem", "position": 2, "name": "mitmkit", "item": "https://tools.lihu.me/mitmkit/" }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "如何用 mitmkit 开始抓取 HTTPS 流量？",
+            "acceptedAnswer": { "@type": "Answer", "text": "先运行 mitmkit ca 生成 CA，用 certkit trust install ~/.mitmkit/ca/ca.crt 安装信任，然后 mitmkit run --jsonl 启动代理。把支持显式代理的客户端指向 127.0.0.1:8080 即可。" }
+          },
+          {
+            "@type": "Question",
+            "name": "为什么 mitmkit 不自己把 CA 装进系统信任库？",
+            "acceptedAnswer": { "@type": "Answer", "text": "信任变更统一由 certkit 负责，系统信任库只有一个Owner。mitmkit 只生成 CA，并提示你该执行的 certkit 命令。" }
+          },
+          {
+            "@type": "Question",
+            "name": "mitmkit 能否不经代理设置透明抓包？",
+            "acceptedAnswer": { "@type": "Answer", "text": "首期不支持。mitmkit 是显式代理：不遵守代理设置的客户端（部分 Go CLI、移动设备）抓不到。TUN/透明模式不在范围内。" }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', accent: '#a855f7' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0b0f19; }
+    .glass-card {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(14, 165, 233, 0.15);
+      transition: all 0.25s ease-in-out;
+    }
+    .glass-card:hover { border-color: rgba(14, 165, 233, 0.35); transform: translateY(-2px); }
+    .hero-glow { background: radial-gradient(circle at 50% 20%, rgba(14, 165, 233, 0.16) 0%, rgba(168, 85, 247, 0.08) 45%, transparent 70%); }
+  </style>
+</head>
+<body class="text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-white relative">
+  <div class="absolute inset-0 hero-glow pointer-events-none h-[600px]"></div>
+
+  <header class="border-b border-slate-800/80 sticky top-0 z-50 bg-[#0b0f19]/80 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="../index_zh.html" class="flex items-center space-x-3">
+        <span class="font-bold text-lg tracking-tight flex items-center gap-2">
+          <span class="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-500 flex items-center justify-center text-xs font-mono font-bold text-white shadow-lg">li</span>
+          li-tools
+        </span>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">mitmkit</span>
+      </a>
+      <nav class="flex items-center space-x-6 text-sm">
+        <a href="#usage" class="text-slate-400 hover:text-white transition">用法</a>
+        <a href="#contract" class="text-slate-400 hover:text-white transition">约定</a>
+        <a href="#install" class="text-slate-400 hover:text-white transition">安装</a>
+        <a href="index.html" class="px-2.5 py-1 text-xs font-mono font-semibold rounded-md bg-slate-800 hover:bg-slate-700 text-sky-300 border border-sky-500/30 transition">🌐 EN</a>
+        <a href="https://github.com/lihuu/li-tools" target="_blank" rel="noopener" class="text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">GitHub ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 pt-20 pb-24">
+    <div class="text-center max-w-3xl mx-auto mb-14">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-800/80 border border-slate-700 text-slate-300 text-xs font-mono mb-6 backdrop-blur">
+        <span>⚡</span> Java 25 • GraalVM Native Image • HTTPS 抓包
+      </div>
+      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+        HTTPS 流量，<br>
+        <span class="bg-gradient-to-r from-sky-400 via-cyan-300 to-indigo-400 bg-clip-text text-transparent">可读。</span>
+      </h1>
+      <p class="text-lg text-slate-400 leading-relaxed">
+        本地抓包代理：自动生成 CA、按 host 签发证书，每条流量输出一行 JSON。
+        一个 native 单文件，macOS、Linux、Windows 行为一致。
+      </p>
+      <div class="mt-8 bg-black/70 rounded-xl p-4 font-mono text-sm text-sky-300 border border-sky-950/70 text-left max-w-xl mx-auto">
+        <div><span class="text-slate-500">$</span> mitmkit ca</div>
+        <div><span class="text-slate-500">$</span> mitmkit run --jsonl</div>
+        <div><span class="text-slate-500">$</span> curl -x http://127.0.0.1:8080 --cacert ~/.mitmkit/ca/ca.crt https://example.com/</div>
+      </div>
+    </div>
+
+    <section id="usage" class="mb-20">
+      <h2 class="text-2xl font-bold mb-6">三步，一个 CA</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="glass-card rounded-2xl p-7">
+          <h3 class="font-bold text-lg text-sky-300 mb-3">1. 生成 CA</h3>
+          <p class="text-sm text-slate-400 leading-relaxed mb-4">一个 ECDSA P-256 根 CA 位于 <code class="text-cyan-300">~/.mitmkit/ca/</code>，跨运行复用，除非 <code class="text-cyan-300">--force</code> 不重建。</p>
+          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-slate-300 overflow-x-auto"><code>$ mitmkit ca --json
+{"caCert":"~/.mitmkit/ca/ca.crt",...}</code></pre>
+        </div>
+        <div class="glass-card rounded-2xl p-7">
+          <h3 class="font-bold text-lg text-cyan-300 mb-3">2. 装一次信任</h3>
+          <p class="text-sm text-slate-400 leading-relaxed mb-4">信任安装统一由 <code class="text-cyan-300">certkit</code> 负责，系统信任库在每个平台只有一个 Owner。</p>
+          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-slate-300 overflow-x-auto"><code>$ certkit trust install \
+    ~/.mitmkit/ca/ca.crt</code></pre>
+        </div>
+        <div class="glass-card rounded-2xl p-7">
+          <h3 class="font-bold text-lg text-indigo-300 mb-3">3. 捕获流量</h3>
+          <p class="text-sm text-slate-400 leading-relaxed mb-4">启动代理后，每个请求在 stdout 输出一行 JSON——可直接喂给 <code class="text-cyan-300">jq</code>、脚本和 agent。</p>
+          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-slate-300 overflow-x-auto"><code>$ mitmkit run --jsonl
+{"id":1,"method":"GET","status":200,...}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-20">
+      <h2 class="text-2xl font-bold mb-6">记录哪些字段</h2>
+      <div class="glass-card rounded-2xl overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-900/80 text-slate-400 font-mono text-xs">
+            <tr><th class="text-left px-5 py-3">字段</th><th class="text-left px-5 py-3">含义</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/80 text-slate-300">
+            <tr><td class="px-5 py-3 font-mono text-sky-300">id, ts</td><td class="px-5 py-3">递增 flow id 与 ISO-8601 时间戳</td></tr>
+            <tr><td class="px-5 py-3 font-mono text-sky-300">method, url</td><td class="px-5 py-3">请求方法与完整 URL</td></tr>
+            <tr><td class="px-5 py-3 font-mono text-sky-300">status</td><td class="px-5 py-3">响应状态码，失败时为 null</td></tr>
+            <tr><td class="px-5 py-3 font-mono text-sky-300">durationMs</td><td class="px-5 py-3">往返耗时（毫秒）</td></tr>
+            <tr><td class="px-5 py-3 font-mono text-sky-300">reqBytes, resBytes</td><td class="px-5 py-3">请求体与响应体大小</td></tr>
+            <tr><td class="px-5 py-3 font-mono text-sky-300">reqHeaders, resHeaders</td><td class="px-5 py-3">请求头与响应头，仅 <code class="text-cyan-300">--headers</code> 时输出</td></tr>
+            <tr><td class="px-5 py-3 font-mono text-sky-300">reqBody, resBody</td><td class="px-5 py-3">请求体与响应体，仅 <code class="text-cyan-300">--body</code> 时输出</td></tr>
+            <tr><td class="px-5 py-3 font-mono text-sky-300">error</td><td class="px-5 py-3">失败信息，仅失败时输出</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-slate-500 mt-3">字段在 macOS、Linux、Windows 上完全一致。错误记为 status 为 null 的 flow，输出始终可机器解析。</p>
+    </section>
+
+    <section id="contract" class="mb-20">
+      <h2 class="text-2xl font-bold mb-6">agent 可信的输出约定</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="font-bold text-base text-white mb-2">脚本用 JSONL</h3>
+          <p class="text-sm text-slate-400 leading-relaxed"><code class="text-sky-300">--jsonl</code> 每行一个 JSON 对象。人类可读行是终端默认；重定向输出始终可解析。</p>
+        </div>
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="font-bold text-base text-white mb-2">仅显式代理</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">常规代理模式：遵守 HTTP 代理设置的客户端会被拦截。首期不含 TUN/透明模式。</p>
+        </div>
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="font-bold text-base text-white mb-2">上游证书校验</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">默认校验上游证书。<code class="text-sky-300">--insecure</code> 跳过校验，用于自签上游场景。</p>
+        </div>
+      </div>
+      <div class="glass-card rounded-2xl overflow-hidden mt-6">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-900/80 text-slate-400 font-mono text-xs">
+            <tr><th class="text-left px-5 py-3">退出码</th><th class="text-left px-5 py-3">含义</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/80 text-slate-300">
+            <tr><td class="px-5 py-3 font-mono text-emerald-400">0</td><td class="px-5 py-3">成功、帮助、版本，或 Ctrl+C 正常退出</td></tr>
+            <tr><td class="px-5 py-3 font-mono text-amber-400">1</td><td class="px-5 py-3">CA 生成失败、端口占用，或交换错误 flow</td></tr>
+            <tr><td class="px-5 py-3 font-mono text-rose-400">2</td><td class="px-5 py-3">CLI 用法错误</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="install" class="mb-20">
+      <h2 class="text-2xl font-bold mb-6">安装单个命令</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="glass-card rounded-2xl p-7">
+          <h3 class="font-bold text-base mb-3">Shell 安装器</h3>
+          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-sky-300 overflow-x-auto"><code>curl -fsSL https://tools.lihu.me/install.sh | bash -s mitmkit
+mitmkit --version</code></pre>
+        </div>
+        <div class="glass-card rounded-2xl p-7">
+          <h3 class="font-bold text-base mb-3">包管理器</h3>
+          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-sky-300 overflow-x-auto"><code>brew install lihuu/tap/mitmkit
+scoop install mitmkit</code></pre>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500 mt-3">正式命令是 <code class="text-sky-300">mitmkit</code>。更短的别名由用户自行设置，安装器不创建。</p>
+    </section>
+
+    <section class="mb-20">
+      <h2 class="text-2xl font-bold mb-6">FAQ</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="font-bold text-base text-white mb-2">为什么不直接用 mitmproxy？</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">mitmproxy 成熟且强大。mitmkit 面向更窄的需求：native 单文件、三平台命令面一致、为脚本和 agent 内置 JSONL 输出。</p>
+        </div>
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="font-bold text-base text-white mb-2">CA 存在哪里？</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">默认 <code class="text-sky-300">~/.mitmkit/ca/</code>，可用 <code class="text-sky-300">MITMKIT_CA_DIR</code> 覆盖。与 certkit 的 CA 相互独立，卸载一个不影响另一个。</p>
+        </div>
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="font-bold text-base text-white mb-2">支持 HTTP/2 或 WebSocket 吗？</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">首期不支持。伪造证书只协商 http/1.1，请求 h2 的客户端回落到 http/1.1。拦截连接上的 WebSocket 升级不受支持。</p>
+        </div>
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="font-bold text-base text-white mb-2">局域网其他设备能用吗？</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">可以。运行 <code class="text-sky-300">mitmkit run --host 0.0.0.0</code>，把设备的代理指向你的机器，并先在设备上安装 CA。</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-800/80 bg-[#070b13] py-12 text-slate-400 text-xs font-mono">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-2">
+        <span class="text-white font-bold">li-tools</span><span>•</span><span>mitmkit</span><span>•</span><span>Apache 2.0 License</span>
+      </div>
+      <div class="flex items-center space-x-6">
+        <a href="https://github.com/lihuu/li-tools" target="_blank" rel="noopener" class="hover:text-white transition">GitHub</a>
+        <a href="../llms.txt" class="hover:text-sky-400 transition">llms.txt</a>
+        <a href="SKILL.md" class="hover:text-sky-400 transition">Agent Skill</a>
+        <a href="../sitemap.xml" class="hover:text-white transition">Sitemap</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

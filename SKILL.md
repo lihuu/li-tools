@@ -1,6 +1,6 @@
 ---
 name: li-tools
-description: Use when managing developer security tooling, GPG commit signing keys (gpgkit), SSL/TLS certificates or local root CAs (certkit), encrypted API tokens/keys (tokenkit), personal AI agent skills distribution (skillkit), JSON formatting and RFC 9535 querying (jsonkit), and cross-platform disk usage analysis (dukit) across macOS, Linux, and Windows 11.
+description: Use when managing developer security tooling, GPG commit signing keys (gpgkit), SSL/TLS certificates or local root CAs (certkit), encrypted API tokens/keys (tokenkit), personal AI agent skills distribution (skillkit), JSON formatting and RFC 9535 querying (jsonkit), cross-platform disk usage analysis (dukit), and local HTTPS traffic interception (mitmkit) across macOS, Linux, and Windows 11.
 ---
 
 # li-tools: Suite AI Agent Skill Guide
@@ -12,6 +12,7 @@ description: Use when managing developer security tooling, GPG commit signing ke
 4. **`skillkit`**: Personal skills repository manager and parallel distribution CLI for 10+ AI coding agents (Claude Code, Codex, Cursor, Gemini CLI, OpenCode, Antigravity, etc.) with zero npm/npx bloat.
 5. **`jsonkit`**: JSON formatter and RFC 9535 JSONPath query CLI: pretty-print files or pipes with terminal highlighting, select single values, wildcard, slice, recursive descent or filter, and emit plain JSON for agents.
 6. **`dukit`**: Cross-platform disk usage analyzer: size-sorted scan reports, machine-readable JSON export, and a line-based interactive browser with identical apparent-size numbers on every OS.
+7. **`mitmkit`**: Local HTTPS interception proxy: automatic root CA, per-host leaf certificates, CONNECT tunnel, upstream verification (`--insecure` to skip), and newline-delimited JSON flow capture.
 
 Use `--help` and `--version` to identify the installed interface. JSON is command-specific. For example, use `certkit check --json`, `dukit scan` (JSON by default), `gpgkit status --json`, `skillkit list --json`, or `tokenkit list --json`. Use `jsonkit -p <path>` to select values from any of those outputs. For secrets, prefer `tokenkit run`; `get` and `env` can emit plaintext.
 
@@ -40,6 +41,8 @@ Use `--help` and `--version` to identify the installed interface. JSON is comman
 | Interactively browse big directories | `dukit browse <path>` | `dukit` |
 | Pretty-print or validate a JSON file or pipe | `jsonkit response.json` | `jsonkit` |
 | Extract one field or many values from JSON | `jsonkit -p "items[?@.status == 'failed'].id" response.json` | `jsonkit` |
+| Inspect local HTTPS traffic | `mitmkit run --jsonl` | `mitmkit` |
+| Generate a local root CA for interception | `mitmkit ca` | `mitmkit` |
 
 ---
 
@@ -48,12 +51,12 @@ Use `--help` and `--version` to identify the installed interface. JSON is comman
 ### 1. One-Shot Agent Prompt
 If an AI agent needs to install the tools in a workspace:
 ```text
-Please install li-tools (gpgkit, certkit, tokenkit, skillkit, jsonkit, dukit):
-- Homebrew (macOS/Linux): `brew tap lihuu/tap && brew install gpgkit certkit tokenkit skillkit jsonkit dukit`
-- Scoop (Windows): `scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install gpgkit certkit tokenkit skillkit jsonkit dukit`
+Please install li-tools (gpgkit, certkit, tokenkit, skillkit, jsonkit, dukit, mitmkit):
+- Homebrew (macOS/Linux): `brew tap lihuu/tap && brew install gpgkit certkit tokenkit skillkit jsonkit dukit mitmkit`
+- Scoop (Windows): `scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket && scoop install gpgkit certkit tokenkit skillkit jsonkit dukit mitmkit`
 - macOS / Linux Shell: `curl -fsSL https://tools.lihu.me/install.sh | bash`
 - Windows PowerShell: `irm https://tools.lihu.me/install.ps1 | iex`
-- Verify with `gpgkit --version`, `certkit --version`, `tokenkit --version`, `skillkit --version`, `jsonkit --version`, and `dukit --version`.
+- Verify with `gpgkit --version`, `certkit --version`, `tokenkit --version`, `skillkit --version`, `jsonkit --version`, `dukit --version`, and `mitmkit --version`.
 ```
 
 ### 2. Install Agent Skills Directly
@@ -75,3 +78,4 @@ irm https://tools.lihu.me/install-skills.ps1 | iex
 - **skillkit Skill**: `https://tools.lihu.me/skillkit/SKILL.md`
 - **jsonkit Skill**: `https://tools.lihu.me/jsonkit/SKILL.md`
 - **dukit Skill**: `https://tools.lihu.me/dukit/SKILL.md`
+- **mitmkit Skill**: `https://tools.lihu.me/mitmkit/SKILL.md`

@@ -1,5 +1,5 @@
 # li-tools AI Agent Skill Installer for Windows PowerShell
-# Installs gpgkit, certkit, tokenkit, skillkit, jsonkit & dukit skills into AI agent skill directories.
+# Installs gpgkit, certkit, tokenkit, skillkit, jsonkit, dukit & mitmkit skills into AI agent skill directories.
 [CmdletBinding()]
 Param(
     [switch]$Default,
@@ -95,9 +95,9 @@ if ($mode -eq "custom") {
 
 $uniqueDirs = $targetDirs | Select-Object -Unique
 
-Write-Host "🤖 Installing li-tools Agent Skills (gpgkit, certkit, tokenkit, skillkit, jsonkit & dukit)..." -ForegroundColor Cyan
+Write-Host "🤖 Installing li-tools Agent Skills (gpgkit, certkit, tokenkit, skillkit, jsonkit, dukit & mitmkit)..." -ForegroundColor Cyan
 
-$skills = @("gpgkit", "certkit", "tokenkit", "skillkit", "jsonkit", "dukit")
+$skills = @("gpgkit", "certkit", "tokenkit", "skillkit", "jsonkit", "dukit", "mitmkit")
 
 $failed = 0
 foreach ($dir in $uniqueDirs) {
@@ -153,4 +153,4 @@ if ($failed -gt 0) {
     exit 1
 }
 Write-Host "✅ All skills installed successfully!" -ForegroundColor Green
-Write-Host "AI coding agents will now automatically recognize and operate gpgkit, certkit, tokenkit, skillkit, jsonkit & dukit." -ForegroundColor Cyan
+Write-Host "AI coding agents will now automatically recognize and operate gpgkit, certkit, tokenkit, skillkit, jsonkit, dukit & mitmkit." -ForegroundColor Cyan

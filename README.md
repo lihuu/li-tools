@@ -26,6 +26,7 @@
 | **[`dukit`](dukit/)** | Cross-platform disk usage analyzer | ncdu-inspired speed, occupied space by default via FFM `st_blocks`, full-screen TUI with Trash delete (`d`) & file preview (`t`), pure streaming JSON tree | `Active` |
 | **[`gpgkit`](gpgkit/)** | Full lifecycle management of GPG keys | Zero runtime dependencies, guaranteed loopback test verification, one-command backup/restore/extend/diagnose | `Active` |
 | **[`jsonkit`](jsonkit/)** | JSON formatter and RFC 9535 query CLI | One-command pretty-print and `-p` selection, terminal-aware highlighting, preserved number literals, stable single-value vs array shapes | `Active` |
+| **[`mitmkit`](mitmkit/)** | Local HTTPS MITM proxy | Automatic root CA, per-host leaf signing, CONNECT tunnel, JSONL flow capture, identical across platforms | `Active` |
 | **[`skillkit`](skillkit/)** | Local agent skill management | Local content + metadata-only upstreams, parallel install/update, personal repository pull/push, shared or selected agent targets | `Active` |
 | **[`tokenkit`](tokenkit/)** | Modern cross-platform encrypted token manager | Embedded encrypted SQLite, AES-256-GCM + PBKDF2, sub-10ms terminal shell injection (`tokenkit env`), cross-machine encrypted migration bundles | `Active` |
 
@@ -62,6 +63,7 @@ li-tools/
 │   ├── dukit/index.html        # dukit landing page
 │   ├── gpgkit/index.html       # gpgkit landing page
 │   ├── jsonkit/index.html      # jsonkit landing page
+│   ├── mitmkit/index.html      # mitmkit landing page
 │   ├── skillkit/index.html     # skillkit landing page
 │   └── tokenkit/index.html     # tokenkit landing page
 ├── certkit/                    # SSL/TLS certificate toolkit (Picocli + OpenSSL orchestration)
@@ -77,6 +79,7 @@ li-tools/
 │   ├── build-native.sh         # GraalVM Native Image compilation script
 │   └── src/
 ├── jsonkit/                    # JSON formatter and RFC 9535 JSONPath query CLI (jackson-core + Treetrail engine)
+├── mitmkit/                    # Local HTTPS MITM proxy (BouncyCastle CA + SSLEngine interception + JSONL)
 │   ├── SPEC.md                 # Contract specifications
 │   ├── build-native.sh         # GraalVM Native Image compilation script
 │   └── src/
@@ -115,13 +118,16 @@ Choose your preferred package manager or installer:
 brew tap lihuu/tap
 
 # Install tools
-brew install certkit dukit gpgkit jsonkit skillkit tokenkit
+brew install certkit dukit gpgkit jsonkit mitmkit skillkit tokenkit
 
 # Or install individually without tapping first:
 brew install lihuu/tap/certkit
 brew install lihuu/tap/dukit
 brew install lihuu/tap/gpgkit
 brew install lihuu/tap/jsonkit
+
+# Or install a single tool directly
+brew install lihuu/tap/mitmkit
 brew install lihuu/tap/skillkit
 brew install lihuu/tap/tokenkit
 ```
@@ -132,7 +138,7 @@ brew install lihuu/tap/tokenkit
 scoop bucket add lihuu https://github.com/lihuu/my-scoop-bucket
 
 # Install tools
-scoop install certkit dukit gpgkit jsonkit skillkit tokenkit
+scoop install certkit dukit gpgkit jsonkit mitmkit skillkit tokenkit
 ```
 
 ### 3. One-Line Script Installer (macOS, Linux & Windows 11)
