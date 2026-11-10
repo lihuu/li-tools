@@ -73,7 +73,7 @@ public final class DirectoryScanner {
     /** How often the watcher re-reads the stamps and checks the queue. */
     private static final long POLL_MILLIS = 100;
     /** Ceiling for replacing workers written off to a stalled syscall. */
-    private static final int MAX_EXTRA_WORKERS = 8;
+    private static final int MAX_EXTRA_WORKERS = 64;
 
     private final List<String> excludePatterns;
     private final int parallelism;
@@ -137,27 +137,22 @@ public final class DirectoryScanner {
     }
 
     private @NotNull Run execute(@NotNull Path root, @NotNull ProgressListener listener,
-            boolean buildTree, int topLimit, int topFiles) throws IOException {
+            boolean buildTree, int topLimit, int topFiles) {
         Path absolute = root.toAbsolutePath().normalize();
         List<PathMatcher> nameMatchers = new ArrayList<>();
         List<PathMatcher> relativeMatchers = new ArrayList<>();
-        if (Files.isDirectory(absolute)) {
-            FileSystem fileSystem = absolute.getFileSystem();
-            for (String pattern : excludePatterns) {
-                PathMatcher matcher = fileSystem.getPathMatcher("glob:" + pattern);
-                if (pattern.indexOf('/') >= 0) {
-                    relativeMatchers.add(matcher);
-                } else {
-                    nameMatchers.add(matcher);
-                }
+        FileSystem fileSystem = absolute.getFileSystem();
+        for (String pattern : excludePatterns) {
+            PathMatcher matcher = fileSystem.getPathMatcher("glob:" + pattern);
+            if (pattern.indexOf('/') >= 0) {
+                relativeMatchers.add(matcher);
+            } else {
+                nameMatchers.add(matcher);
             }
         }
 
         Run run = new Run(absolute, nameMatchers, relativeMatchers, listener, buildTree, topLimit, topFiles,
                 stallBudgetNanos);
-        if (!Files.isDirectory(absolute)) {
-            return run;
-        }
         int workers = parallelism > 0 ? parallelism : Math.max(1, Runtime.getRuntime().availableProcessors() * 2);
         run.start(workers);
         listener.onUpdate(run.fileCount.get(), run.bytesSeen.get(), absolute);
@@ -254,9 +249,20 @@ public final class DirectoryScanner {
                 } else if (idleSince == 0L) {
                     idleSince = now;
                 } else if (now - idleSince >= stallBudgetNanos) {
-                    // Outstanding work exists but nothing is running and nothing is queued:
-                    // every worker is wedged. There is no directory left to skip.
-                    abandon(rootJob, now);
+                    // Every worker including the replacement ceiling is wedged: drain any
+                    // remaining queued directories as skipped so already-scanned subtrees still
+                    // finish, and abort the root only if it still cannot complete.
+                    if (executor != null) {
+                        Runnable queued;
+                        while ((queued = executor.getQueue().poll()) != null) {
+                            if (queued instanceof ScanJob job) {
+                                abandonDirectory(job);
+                            }
+                        }
+                    }
+                    if (done.getCount() > 0) {
+                        abandonDirectory(rootJob);
+                    }
                     return;
                 }
             }
@@ -268,13 +274,14 @@ public final class DirectoryScanner {
                 if (job.isFinished() || now - job.stamp() < stallBudgetNanos) {
                     continue;
                 }
-                abandon(job, now);
-                abandoned = true;
+                if (job.onSilence(now)) {
+                    abandoned = true;
+                }
             }
             return abandoned;
         }
 
-        private void abandon(@Nullable ScanJob job, long now) {
+        private void abandonDirectory(@Nullable ScanJob job) {
             if (job == null) {
                 return;
             }
@@ -404,6 +411,10 @@ public final class DirectoryScanner {
         /** When the last entry arrived, judged only while this listing is in progress. */
         private final AtomicLong stamp = new AtomicLong();
         private volatile @Nullable Path lastVisited;
+        private int activeAttempt;
+        private @Nullable List<Path> entries;
+        private int nextEntry;
+        private @Nullable Path stattingChild;
         private boolean listingDone;
         private @Nullable List<ScanJob> deferred;
         private int deferredErrors;
@@ -418,59 +429,129 @@ public final class DirectoryScanner {
 
         @Override
         public void run() {
-            run.active.add(this);
-            stamp.set(System.nanoTime());
-            try {
-                FileStat stat = new FileStat();
-                try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir);
-                     StatReader.Cursor cursor = run.statReader.open()) {
-                    for (Path child : stream) {
-                        visit(child, cursor, stat);
+            int attempt;
+            List<Path> listed;
+            synchronized (lock) {
+                if (finished.get()) {
+                    return;
+                }
+                attempt = ++activeAttempt;
+                listed = entries;
+                stattingChild = null;
+                stamp.set(System.nanoTime());
+                run.active.add(this);
+            }
+            if (listed == null) {
+                listed = readListing(attempt);
+                if (listed == null) {
+                    return;
+                }
+            }
+            statEntries(attempt, listed);
+        }
+
+        /**
+         * Reads the directory stream into memory before statting any entry. A stall here means
+         * {@link #dir} itself stopped answering; a stall later during {@link #statEntries}
+         * blames only the specific child entry whose attribute read blocked.
+         */
+        private @Nullable List<Path> readListing(int attempt) {
+            List<Path> discovered = new ArrayList<>();
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+                for (Path child : stream) {
+                    if (!isCurrentAttempt(attempt)) {
+                        return null;
                     }
-                } catch (IOException | DirectoryIteratorException failure) {
+                    if (run.excluded(child)) {
+                        stamp.set(System.nanoTime());
+                        continue;
+                    }
+                    stamp.set(System.nanoTime());
+                    lastVisited = child;
+                    discovered.add(child);
+                }
+            } catch (IOException | DirectoryIteratorException failure) {
+                synchronized (lock) {
+                    if (attempt != activeAttempt || finished.get()) {
+                        return null;
+                    }
+                    run.active.remove(this);
                     run.recordError(dir, failure instanceof DirectoryIteratorException iteratorFailure
                             && iteratorFailure.getCause() != null ? iteratorFailure.getCause() : failure);
                     node.errorCount++;
                     if (parent == null) {
                         run.rootUnreadable();
                     }
-                }
-            } finally {
-                run.active.remove(this);
-                synchronized (lock) {
-                    listingDone = true;
-                    node.errorCount += deferredErrors;
-                    if (deferred != null) {
-                        for (ScanJob child : deferred) {
-                            mergeLocked(child);
-                        }
-                        deferred = null;
-                    }
+                    completeOwnListingLocked();
                 }
                 ownListingDone();
+                return null;
+            }
+            synchronized (lock) {
+                if (attempt != activeAttempt || finished.get()) {
+                    return null;
+                }
+                entries = discovered;
+                stamp.set(System.nanoTime());
+                return discovered;
             }
         }
 
-        private void visit(@NotNull Path child, @NotNull StatReader.Cursor cursor, @NotNull FileStat stat) {
-            if (run.excluded(child)) {
-                return;
+        private void statEntries(int attempt, @NotNull List<Path> listed) {
+            FileStat stat = new FileStat();
+            try (StatReader.Cursor cursor = run.statReader.open()) {
+                while (true) {
+                    Path child;
+                    synchronized (lock) {
+                        if (attempt != activeAttempt || finished.get()) {
+                            return;
+                        }
+                        if (nextEntry >= listed.size()) {
+                            stattingChild = null;
+                            run.active.remove(this);
+                            completeOwnListingLocked();
+                            break;
+                        }
+                        child = listed.get(nextEntry++);
+                        stattingChild = child;
+                        lastVisited = child;
+                        stamp.set(System.nanoTime());
+                    }
+                    IOException statFailure = null;
+                    try {
+                        cursor.read(child, stat);
+                    } catch (IOException failure) {
+                        statFailure = failure;
+                    }
+                    Path childDirectory = null;
+                    synchronized (lock) {
+                        if (attempt != activeAttempt || finished.get()) {
+                            return;
+                        }
+                        stattingChild = null;
+                        stamp.set(System.nanoTime());
+                        if (statFailure != null) {
+                            run.recordError(child, statFailure);
+                            node.errorCount++;
+                            continue;
+                        }
+                        childDirectory = applyStatLocked(child, stat);
+                    }
+                    if (childDirectory != null) {
+                        submitChild(childDirectory);
+                    }
+                }
             }
-            stamp.set(System.nanoTime());
-            lastVisited = child;
-            try {
-                cursor.read(child, stat);
-            } catch (IOException failure) {
-                run.recordError(child, failure);
-                node.errorCount++;
-                return;
-            }
+            ownListingDone();
+        }
+
+        private @Nullable Path applyStatLocked(@NotNull Path child, @NotNull FileStat stat) {
             switch (stat.kind) {
                 case SYMBOLIC_LINK, OTHER -> {
-                    return;
+                    return null;
                 }
                 case DIRECTORY -> {
-                    submitChild(child);
-                    return;
+                    return child;
                 }
                 case REGULAR_FILE -> {
                 }
@@ -497,6 +578,60 @@ public final class DirectoryScanner {
                 run.largestFiles.offer(child, size, disk);
             }
             run.progress(child);
+            return null;
+        }
+
+        private void completeOwnListingLocked() {
+            listingDone = true;
+            node.errorCount += deferredErrors;
+            if (deferred != null) {
+                for (ScanJob child : deferred) {
+                    mergeLocked(child);
+                }
+                deferred = null;
+            }
+        }
+
+        private boolean isCurrentAttempt(int attempt) {
+            synchronized (lock) {
+                return attempt == activeAttempt && !finished.get();
+            }
+        }
+
+        /**
+         * Invoked by the watcher when this job has stayed silent for one budget. If the job was
+         * already statting an individual child entry, only that child is abandoned and a
+         * replacement worker resumes the remaining entries; otherwise the directory listing
+         * itself is abandoned.
+         */
+        boolean onSilence(long now) {
+            Path stalledChild;
+            synchronized (lock) {
+                if (finished.get() || now - stamp.get() < run.stallBudgetNanos) {
+                    return false;
+                }
+                activeAttempt++;
+                stalledChild = stattingChild;
+                stattingChild = null;
+                run.active.remove(this);
+                if (entries != null && stalledChild != null) {
+                    node.errorCount++;
+                    stamp.set(now);
+                }
+            }
+            if (stalledChild == null) {
+                run.abandonDirectory(this);
+                return true;
+            }
+            run.recordError(stalledChild, new IOException("stalled after "
+                    + describeSeconds(run.stallBudgetNanos) + " without a single entry, skipped"));
+            run.replaceLostWorker();
+            try {
+                run.submit(this);
+            } catch (RejectedExecutionException scanOver) {
+                abandon();
+            }
+            return true;
         }
 
         private void submitChild(@NotNull Path child) {
