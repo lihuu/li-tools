@@ -11,6 +11,8 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -27,6 +29,7 @@ import java.nio.file.attribute.BasicFileAttributes;
  * the same entries.
  */
 final class NativeStatReader implements StatReader {
+    private static final FileSystem DEFAULT_FILE_SYSTEM = FileSystems.getDefault();
     private static final int MODE_TYPE_MASK = 0170000;
     private static final int MODE_DIRECTORY = 0040000;
     private static final int MODE_REGULAR = 0100000;
@@ -79,6 +82,12 @@ final class NativeStatReader implements StatReader {
 
         @Override
         public void read(@NotNull Path path, @NotNull FileStat stat) throws IOException {
+            if (path.getFileSystem() != DEFAULT_FILE_SYSTEM) {
+                BasicFileAttributes attributes = Files.readAttributes(
+                        path, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+                NioStatReader.fill(stat, attributes);
+                return;
+            }
             byte[] encoded = path.toString().getBytes(StandardCharsets.UTF_8);
             int required = encoded.length + 1;
             if (required > pathBuffer.byteSize()) {

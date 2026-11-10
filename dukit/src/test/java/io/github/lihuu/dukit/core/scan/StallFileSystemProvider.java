@@ -43,6 +43,7 @@ public final class StallFileSystemProvider extends FileSystemProvider {
     private static final long STALL_MILLIS = TimeUnit.SECONDS.toMillis(3);
 
     private static final Set<String> STALLED_DIRECTORIES = ConcurrentHashMap.newKeySet();
+    private static final Set<String> STALLED_ATTRIBUTES = ConcurrentHashMap.newKeySet();
     private static final Map<String, Long> TRICKLING_DIRECTORIES = new ConcurrentHashMap<>();
     private static final Map<String, StallFileSystem> FILE_SYSTEMS = new HashMap<>();
     private static final String SCHEME = "stall";
@@ -74,6 +75,14 @@ public final class StallFileSystemProvider extends FileSystemProvider {
     }
 
     /**
+     * Marks a {@code stall:} path so that reading its attributes ({@code lstat} /
+     * {@code Files.readAttributes}) blocks like a dead mount point inside a healthy parent.
+     */
+    static void stallAttributes(@NotNull Path stallPath) {
+        STALLED_ATTRIBUTES.add(stallPath.toString());
+    }
+
+    /**
      * Makes a {@code stall:} path list its real entries with a pause before each one — a slow
      * mount that keeps making progress, which must never be mistaken for a stalled one.
      */
@@ -83,6 +92,7 @@ public final class StallFileSystemProvider extends FileSystemProvider {
 
     static void unstallAll() {
         STALLED_DIRECTORIES.clear();
+        STALLED_ATTRIBUTES.clear();
         TRICKLING_DIRECTORIES.clear();
     }
 
@@ -159,6 +169,10 @@ public final class StallFileSystemProvider extends FileSystemProvider {
     @Override
     public <A extends java.nio.file.attribute.BasicFileAttributes> A readAttributes(@NotNull Path path,
             @NotNull Class<A> type, @NotNull LinkOption... options) throws IOException {
+        if (STALLED_ATTRIBUTES.contains(path.toString())) {
+            blockLikeAStalledMount();
+            throw new IOException("simulated stalled attribute read: " + path);
+        }
         return FileSystems.getDefault().provider().readAttributes(unwrap(path), type, options);
     }
 
