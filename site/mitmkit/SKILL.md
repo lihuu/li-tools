@@ -63,10 +63,14 @@ Bare `mitmkit` is equivalent to `mitmkit run`. The process runs until Ctrl+C.
 ### 3. Trust the CA
 
 ```bash
+mitmkit run --install-trust
+# or, using certkit:
 certkit trust install ~/.mitmkit/ca/ca.crt
 ```
 
-`mitmkit` never modifies the system trust store; use `certkit` for trust changes.
+`--install-trust` writes the CA into the OS trust store (login keychain on macOS,
+CurrentUser Root on Windows, anchors on Linux) and needs admin rights. Failure
+prints a copy-pasteable command instead of stopping the proxy.
 
 ### 4. Send traffic through the proxy
 

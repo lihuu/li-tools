@@ -13,9 +13,9 @@
 ## 1. 命令接口
 
 ```text
-mitmkit [run] [--port PORT] [--host HOST] [--insecure] [--trust-local] [--system-proxy]
-                [--url URL] [--header NAME:VALUE]... [--cookie NAME=VALUE]... [--body BODY]
-                [--response-header NAME:VALUE]... [--response-body BODY] [--match SUBSTR]
+mitmkit [run] [--port PORT] [--host HOST] [--insecure] [--trust-local] [--install-trust]
+                [--system-proxy] [--url URL] [--header NAME:VALUE]... [--cookie NAME=VALUE]...
+                [--body BODY] [--response-header NAME:VALUE]... [--response-body BODY] [--match SUBSTR]
                 [--rewrite RULE]... [--record-body] [--record-headers] [--jsonl] [--json] [--no-color]
 mitmkit ca [--force] [--json]
 mitmkit --help
@@ -28,6 +28,8 @@ mitmkit --version
   CA 独立于 certkit（不共用 `~/.certkit`），卸载互不影响。
 - `ca` 子命令生成/检查 CA，不装系统信任；已存在时默认拒绝（返回 `1` 并提示），`--force` 重建。
 - `run` 启动时若 CA 不存在则自动生成，打印提示行到 stderr（信任安装仍由 certkit 负责）。
+- `--install-trust` 把 CA 装进系统信任库（macOS 登录钥匙串 / Windows certutil / Linux anchors），
+  需要管理员权限；失败时打印可复制的补救命令，不阻止启动。
 - `--system-proxy` 在运行期间设置 OS 系统代理（macOS networksetup / Windows 注册表 / Linux gsettings），
   退出时恢复；设置失败不阻止启动。
 - `--trust-local` 对回环上游（127.0.0.1、localhost、::1）跳过证书校验，其他上游仍校验。

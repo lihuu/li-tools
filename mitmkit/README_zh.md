@@ -60,6 +60,7 @@ curl -x http://127.0.0.1:8080 --cacert ~/.mitmkit/ca/ca.crt https://example.com/
 | `--port PORT` | 监听端口（默认 `8080`） |
 | `--insecure` | 跳过上游证书校验（自签上游场景） |
 | `--trust-local` | 对回环上游（127.0.0.1、localhost）跳过校验 |
+| `--install-trust` | 把 CA 装进系统信任库（需要管理员权限） |
 | `--system-proxy` | 运行期间设置系统代理，退出时恢复 |
 | `--url URL` | 把请求 URL 整体替换为 URL |
 | `--header NAME:VALUE` | 追加或替换请求头（可重复） |

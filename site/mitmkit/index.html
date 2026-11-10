@@ -168,9 +168,8 @@
         </div>
         <div class="glass-card rounded-2xl p-7">
           <h3 class="font-bold text-lg text-cyan-300 mb-3">2. Trust it once</h3>
-          <p class="text-sm text-slate-400 leading-relaxed mb-4">Trust installation stays in <code class="text-cyan-300">certkit</code>, so the OS trust store has a single owner on every platform.</p>
-          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-slate-300 overflow-x-auto"><code>$ certkit trust install \
-    ~/.mitmkit/ca/ca.crt</code></pre>
+          <p class="text-sm text-slate-400 leading-relaxed mb-4"><code class="text-cyan-300">mitmkit run --install-trust</code> writes the CA into the OS trust store (login keychain, CurrentUser Root or anchors). Or use <code class="text-cyan-300">certkit trust install</code>.</p>
+          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-slate-300 overflow-x-auto"><code>$ mitmkit run --install-trust</code></pre>
         </div>
         <div class="glass-card rounded-2xl p-7">
           <h3 class="font-bold text-lg text-indigo-300 mb-3">3. Capture flows</h3>

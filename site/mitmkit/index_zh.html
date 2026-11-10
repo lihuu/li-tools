@@ -168,9 +168,8 @@
         </div>
         <div class="glass-card rounded-2xl p-7">
           <h3 class="font-bold text-lg text-cyan-300 mb-3">2. 装一次信任</h3>
-          <p class="text-sm text-slate-400 leading-relaxed mb-4">信任安装统一由 <code class="text-cyan-300">certkit</code> 负责，系统信任库在每个平台只有一个 Owner。</p>
-          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-slate-300 overflow-x-auto"><code>$ certkit trust install \
-    ~/.mitmkit/ca/ca.crt</code></pre>
+          <p class="text-sm text-slate-400 leading-relaxed mb-4"><code class="text-cyan-300">mitmkit run --install-trust</code> 把 CA 写进系统信任库（登录钥匙串、CurrentUser Root 或 anchors）。也可用 <code class="text-cyan-300">certkit trust install</code>。</p>
+          <pre class="bg-black/60 rounded-xl p-4 font-mono text-xs text-slate-300 overflow-x-auto"><code>$ mitmkit run --install-trust</code></pre>
         </div>
         <div class="glass-card rounded-2xl p-7">
           <h3 class="font-bold text-lg text-indigo-300 mb-3">3. 捕获流量</h3>

@@ -9,6 +9,7 @@ import io.github.lihuu.mitmkit.core.FlowRecorder;
 import io.github.lihuu.mitmkit.core.ProxyServer;
 import io.github.lihuu.mitmkit.core.RewriteRule;
 import io.github.lihuu.mitmkit.core.SystemProxy;
+import io.github.lihuu.mitmkit.core.TrustStore;
 import org.jetbrains.annotations.NotNull;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -33,6 +34,9 @@ public final class RunCommand extends CliCommand.Action {
 
     @Option(names = "--trust-local", description = "Trust loopback upstreams (127.0.0.1, localhost) without verification")
     boolean trustLocal;
+
+    @Option(names = "--install-trust", description = "Install the CA into the OS trust store (needs admin rights)")
+    boolean installTrust;
 
     @Option(names = "--rewrite", description = "Advanced rewrite rule (semicolon-separated key:value pairs). "
             + "Repeatable. For simple whole-value replacement prefer --url/--header/--body.")
@@ -86,7 +90,18 @@ public final class RunCommand extends CliCommand.Action {
                 err().println("Generating local CA at " + caDir);
             }
             authority.ensureCa();
-            if (!caExisted) {
+            if (installTrust) {
+                TrustStore trust = new TrustStore();
+                TrustStore.TrustResult result = trust.install(caDir.resolve("ca.crt"));
+                if (result.success()) {
+                    err().println("Trust installed: " + result.message());
+                } else {
+                    err().println("Could not install trust: " + result.message());
+                    if (result.suggestedCommand() != null) {
+                        err().println("Run: " + result.suggestedCommand());
+                    }
+                }
+            } else if (!caExisted) {
                 err().println("Install trust once with: certkit trust install " + caDir.resolve("ca.crt"));
             }
 

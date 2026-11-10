@@ -60,6 +60,7 @@ curl -x http://127.0.0.1:8080 --cacert ~/.mitmkit/ca/ca.crt https://example.com/
 | `--port PORT` | Listen port (default `8080`) |
 | `--insecure` | Skip upstream certificate verification (self-signed upstreams) |
 | `--trust-local` | Trust loopback upstreams (127.0.0.1, localhost) without verification |
+| `--install-trust` | Install the CA into the OS trust store (needs admin rights) |
 | `--system-proxy` | Set the OS system proxy while running, restore on exit |
 | `--url URL` | Replace the request URL with this whole value |
 | `--header NAME:VALUE` | Append or replace a request header (repeatable) |
