@@ -19,6 +19,7 @@
         <module>skillkit</module>
         <module>jsonkit</module>
         <module>dukit</module>
+        <module>mitmkit</module>
     </modules>
 
         <properties>
@@ -28,6 +29,7 @@
             <junit.jupiter.version>5.11.4</junit.jupiter.version>
             <picocli.version>4.7.6</picocli.version>
             <jackson.version>2.20.1</jackson.version>
+            <bouncycastle.version>1.81</bouncycastle.version>
             <annotations.version>26.0.2</annotations.version>
             <notnull-maven-plugin.version>1.0.0</notnull-maven-plugin.version>
             <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
@@ -58,6 +60,21 @@
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
                 <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcutil-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jetbrains</groupId>
