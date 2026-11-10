@@ -334,6 +334,214 @@ class DirectoryScannerTest {
         assertThrows(IOException.class, () -> new DirectoryScanner(List.of()).top(missing, 5, (files, bytes, dir) -> { }));
     }
 
+    @Test
+    void scanSkipsADirectoryWhoseListingStallsAndKeepsItsSiblings() throws IOException {
+        Path realRoot = Files.createDirectories(temporary.resolve("stallskip"));
+        // Sizes differ by at least one block so the children sort by occupied size.
+        for (int index = 1; index <= 4; index++) {
+            Path fine = realRoot.resolve("fine" + index);
+            Files.createDirectories(fine);
+            Files.writeString(fine.resolve("f.bin"), "x".repeat(index * 4096), StandardCharsets.US_ASCII);
+        }
+        Files.createDirectories(realRoot.resolve("cloud"));
+
+        StallFileSystem stallSystem = StallFileSystemProvider.mount();
+        Path stallRoot = stallSystem.getPath(realRoot.toString());
+        StallFileSystemProvider.stallDirectory(stallRoot.resolve("cloud"));
+        try {
+            // A listing that blocks must not hold the scan hostage: after the per-directory
+            // budget the directory is recorded as an error and its siblings are kept.
+            ScanResult result = assertTimeoutPreemptively(java.time.Duration.ofSeconds(3), () ->
+                    new DirectoryScanner(List.of(), 0, java.util.concurrent.TimeUnit.SECONDS.toNanos(1))
+                            .scan(stallRoot, (files, bytes, dir) -> { }));
+
+            assertEquals(1, result.errors().size(), "one stalled directory, one error: " + result.errors());
+            assertEquals(stallRoot.resolve("cloud"), result.errors().get(0).path());
+            assertTrue(result.errors().get(0).message().contains("stalled"),
+                    "the error names the timeout: " + result.errors().get(0).message());
+            assertEquals(40960, result.root().size(), "the readable siblings are still aggregated");
+            assertEquals(4, result.root().dirCount());
+            assertEquals(1, result.root().errorCount());
+            assertEquals(List.of("fine4", "fine3", "fine2", "fine1"), names(result.root()),
+                    "the stalled directory is not part of the tree");
+        } finally {
+            StallFileSystemProvider.unstallAll();
+        }
+    }
+
+    @Test
+    void scanKeepsADirectoryThatIsSlowButNeverSilent() throws IOException {
+        Path realRoot = Files.createDirectories(temporary.resolve("trickle"));
+        for (int index = 1; index <= 4; index++) {
+            Path fine = realRoot.resolve("fine" + index);
+            Files.createDirectories(fine);
+            Files.writeString(fine.resolve("f.bin"), "x".repeat(index * 4096), StandardCharsets.US_ASCII);
+        }
+        Path slow = Files.createDirectories(realRoot.resolve("slow"));
+        for (int index = 0; index < 20; index++) {
+            Files.writeString(slow.resolve("f" + index + ".bin"), "x".repeat(4096), StandardCharsets.US_ASCII);
+        }
+
+        StallFileSystem stallSystem = StallFileSystemProvider.mount();
+        Path stallRoot = stallSystem.getPath(realRoot.toString());
+        // 20 entries × 100 ms = 2 s of work, twice the budget, but never one silent 1 s:
+        // a mount that keeps producing results must not be mistaken for a dead one.
+        StallFileSystemProvider.trickleDirectory(stallRoot.resolve("slow"), 100);
+        try {
+            ScanResult result = assertTimeoutPreemptively(java.time.Duration.ofSeconds(20), () ->
+                    new DirectoryScanner(List.of(), 0, java.util.concurrent.TimeUnit.SECONDS.toNanos(1))
+                            .scan(stallRoot, (files, bytes, dir) -> { }));
+
+            assertTrue(result.errors().isEmpty(), "a progressing listing is not a stall: " + result.errors());
+            DirEntry slowEntry = child(result.root(), "slow");
+            assertEquals(20, slowEntry.fileCount(), "every trickled file is counted");
+            assertEquals(20L * 4096, slowEntry.size());
+            assertEquals(0, result.root().errorCount());
+        } finally {
+            StallFileSystemProvider.unstallAll();
+        }
+    }
+
+    @Test
+    void scanKeepsHealthySiblingsWhenWorkersAreScarce() throws IOException {
+        // Regression: with few workers, the thread that waits for a child could end up running
+        // the stalled child itself, and queued siblings could be judged by a stamp that never
+        // moved because their turn had not come. Both reported healthy directories as stalled.
+        Path realRoot = Files.createDirectories(temporary.resolve("scarce"));
+        for (int index = 1; index <= 4; index++) {
+            Path fine = realRoot.resolve("fine" + index);
+            Files.createDirectories(fine);
+            Files.writeString(fine.resolve("f.bin"), "x".repeat(index * 4096), StandardCharsets.US_ASCII);
+        }
+        Files.createDirectories(realRoot.resolve("cloud"));
+
+        StallFileSystem stallSystem = StallFileSystemProvider.mount();
+        Path stallRoot = stallSystem.getPath(realRoot.toString());
+        StallFileSystemProvider.stallDirectory(stallRoot.resolve("cloud"));
+        try {
+            ScanResult result = assertTimeoutPreemptively(java.time.Duration.ofSeconds(10), () ->
+                    new DirectoryScanner(List.of(), 2, java.util.concurrent.TimeUnit.SECONDS.toNanos(1))
+                            .scan(stallRoot, (files, bytes, dir) -> { }));
+
+            assertEquals(1, result.errors().size(), "only the stalled directory fails: " + result.errors());
+            assertEquals(stallRoot.resolve("cloud"), result.errors().get(0).path());
+            assertEquals(40960, result.root().size(), "every healthy sibling is counted");
+            assertEquals(4, result.root().dirCount());
+            assertEquals(List.of("fine4", "fine3", "fine2", "fine1"), names(result.root()));
+        } finally {
+            StallFileSystemProvider.unstallAll();
+        }
+    }
+
+    @Test
+    void scanAbortsWhenTheRootListingStalls() throws IOException {
+        Path realRoot = Files.createDirectories(temporary.resolve("stallroot"));
+        Files.writeString(realRoot.resolve("never-listed.txt"), "x", StandardCharsets.US_ASCII);
+
+        StallFileSystem stallSystem = StallFileSystemProvider.mount();
+        Path stallRoot = stallSystem.getPath(realRoot.toString());
+        StallFileSystemProvider.stallDirectory(stallRoot);
+        try {
+            IOException failure = assertThrows(IOException.class, () ->
+                    assertTimeoutPreemptively(java.time.Duration.ofSeconds(3), () ->
+                            new DirectoryScanner(List.of(), 0, java.util.concurrent.TimeUnit.SECONDS.toNanos(1))
+                                    .scan(stallRoot, (files, bytes, dir) -> { })));
+            assertTrue(failure.getMessage().contains("stalled"),
+                    "the abort names the timeout: " + failure.getMessage());
+        } finally {
+            StallFileSystemProvider.unstallAll();
+        }
+    }
+
+    @Test
+    void scanSkipsAnEntryWhoseStatStallsAndKeepsItsSiblings() throws IOException {
+        // A dead mount point inside a healthy parent directory (~/cloud inside ~) lets the
+        // parent's readdir succeed, then blocks lstat / readAttributes on that entry. Only
+        // the stalled entry may be skipped; the parent and its healthy siblings must survive.
+        Path realRoot = Files.createDirectories(temporary.resolve("stallstat"));
+        for (int index = 1; index <= 4; index++) {
+            Path fine = realRoot.resolve("fine" + index);
+            Files.createDirectories(fine);
+            Files.writeString(fine.resolve("f.bin"), "x".repeat(index * 4096), StandardCharsets.US_ASCII);
+        }
+        Files.createDirectories(realRoot.resolve("cloud"));
+
+        StallFileSystem stallSystem = StallFileSystemProvider.mount();
+        Path stallRoot = stallSystem.getPath(realRoot.toString());
+        StallFileSystemProvider.stallAttributes(stallRoot.resolve("cloud"));
+        try {
+            ScanResult result = assertTimeoutPreemptively(java.time.Duration.ofSeconds(3), () ->
+                    new DirectoryScanner(List.of(), 0, java.util.concurrent.TimeUnit.SECONDS.toNanos(1))
+                            .scan(stallRoot, (files, bytes, dir) -> { }));
+
+            assertEquals(1, result.errors().size(), "only the entry whose stat stalled fails: " + result.errors());
+            assertEquals(stallRoot.resolve("cloud"), result.errors().get(0).path());
+            assertTrue(result.errors().get(0).message().contains("stalled"),
+                    "the error names the timeout: " + result.errors().get(0).message());
+            assertEquals(40960, result.root().size(), "every healthy sibling is still aggregated");
+            assertEquals(4, result.root().dirCount());
+            assertEquals(1, result.root().errorCount());
+            assertEquals(List.of("fine4", "fine3", "fine2", "fine1"), names(result.root()));
+        } finally {
+            StallFileSystemProvider.unstallAll();
+        }
+    }
+
+    @Test
+    void scanAbortsWhenStattingTheRootStalls() throws IOException {
+        Path realRoot = Files.createDirectories(temporary.resolve("stallrootstat"));
+        Files.writeString(realRoot.resolve("never-listed.txt"), "x", StandardCharsets.US_ASCII);
+
+        StallFileSystem stallSystem = StallFileSystemProvider.mount();
+        Path stallRoot = stallSystem.getPath(realRoot.toString());
+        StallFileSystemProvider.stallAttributes(stallRoot);
+        StallFileSystemProvider.stallDirectory(stallRoot);
+        try {
+            // Statting the root on the calling thread before the watcher starts would wait out
+            // the full mount hang; every filesystem touch must stay under the stall budget.
+            IOException failure = assertThrows(IOException.class, () ->
+                    assertTimeoutPreemptively(java.time.Duration.ofSeconds(2), () ->
+                            new DirectoryScanner(List.of(), 0, java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(300))
+                                    .scan(stallRoot, (files, bytes, dir) -> { })));
+            assertTrue(failure.getMessage().contains("stalled"),
+                    "the abort names the timeout: " + failure.getMessage());
+        } finally {
+            StallFileSystemProvider.unstallAll();
+        }
+    }
+
+    @Test
+    void scanKeepsHealthySiblingsWhenManyDirectoriesStall() throws IOException {
+        Path realRoot = Files.createDirectories(temporary.resolve("manystalled"));
+        for (int index = 1; index <= 4; index++) {
+            Path fine = realRoot.resolve("fine" + index);
+            Files.createDirectories(fine);
+            Files.writeString(fine.resolve("f.bin"), "x".repeat(index * 4096), StandardCharsets.US_ASCII);
+        }
+        for (int index = 1; index <= 12; index++) {
+            Files.createDirectories(realRoot.resolve("cloud" + index));
+        }
+
+        StallFileSystem stallSystem = StallFileSystemProvider.mount();
+        Path stallRoot = stallSystem.getPath(realRoot.toString());
+        for (int index = 1; index <= 12; index++) {
+            StallFileSystemProvider.stallDirectory(stallRoot.resolve("cloud" + index));
+        }
+        try {
+            ScanResult result = assertTimeoutPreemptively(java.time.Duration.ofSeconds(10), () ->
+                    new DirectoryScanner(List.of(), 2, java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(200))
+                            .scan(stallRoot, (files, bytes, dir) -> { }));
+
+            assertEquals(12, result.errors().size(), "every stalled directory is reported: " + result.errors());
+            assertEquals(40960, result.root().size(), "healthy siblings survive past the old worker cap");
+            assertEquals(4, result.root().dirCount());
+            assertEquals(12, result.root().errorCount());
+            assertEquals(List.of("fine4", "fine3", "fine2", "fine1"), names(result.root()));
+        } finally {
+            StallFileSystemProvider.unstallAll();
+        }
+    }
+
     private Path tree(String name) throws IOException {
         Path root = temporary.resolve(name);
         Files.createDirectories(root.resolve("a/sub"));
