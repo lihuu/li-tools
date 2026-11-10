@@ -370,6 +370,39 @@ class DirectoryScannerTest {
     }
 
     @Test
+    void scanKeepsADirectoryThatIsSlowButNeverSilent() throws IOException {
+        Path realRoot = Files.createDirectories(temporary.resolve("trickle"));
+        for (int index = 1; index <= 4; index++) {
+            Path fine = realRoot.resolve("fine" + index);
+            Files.createDirectories(fine);
+            Files.writeString(fine.resolve("f.bin"), "x".repeat(index * 4096), StandardCharsets.US_ASCII);
+        }
+        Path slow = Files.createDirectories(realRoot.resolve("slow"));
+        for (int index = 0; index < 20; index++) {
+            Files.writeString(slow.resolve("f" + index + ".bin"), "x".repeat(4096), StandardCharsets.US_ASCII);
+        }
+
+        StallFileSystem stallSystem = StallFileSystemProvider.mount();
+        Path stallRoot = stallSystem.getPath(realRoot.toString());
+        // 20 entries × 100 ms = 2 s of work, twice the budget, but never one silent 1 s:
+        // a mount that keeps producing results must not be mistaken for a dead one.
+        StallFileSystemProvider.trickleDirectory(stallRoot.resolve("slow"), 100);
+        try {
+            ScanResult result = assertTimeoutPreemptively(java.time.Duration.ofSeconds(20), () ->
+                    new DirectoryScanner(List.of(), 0, java.util.concurrent.TimeUnit.SECONDS.toNanos(1))
+                            .scan(stallRoot, (files, bytes, dir) -> { }));
+
+            assertTrue(result.errors().isEmpty(), "a progressing listing is not a stall: " + result.errors());
+            DirEntry slowEntry = child(result.root(), "slow");
+            assertEquals(20, slowEntry.fileCount(), "every trickled file is counted");
+            assertEquals(20L * 4096, slowEntry.size());
+            assertEquals(0, result.root().errorCount());
+        } finally {
+            StallFileSystemProvider.unstallAll();
+        }
+    }
+
+    @Test
     void scanAbortsWhenTheRootListingStalls() throws IOException {
         Path realRoot = Files.createDirectories(temporary.resolve("stallroot"));
         Files.writeString(realRoot.resolve("never-listed.txt"), "x", StandardCharsets.US_ASCII);

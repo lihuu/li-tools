@@ -43,6 +43,7 @@ public final class StallFileSystemProvider extends FileSystemProvider {
     private static final long STALL_MILLIS = TimeUnit.SECONDS.toMillis(5);
 
     private static final Set<String> STALLED_DIRECTORIES = ConcurrentHashMap.newKeySet();
+    private static final Map<String, Long> TRICKLING_DIRECTORIES = new ConcurrentHashMap<>();
     private static final Map<String, StallFileSystem> FILE_SYSTEMS = new HashMap<>();
     private static final String SCHEME = "stall";
 
@@ -72,8 +73,17 @@ public final class StallFileSystemProvider extends FileSystemProvider {
         STALLED_DIRECTORIES.add(stallPath.toString());
     }
 
+    /**
+     * Makes a {@code stall:} path list its real entries with a pause before each one — a slow
+     * mount that keeps making progress, which must never be mistaken for a stalled one.
+     */
+    static void trickleDirectory(@NotNull Path stallPath, long perEntryMillis) {
+        TRICKLING_DIRECTORIES.put(stallPath.toString(), perEntryMillis);
+    }
+
     static void unstallAll() {
         STALLED_DIRECTORIES.clear();
+        TRICKLING_DIRECTORIES.clear();
     }
 
     @Override
@@ -120,7 +130,12 @@ public final class StallFileSystemProvider extends FileSystemProvider {
         }
         DirectoryStream<Path> inner = FileSystems.getDefault().provider()
                 .newDirectoryStream(unwrap(dir), filter);
-        return new WrappingDirectoryStream((StallFileSystem) dir.getFileSystem(), inner);
+        StallFileSystem fileSystem = (StallFileSystem) dir.getFileSystem();
+        Long perEntryMillis = TRICKLING_DIRECTORIES.get(dir.toString());
+        if (perEntryMillis != null) {
+            return new TricklingDirectoryStream(fileSystem, inner, perEntryMillis);
+        }
+        return new WrappingDirectoryStream(fileSystem, inner);
     }
 
     private static void blockLikeAStalledMount() {
@@ -220,6 +235,40 @@ public final class StallFileSystemProvider extends FileSystemProvider {
 
                 @Override
                 public Path next() {
+                    return fileSystem.wrap(source.next());
+                }
+            };
+        }
+
+        @Override
+        public void close() throws IOException {
+            inner.close();
+        }
+    }
+
+    /**
+     * Lists real entries with a pause before each one: total listing time grows with the entry
+     * count, but the stream never goes silent for longer than one pause.
+     */
+    private record TricklingDirectoryStream(@NotNull StallFileSystem fileSystem,
+            @NotNull DirectoryStream<Path> inner, long perEntryMillis) implements DirectoryStream<Path> {
+
+        @Override
+        public @NotNull Iterator<Path> iterator() {
+            Iterator<Path> source = inner.iterator();
+            return new Iterator<>() {
+                @Override
+                public boolean hasNext() {
+                    return source.hasNext();
+                }
+
+                @Override
+                public Path next() {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(perEntryMillis);
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                    }
                     return fileSystem.wrap(source.next());
                 }
             };
