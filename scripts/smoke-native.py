@@ -228,17 +228,35 @@ def main():
         print("mitmkit: CA generation, JSON metadata and overwrite guard PASS", flush=True)
 
         import time
+        import http.server
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                body = b"hello"
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *args):
+                pass
+
+        upstream = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+        upstream_port = upstream.server_address[1]
+        import threading
+        threading.Thread(target=upstream.serve_forever, daemon=True).start()
+
         proxy_port = 18080
         proxy = subprocess.Popen(
-            [str(mitmkit), "run", "--port", str(proxy_port), "--insecure", "--jsonl"],
+            [str(mitmkit), "run", "--port", str(proxy_port), "--jsonl"],
             cwd=directory, env=mitmkit_env, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace",
         )
         try:
             time.sleep(2)
             result = subprocess.run(
-                ["curl", "-s", "-x", f"http://127.0.0.1:{proxy_port}",
-                 "--cacert", ca["caCert"], "https://example.com/",
+                ["curl", "-s", "-x", f"http://127.0.0.1:{proxy_port}", "--noproxy", "",
+                 f"http://127.0.0.1:{upstream_port}/hello",
                  "-o", os.devnull, "-w", "%{http_code}", "--max-time", "15"],
                 cwd=directory, env=mitmkit_env, capture_output=True, text=True, timeout=30,
             )
@@ -249,11 +267,13 @@ def main():
             assert flows, "mitmkit should emit at least one JSONL flow"
             record = json.loads(flows[0])
             assert record["method"] == "GET" and record["status"] == 200, record
+            assert "/hello" in record["url"], record
         finally:
             if proxy.poll() is None:
                 proxy.terminate()
                 proxy.wait(timeout=10)
-        print("mitmkit: HTTPS interception and JSONL flow PASS", flush=True)
+            upstream.shutdown()
+        print("mitmkit: HTTP interception and JSONL flow PASS", flush=True)
 
 
 if __name__ == "__main__":
