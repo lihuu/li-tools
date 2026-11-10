@@ -53,6 +53,9 @@ exit 1
             PATH=str(self.bin) + os.pathsep + os.environ["PATH"],
             BUILD_CALL_LOG=self.log.as_posix(),
             BUILD_FIXTURE_ROOT=self.root.as_posix(),
+            # Keep the default path deterministic; parallel behaviour has its
+            # own tests below.
+            NATIVE_BUILD_JOBS="1",
         )
         self.environment.pop("FAIL_MAVEN", None)
         self.environment.pop("FAIL_NATIVE", None)
@@ -143,6 +146,34 @@ exit 1
                     self.assertEqual(2, result.returncode, result.stderr)
                     self.assertIn("usage:", result.stderr)
                     self.assertEqual([], self.calls())
+
+    def test_parallel_build_builds_every_tool(self):
+        self.environment["NATIVE_BUILD_JOBS"] = "3"
+        result = self.run_build("build-native.sh")
+        self.assertEqual(0, result.returncode, result.stderr)
+        calls = self.calls()
+        self.assertTrue(calls[0].startswith("maven:"), calls)
+        self.assertEqual(
+            sorted("native:" + tool for tool in TOOLS),
+            sorted(calls[1:]),
+            "every tool builds exactly once",
+        )
+        for tool in TOOLS:
+            self.assertTrue((self.root / tool / "target" / tool).is_file(), tool)
+
+    def test_parallel_build_reports_failure_and_exit_code(self):
+        self.environment["NATIVE_BUILD_JOBS"] = "3"
+        self.environment["FAIL_NATIVE"] = "certkit"
+        result = self.run_build("build-native.sh")
+        self.assertEqual(9, result.returncode, result.stderr)
+        self.assertIn("FAILED certkit", result.stderr)
+
+    def test_parallel_jobs_must_be_a_positive_integer(self):
+        self.environment["NATIVE_BUILD_JOBS"] = "zero"
+        result = self.run_build("build-native.sh")
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertIn("NATIVE_BUILD_JOBS", result.stderr)
+        self.assertEqual([], self.calls())
 
 
 if __name__ == "__main__":
