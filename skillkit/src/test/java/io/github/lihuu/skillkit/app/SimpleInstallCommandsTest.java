@@ -94,11 +94,12 @@ class SimpleInstallCommandsTest {
     }
 
     @Test
-    void installHelpDoesNotRequireStorageOrScopeChoices() {
+    void installHelpSupportsAgentAndProjectWithoutRawTargetOptions() {
         Result result = run("install", "--help");
         assertEquals(0, result.code());
         assertTrue(result.out().contains("--agent"));
-        for (String removed : List.of("--project", "--target-dir", "--global")) {
+        assertTrue(result.out().contains("--project"));
+        for (String removed : List.of("--target-dir", "--global")) {
             assertFalse(result.out().contains(removed), removed);
         }
     }

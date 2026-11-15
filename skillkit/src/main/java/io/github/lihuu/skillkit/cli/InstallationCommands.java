@@ -25,8 +25,15 @@ final class InstallationCommands {
         @Option(names = {"--agent", "-a"}, split = ",", paramLabel = "<agent>",
                 description = "Agent target; repeat or comma-separate (install defaults to shared)")
         List<String> agents = List.of();
+        @Option(names = "--project",
+                description = "Target the current project directory instead of global home")
+        boolean project;
 
         List<Path> resolve(CliCommand root, boolean installing) {
+            if (project) {
+                return agents.isEmpty() && !installing ? AgentPaths.projectTargets(root.workingDirectory)
+                        : AgentPaths.projectTargets(root.workingDirectory, agents);
+            }
             return agents.isEmpty() && !installing ? AgentPaths.targets(root.home, root.environment)
                     : AgentPaths.targets(root.home, root.environment, agents);
         }
