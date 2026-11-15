@@ -4,14 +4,14 @@
 
 | 命令 | 行为 | 专属参数 |
 | --- | --- | --- |
-| `install <names...>` | 从个人仓库或指定外部来源，安装到公共目录或指定 Agent | `--repo <source>`、`--ref <ref>`（默认 HEAD）、`--symlink`、`--jobs <n>`（默认 4）、`--dry-run`、`--agent/-a <name>` |
-| `update [names...]` | 更新已安装项；省略名称时更新当前个人仓库的全部已安装项 | `--jobs <n>`（默认 4）、`--dry-run`、`--agent/-a <name>` |
-| `uninstall <names...>` | 卸载已安装副本，保留个人原稿与来源记录 | `--dry-run`、`--agent/-a <name>` |
-| `list` | 列出当前个人仓库管理的全局安装状态 | `--agent/-a <name>` |
+| `install <names...>` | 从个人仓库或指定外部来源，安装到公共目录、指定 Agent 或当前项目目录 | `--repo <source>`、`--ref <ref>`（默认 HEAD）、`--symlink`、`--jobs <n>`（默认 4）、`--dry-run`、`--agent/-a <name>`、`--project` |
+| `update [names...]` | 更新已安装项；省略名称时更新当前个人仓库的全部已安装项 | `--jobs <n>`（默认 4）、`--dry-run`、`--agent/-a <name>`、`--project` |
+| `uninstall <names...>` | 卸载已安装副本，保留个人原稿与来源记录 | `--dry-run`、`--agent/-a <name>`、`--project` |
+| `list` | 列出当前个人仓库管理的全局或项目级安装状态 | `--agent/-a <name>`、`--project` |
 | `push` | 自动提交个人内容和来源记录，并发布当前分支 | `--repo <source>`、`-m/--message <text>`、`--dry-run` |
 | `pull` | 首次克隆个人仓库，之后从 origin 快进拉取 | `--repo <source>`（首次必填）、`--dry-run` |
 
-只有一个安装入口 `install`；不提供导入、订阅管理、初始化或项目作用域子命令。Agent 选择通过参数完成，支持重复及逗号分隔。`--jobs` 必须为正整数。所有命令继承 `--repository <path>` 及 cli-common 的 `--json`、`--quiet`、`--no-color`、`--debug`。
+只有一个安装入口 `install`；不提供导入、订阅管理或初始化子命令。Agent 与作用域选择通过 `--agent` 和 `--project` 完成，支持重复及逗号分隔。`--jobs` 必须为正整数。所有命令继承 `--repository <path>` 及 cli-common 的 `--json`、`--quiet`、`--no-color`、`--debug`。
 
 仓库选择：显式 `--repository` → `SKILLKIT_REPOSITORY` → 当前目录向上发现 `skillkit.json` 或 `skills/` → `~/.skillkit/repository`。相对路径以当前工作目录为基准。
 
@@ -51,16 +51,16 @@
 
 `update`、`list`、`uninstall` 省略 `--agent` 时处理所有受支持路径中的既有安装；指定时仅处理所选路径。更新不向未安装的目录新增分发，兼容旧版已经安装到专用目录的副本。公共目录供支持它的 Agent 读取，不保证覆盖所有 Agent；共享目录的选择不提供消费者隔离。
 
-| Agent 参数 | skills 根目录 |
-| --- | --- |
-| `shared`、`codex`、`pi`、`zcode` | `~/.agents/skills` |
-| `claude-code` | `${CLAUDE_CONFIG_DIR:-~/.claude}/skills` |
-| `qwen-code` | `~/.qwen/skills` |
-| `cursor` | `~/.cursor/skills` |
-| `gemini-cli` | `~/.gemini/skills` |
-| `hermes`、`hermes-agent` | `${HERMES_HOME:-~/.hermes}/skills` |
-| `opencode` | `${XDG_CONFIG_HOME:-~/.config}/opencode/skills` |
-| `antigravity` | `~/.gemini/antigravity/skills` |
+| Agent 参数 | 全局 skills 根目录 | 项目级（`--project`）skills 目录 |
+| --- | --- | --- |
+| `shared`、`codex`、`pi`、`zcode` | `~/.agents/skills` | `./.agents/skills` |
+| `claude-code` | `${CLAUDE_CONFIG_DIR:-~/.claude}/skills` | `./.claude/skills` |
+| `qwen-code` | `~/.qwen/skills` | `./.qwen/skills` |
+| `cursor` | `~/.cursor/skills` | `./.cursor/skills` |
+| `gemini-cli` | `~/.gemini/skills` | `./.gemini/skills` |
+| `hermes`、`hermes-agent` | `${HERMES_HOME:-~/.hermes}/skills` | `./.hermes/skills` |
+| `opencode` | `${XDG_CONFIG_HOME:-~/.config}/opencode/skills` | `./.opencode/skills` |
+| `antigravity` | `~/.gemini/antigravity/skills` | `./.agent/skills` |
 
 默认复制；`--symlink` 链接本地原稿或固定版本的缓存快照。更新保留已有安装模式。每个目标的 `.skillkit-state.json` 记录仓库身份、模式、摘要、链接与版本，不认领未托管目录；不同个人仓库共享目标时保留彼此状态。被修改的复制安装拒绝覆盖和卸载，删除软链不跟随删除源。
 

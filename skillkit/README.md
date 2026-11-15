@@ -24,6 +24,10 @@ skillkit install first second third --jobs 8
 skillkit install my-skill --agent claude-code,cursor
 skillkit install my-skill --agent shared --agent claude-code
 
+# 安装到当前项目目录（./.agents/skills 或 ./.<agent>/skills）
+skillkit install my-skill --project
+skillkit list --project
+
 # 更新全部已安装的 skill，或指定名称
 skillkit update
 skillkit update example --jobs 8

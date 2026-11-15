@@ -75,6 +75,42 @@ class AgentSelectionTest {
         assertFalse(Files.exists(repository()));
     }
 
+    @Test
+    void projectFlagInstallsUpdatesListsAndUninstallsInWorkingDirectoryOnly() throws IOException {
+        skill("original");
+        Path project = temporary.resolve("project");
+        Files.createDirectories(project);
+        Result installed = runInProject(project, Map.of("CLAUDE_CONFIG_DIR", home().resolve("custom-claude").toString()),
+                "--repository", repository().toString(), "install", "mine", "--project");
+        assertEquals(0, installed.code(), installed.err());
+        assertEquals("original", Files.readString(project.resolve(".agents/skills/mine/SKILL.md")));
+        assertFalse(Files.exists(home().resolve(".agents")));
+
+        Result agentInstalled = runInProject(project, Map.of("CLAUDE_CONFIG_DIR", home().resolve("custom-claude").toString()),
+                "--repository", repository().toString(), "install", "mine", "--project", "--agent", "claude-code,cursor,opencode,antigravity");
+        assertEquals(0, agentInstalled.code(), agentInstalled.err());
+        assertEquals("original", Files.readString(project.resolve(".claude/skills/mine/SKILL.md")));
+        assertEquals("original", Files.readString(project.resolve(".cursor/skills/mine/SKILL.md")));
+        assertEquals("original", Files.readString(project.resolve(".opencode/skills/mine/SKILL.md")));
+        assertEquals("original", Files.readString(project.resolve(".agent/skills/mine/SKILL.md")));
+        assertFalse(Files.exists(home().resolve("custom-claude")));
+
+        skill("updated");
+        assertEquals(0, runInProject(project, Map.of(), "--repository", repository().toString(), "update", "--project").code());
+        assertEquals("updated", Files.readString(project.resolve(".agents/skills/mine/SKILL.md")));
+        assertEquals("updated", Files.readString(project.resolve(".claude/skills/mine/SKILL.md")));
+        assertFalse(Files.exists(project.resolve(".qwen")));
+
+        Result listed = runInProject(project, Map.of(), "--repository", repository().toString(), "list", "--project", "--json");
+        assertEquals(0, listed.code(), listed.err());
+        assertTrue(listed.out().contains(".agents"));
+        assertTrue(listed.out().contains(".claude"));
+
+        assertEquals(0, runInProject(project, Map.of(), "--repository", repository().toString(), "uninstall", "mine", "--project", "--agent", "claude-code").code());
+        assertFalse(Files.exists(project.resolve(".claude/skills/mine")));
+        assertEquals("updated", Files.readString(project.resolve(".agents/skills/mine/SKILL.md")));
+    }
+
     private void skill(String content) throws IOException {
         Path directory = repository().resolve("skills/mine");
         Files.createDirectories(directory);
@@ -85,9 +121,13 @@ class AgentSelectionTest {
     private Path home() { return temporary.resolve("home"); }
     private Path repository() { return temporary.resolve("repository"); }
     private Result run(String... arguments) {
+        return runInProject(repository(), Map.of(), arguments);
+    }
+
+    private Result runInProject(Path workingDirectory, Map<String, String> environment, String... arguments) {
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();
-        int code = CliApplication.run(arguments, home(), repository(), new PrintWriter(out, true), new PrintWriter(err, true), Map.of(), false);
+        int code = CliApplication.run(arguments, home(), workingDirectory, new PrintWriter(out, true), new PrintWriter(err, true), environment, false);
         return new Result(code, out.toString(), err.toString());
     }
     private record Result(int code, String out, String err) {}
