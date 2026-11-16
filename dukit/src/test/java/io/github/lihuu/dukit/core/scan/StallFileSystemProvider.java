@@ -18,8 +18,11 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.spi.FileSystemProvider;
 import java.nio.channels.SeekableByteChannel;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,8 +46,11 @@ public final class StallFileSystemProvider extends FileSystemProvider {
     private static final long STALL_MILLIS = TimeUnit.SECONDS.toMillis(3);
 
     private static final Set<String> STALLED_DIRECTORIES = ConcurrentHashMap.newKeySet();
+    private static final Set<String> HUNG_DIRECTORIES = ConcurrentHashMap.newKeySet();
+    private static final Set<String> SORTED_DIRECTORIES = ConcurrentHashMap.newKeySet();
     private static final Set<String> STALLED_ATTRIBUTES = ConcurrentHashMap.newKeySet();
     private static final Map<String, Long> TRICKLING_DIRECTORIES = new ConcurrentHashMap<>();
+    private static final Object HANG_LOCK = new Object();
     private static final Map<String, StallFileSystem> FILE_SYSTEMS = new HashMap<>();
     private static final String SCHEME = "stall";
 
@@ -74,6 +80,16 @@ public final class StallFileSystemProvider extends FileSystemProvider {
         STALLED_DIRECTORIES.add(stallPath.toString());
     }
 
+    /** Marks a {@code stall:} path so that listing it blocks until {@link #unstallAll()}. */
+    static void hangDirectory(@NotNull Path stallPath) {
+        HUNG_DIRECTORIES.add(stallPath.toString());
+    }
+
+    /** Makes listing {@code stallPath} deterministic by sorting its direct entries by name. */
+    static void sortDirectory(@NotNull Path stallPath) {
+        SORTED_DIRECTORIES.add(stallPath.toString());
+    }
+
     /**
      * Marks a {@code stall:} path so that reading its attributes ({@code lstat} /
      * {@code Files.readAttributes}) blocks like a dead mount point inside a healthy parent.
@@ -92,8 +108,13 @@ public final class StallFileSystemProvider extends FileSystemProvider {
 
     static void unstallAll() {
         STALLED_DIRECTORIES.clear();
+        HUNG_DIRECTORIES.clear();
+        SORTED_DIRECTORIES.clear();
         STALLED_ATTRIBUTES.clear();
         TRICKLING_DIRECTORIES.clear();
+        synchronized (HANG_LOCK) {
+            HANG_LOCK.notifyAll();
+        }
     }
 
     @Override
@@ -134,6 +155,10 @@ public final class StallFileSystemProvider extends FileSystemProvider {
     @Override
     public @NotNull DirectoryStream<Path> newDirectoryStream(@NotNull Path dir,
             @NotNull DirectoryStream.Filter<? super Path> filter) throws IOException {
+        if (HUNG_DIRECTORIES.contains(dir.toString())) {
+            waitUntilUnstalled(dir.toString());
+            throw new IOException("simulated hung directory listing: " + dir);
+        }
         if (STALLED_DIRECTORIES.contains(dir.toString())) {
             blockLikeAStalledMount();
             throw new IOException("simulated stalled directory listing: " + dir);
@@ -145,7 +170,43 @@ public final class StallFileSystemProvider extends FileSystemProvider {
         if (perEntryMillis != null) {
             return new TricklingDirectoryStream(fileSystem, inner, perEntryMillis);
         }
+        if (SORTED_DIRECTORIES.contains(dir.toString())) {
+            return sortedWrappingStream(fileSystem, inner);
+        }
         return new WrappingDirectoryStream(fileSystem, inner);
+    }
+
+    private static @NotNull DirectoryStream<Path> sortedWrappingStream(
+            @NotNull StallFileSystem fileSystem, @NotNull DirectoryStream<Path> inner) throws IOException {
+        List<Path> sorted = new ArrayList<>();
+        try (inner) {
+            for (Path entry : inner) {
+                sorted.add(fileSystem.wrap(entry));
+            }
+        }
+        sorted.sort(Comparator.comparing(path -> path.getFileName().toString()));
+        return new DirectoryStream<>() {
+            @Override
+            public @NotNull Iterator<Path> iterator() {
+                return sorted.iterator();
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+    }
+
+    private static void waitUntilUnstalled(@NotNull String dirKey) {
+        synchronized (HANG_LOCK) {
+            while (HUNG_DIRECTORIES.contains(dirKey)) {
+                try {
+                    HANG_LOCK.wait();
+                } catch (InterruptedException uncancellable) {
+                    // Deliberate: simulate an uninterruptible kernel syscall until unstallAll().
+                }
+            }
+        }
     }
 
     /**
