@@ -52,8 +52,11 @@ public final class ScreenRenderer {
         lines.add(style(BOLD, fit(state.currentPath() + "  " + HumanBytes.format(current.diskSize()), columns)));
         String summary = String.format(Locale.US, "%s in own files · %,d directories · %,d files",
                 HumanBytes.format(current.ownFileSize()), current.dirCount(), current.fileCount());
-        if (state.showFiles() && !current.topFiles().isEmpty()) {
-            summary += String.format(Locale.US, " · %,d files shown", current.topFiles().size());
+        if (state.filesVisible() && !state.files().isEmpty()) {
+            summary += state.filesTruncated()
+                    ? String.format(Locale.US, " · largest %,d of %,d shown",
+                            state.files().size(), state.filesTotal())
+                    : String.format(Locale.US, " · %,d files shown", state.files().size());
         }
         lines.add(style(DIM, fit(summary, columns)));
         lines.add(style(DIM, "─".repeat(columns)));
@@ -61,7 +64,7 @@ public final class ScreenRenderer {
         List<TreeEntry> entries = state.entries();
         int listRows = Math.max(1, rows - 4);
         if (entries.isEmpty()) {
-            String empty = state.showFiles() ? "  (no entries)" : "  (no subdirectories)";
+            String empty = emptyMessage(state, current);
             lines.add(style(DIM, fit(empty, columns)));
             for (int i = 1; i < listRows; i++) {
                 lines.add("");
@@ -126,9 +129,32 @@ public final class ScreenRenderer {
     private @NotNull String footer(@NotNull TuiState state, int count, int columns) {
         String position = count == 0 ? "0/0" : (state.selected() + 1) + "/" + count;
         String help = "↑↓ move  ⏎ enter  ⌫ back  s sort(" + state.sortKey().label()
-                + ")  d delete  t files(" + (state.showFiles() ? "on" : "off") + ")  q quit";
+                + ")  d delete  t files(" + filesMode(state) + ")  q quit";
         int helpWidth = Math.max(0, columns - position.length() - 1);
         return fit(padRight(help, helpWidth) + " " + position, columns);
+    }
+
+    /**
+     * Says what the empty list means. The three cases are genuinely different: nothing at all
+     * below this directory, files but no subdirectories, and subdirectories the user has not
+     * expanded the files of.
+     */
+    private static @NotNull String emptyMessage(@NotNull TuiState state, @NotNull DirEntry current) {
+        if (current.children().isEmpty() && current.ownFileCount() == 0) {
+            return "  (empty)";
+        }
+        return state.filesVisible() ? "  (no files)" : "  (no subdirectories)";
+    }
+
+    /**
+     * A directory without subdirectories always shows its files, so its toggle reads
+     * {@code auto} rather than pretending the user could turn them off.
+     */
+    private static @NotNull String filesMode(@NotNull TuiState state) {
+        if (state.current().children().isEmpty()) {
+            return "auto";
+        }
+        return state.showFiles() ? "on" : "off";
     }
 
     private @NotNull String style(@NotNull String code, @NotNull String text) {

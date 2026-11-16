@@ -166,6 +166,67 @@ class TuiStateTest {
         assertEquals(1, state.entries().size());
     }
 
+
+    @Test
+    void aDirectoryWithoutSubdirectoriesListsItsFilesWithoutToggling() throws IOException {
+        Path filesOnly = temporary.resolve("files-only");
+        Files.createDirectories(filesOnly);
+        Files.writeString(filesOnly.resolve("small.bin"), "x".repeat(10), StandardCharsets.US_ASCII);
+        Files.writeString(filesOnly.resolve("large.bin"), "x".repeat(300), StandardCharsets.US_ASCII);
+        TuiState state = new TuiState(new DirectoryScanner(List.of()).scan(filesOnly, (files, bytes, dir) -> { }));
+
+        assertFalse(state.showFiles(), "the toggle itself stays off");
+        assertTrue(state.filesVisible(), "but there is nothing else to show");
+        assertEquals(List.of("large.bin", "small.bin"),
+                state.entries().stream().map(TreeEntry::name).toList());
+    }
+
+    @Test
+    void filesAreListedFromTheDirectoryItselfNotOnlyTheScannedPreview() throws IOException {
+        Path wide = temporary.resolve("wide");
+        Files.createDirectories(wide);
+        for (int i = 1; i <= 5; i++) {
+            Files.writeString(wide.resolve("f" + i + ".bin"), "x".repeat(i * 100), StandardCharsets.US_ASCII);
+        }
+        ScanResult result = new DirectoryScanner(List.of()).scan(wide, (files, bytes, dir) -> { }, 2);
+        TuiState state = new TuiState(result);
+
+        assertEquals(2, state.current().topFiles().size(), "the scan itself kept only a preview");
+        assertEquals(List.of("f5.bin", "f4.bin", "f3.bin", "f2.bin", "f1.bin"),
+                state.entries().stream().map(TreeEntry::name).toList());
+        assertFalse(state.filesTruncated(), "five files fit in a listing of two thousand");
+        assertEquals(5, state.filesTotal());
+    }
+
+    @Test
+    void subdirectoriesHideTheirFilesUntilAsked() throws IOException {
+        TuiState state = new TuiState(scan);
+        state.handle(Key.ENTER, 10);
+        assertEquals("alpha", state.current().name());
+
+        assertFalse(state.filesVisible(), "alpha has a subdirectory, so files start hidden");
+        assertEquals(List.of("nested"), state.entries().stream().map(TreeEntry::name).toList());
+        assertTrue(state.files().isEmpty());
+    }
+
+    @Test
+    void leavingAFileOnlyDirectoryHidesItsFilesAgain() throws IOException {
+        Path mixed = temporary.resolve("mixed");
+        Files.createDirectories(mixed.resolve("inner"));
+        Files.createDirectories(mixed.resolve("files-only"));
+        Files.writeString(mixed.resolve("files-only/only.bin"), "x".repeat(10), StandardCharsets.US_ASCII);
+        TuiState state = new TuiState(new DirectoryScanner(List.of()).scan(mixed, (files, bytes, dir) -> { }));
+
+        state.handle(Key.ENTER, 10);
+        assertEquals("files-only", state.current().name());
+        assertTrue(state.filesVisible());
+        assertEquals(List.of("only.bin"), state.entries().stream().map(TreeEntry::name).toList());
+
+        state.handle(Key.BACK, 10);
+        assertFalse(state.filesVisible(), "the directory above still has subdirectories to show");
+        assertTrue(state.entries().stream().allMatch(entry -> entry instanceof DirEntry));
+    }
+
     @Test
     void quitStopsTheLoop() {
         TuiState state = new TuiState(scan);

@@ -6,7 +6,8 @@ import io.github.lihuu.dukit.core.model.DirEntry;
 import io.github.lihuu.dukit.core.model.TreeEntry;
 import io.github.lihuu.dukit.core.model.FileEntry;
 import io.github.lihuu.dukit.core.model.ScanResult;
-import io.github.lihuu.dukit.core.model.TreeEntry;
+import io.github.lihuu.dukit.core.scan.DirectoryLister;
+import io.github.lihuu.dukit.core.scan.Exclusions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,26 +26,41 @@ import java.util.List;
  * access, so changing the sort key never leaves the cursor pointing at a stale index beyond
  * the list bounds.
  *
- * <p>Pressing {@code t} appends the scanner's bounded preview of the current directory's
- * largest direct files to the listing. Those rows are selectable but not enterable; the
- * navigation trail only ever contains directories.
+ * <p>Pressing {@code t} appends the current directory's direct files to the listing, and a
+ * directory that holds no subdirectories shows them without being asked — there is nothing
+ * else to look at. Those rows are selectable but not enterable; the navigation trail only
+ * ever contains directories.
+ *
+ * <p>The file rows come from {@link DirectoryLister}, which re-reads the one directory on
+ * screen rather than spending memory on a per-file entry for every directory in the tree.
+ * The list is therefore refreshed on every move — never per frame — and falls back to the
+ * scan's bounded preview when the directory can no longer be read.
  */
 public final class TuiState {
-    /** How many of a directory's largest direct files the interactive listing retains. */
+    /** How many of a directory's largest direct files the scan keeps as a fallback preview. */
     public static final int TOP_FILES = 10;
 
     private final Path rootPath;
+    private final Exclusions exclusions;
     private final Deque<DirEntry> trail = new ArrayDeque<>();
     private SortKey sortKey = SortKey.SIZE;
     private boolean showFiles;
     private int selected;
     private int scroll;
+    private List<FileEntry> files = List.of();
+    private long filesTotal;
     private @Nullable DeletePlan pendingDelete;
     private @Nullable String notice;
 
     public TuiState(@NotNull ScanResult result) {
+        this(result, Exclusions.none());
+    }
+
+    public TuiState(@NotNull ScanResult result, @NotNull Exclusions exclusions) {
         this.rootPath = result.path();
+        this.exclusions = exclusions;
         trail.push(result.root());
+        refreshFiles();
     }
 
     public @NotNull DirEntry current() {
@@ -58,7 +74,6 @@ public final class TuiState {
     public @NotNull List<TreeEntry> entries() {
         List<DirEntry> directories = new ArrayList<>(current().children());
         directories.sort(sortKey.comparator());
-        List<FileEntry> files = showFiles ? current().topFiles() : List.of();
         List<TreeEntry> entries = new ArrayList<>(directories.size() + files.size());
         entries.addAll(directories);
         entries.addAll(files);
@@ -67,6 +82,28 @@ public final class TuiState {
 
     public boolean showFiles() {
         return showFiles;
+    }
+
+    /**
+     * Whether the listing currently carries the directory's files: either the user asked for
+     * them, or there are no subdirectories to show instead.
+     */
+    public boolean filesVisible() {
+        return showFiles || current().children().isEmpty();
+    }
+
+    /** Direct files in the listing, largest first. */
+    public @NotNull List<FileEntry> files() {
+        return files;
+    }
+
+    /** Files the directory holds, including any the listing left out. */
+    public long filesTotal() {
+        return filesTotal;
+    }
+
+    public boolean filesTruncated() {
+        return files.size() < filesTotal;
     }
 
     public @NotNull SortKey sortKey() {
@@ -157,6 +194,7 @@ public final class TuiState {
             trail.addFirst(entry);
         }
         pendingDelete = null;
+        refreshFiles();
         selected = Math.max(0, Math.min(selected, Math.max(0, entries().size() - 1)));
         scroll = Math.max(0, Math.min(scroll, selected));
     }
@@ -165,13 +203,41 @@ public final class TuiState {
      * Absolute path of the directory currently shown, rebuilt from the navigation trail.
      */
     public @NotNull String currentPath() {
+        return currentDirectory().toString();
+    }
+
+    private @NotNull Path currentDirectory() {
         Path path = rootPath;
         Iterator<DirEntry> ancestors = trail.descendingIterator();
         ancestors.next();
         while (ancestors.hasNext()) {
             path = path.resolve(ancestors.next().name());
         }
-        return path.toString();
+        return path;
+    }
+
+    /**
+     * Re-reads the file rows for the directory in view. Called on every move, never per
+     * frame: a repaint must not touch the filesystem.
+     */
+    private void refreshFiles() {
+        DirEntry current = current();
+        if (!filesVisible()) {
+            files = List.of();
+            filesTotal = current.ownFileCount();
+            return;
+        }
+        DirectoryLister.Listing listing = DirectoryLister.list(currentDirectory(), rootPath,
+                exclusions, DirectoryLister.LIMIT);
+        if (listing.total() == 0) {
+            // Gone, unreadable, or emptied since the scan: the retained preview is the only
+            // evidence left, and it is better than claiming the directory holds nothing.
+            files = current.topFiles();
+            filesTotal = current.ownFileCount();
+            return;
+        }
+        files = listing.files();
+        filesTotal = listing.total();
     }
 
     /**
@@ -197,6 +263,7 @@ public final class TuiState {
             }
             case TOGGLE_FILES -> {
                 showFiles = !showFiles;
+                refreshFiles();
                 clamp(rows);
             }
             case QUIT -> {
@@ -233,6 +300,7 @@ public final class TuiState {
         trail.push(directory);
         selected = 0;
         scroll = 0;
+        refreshFiles();
     }
 
     private void ascend() {
@@ -242,6 +310,7 @@ public final class TuiState {
         trail.pop();
         selected = 0;
         scroll = 0;
+        refreshFiles();
         clamp(1);
     }
 

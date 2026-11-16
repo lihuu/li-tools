@@ -11,10 +11,8 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -139,20 +137,9 @@ public final class DirectoryScanner {
     private @NotNull Run execute(@NotNull Path root, @NotNull ProgressListener listener,
             boolean buildTree, int topLimit, int topFiles) {
         Path absolute = root.toAbsolutePath().normalize();
-        List<PathMatcher> nameMatchers = new ArrayList<>();
-        List<PathMatcher> relativeMatchers = new ArrayList<>();
-        FileSystem fileSystem = absolute.getFileSystem();
-        for (String pattern : excludePatterns) {
-            PathMatcher matcher = fileSystem.getPathMatcher("glob:" + pattern);
-            if (pattern.indexOf('/') >= 0) {
-                relativeMatchers.add(matcher);
-            } else {
-                nameMatchers.add(matcher);
-            }
-        }
+        Exclusions exclusions = Exclusions.compile(excludePatterns, absolute.getFileSystem());
 
-        Run run = new Run(absolute, nameMatchers, relativeMatchers, listener, buildTree, topLimit, topFiles,
-                stallBudgetNanos);
+        Run run = new Run(absolute, exclusions, listener, buildTree, topLimit, topFiles, stallBudgetNanos);
         int workers = parallelism > 0 ? parallelism : Math.max(1, Runtime.getRuntime().availableProcessors() * 2);
         run.start(workers);
         listener.onUpdate(run.fileCount.get(), run.bytesSeen.get(), absolute);
@@ -165,8 +152,7 @@ public final class DirectoryScanner {
 
     private static final class Run {
         private final Path root;
-        private final List<PathMatcher> nameMatchers;
-        private final List<PathMatcher> relativeMatchers;
+        private final Exclusions exclusions;
         private final ProgressListener listener;
         private final boolean buildTree;
         private final int topFiles;
@@ -189,12 +175,10 @@ public final class DirectoryScanner {
         private volatile boolean rootUnreadable;
         private @Nullable Node node;
 
-        Run(@NotNull Path root, @NotNull List<PathMatcher> nameMatchers,
-                @NotNull List<PathMatcher> relativeMatchers, @NotNull ProgressListener listener,
+        Run(@NotNull Path root, @NotNull Exclusions exclusions, @NotNull ProgressListener listener,
                 boolean buildTree, int topLimit, int topFiles, long stallBudgetNanos) {
             this.root = root;
-            this.nameMatchers = nameMatchers;
-            this.relativeMatchers = relativeMatchers;
+            this.exclusions = exclusions;
             this.listener = listener;
             this.buildTree = buildTree;
             this.topFiles = topFiles;
@@ -343,22 +327,7 @@ public final class DirectoryScanner {
         }
 
         boolean excluded(@NotNull Path path) {
-            if (!nameMatchers.isEmpty()) {
-                Path name = path.getFileName();
-                if (name != null) {
-                    for (PathMatcher matcher : nameMatchers) {
-                        if (matcher.matches(name)) {
-                            return true;
-                        }
-                    }
-                }
-            }
-            for (PathMatcher matcher : relativeMatchers) {
-                if (matcher.matches(root.relativize(path))) {
-                    return true;
-                }
-            }
-            return false;
+            return exclusions.matches(root, path);
         }
 
         void recordError(@NotNull Path path, @NotNull Throwable failure) {

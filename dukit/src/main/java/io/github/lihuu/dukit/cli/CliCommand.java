@@ -8,6 +8,7 @@ import io.github.lihuu.dukit.core.model.ScanError;
 import io.github.lihuu.dukit.core.model.ScanResult;
 import io.github.lihuu.dukit.core.model.TopResult;
 import io.github.lihuu.dukit.core.scan.DirectoryScanner;
+import io.github.lihuu.dukit.core.scan.Exclusions;
 import io.github.lihuu.dukit.core.browse.Browser;
 import io.github.lihuu.dukit.core.delete.DeleteService;
 import io.github.lihuu.dukit.core.trash.TrashStores;
@@ -74,7 +75,7 @@ public final class CliCommand implements Callable<Integer> {
                 interactive ? TuiState.TOP_FILES : 0);
         reportScanErrors(result, globalOptions.quiet);
         if (interactive) {
-            if (FullScreenBrowser.run(result, outputStyle().isAnsi(), deleteService())) {
+            if (FullScreenBrowser.run(result, outputStyle().isAnsi(), deleteService(), Exclusions.none())) {
                 return CliExitCode.OK;
             }
             // Raw mode unavailable (exotic terminal): the line-based browser still works.

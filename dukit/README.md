@@ -24,7 +24,7 @@ When investigating disk usage, developers and automated agents usually face dist
 - **Accurate Occupied Disk Space**: Reads native `st_blocks` via Java 25 Foreign Function & Memory (FFM) API, matching `du` and Finder out of the box.
 - **Full-Screen Interactive TUI Browser**: Alternate screen buffer powered by JLine FFM, working identically across macOS, Linux, and Windows 11 console.
 - **Safe Trash Deletion**: Press `d` in the TUI to inspect a modal confirmation dialog and move subtrees safely to the OS Trash (never permanent delete).
-- **Direct Files Preview**: Press `t` to reveal up to 10 largest direct files in the current directory without bloating the scan tree.
+- **Direct Files On Demand**: Press `t` to reveal the current directory's direct files, largest first — read from that one directory when you ask, so the scan tree stays directory-only. A directory with no subdirectories lists its files without being asked.
 - **Bounded Streaming Top-N**: Evaluates the biggest directories or files using fixed-size min-heaps, keeping memory constant regardless of disk size.
 
 ---
@@ -84,7 +84,7 @@ Run `dukit` or `dukit browse` in any interactive terminal:
 | `Home` / `End` | Jump to first / last item |
 | `PageUp` / `PageDown` | Scroll one page up / down |
 | `s` | Cycle sort order: Size → Name → Count |
-| `t` | **Show / hide current directory's top 10 direct files** (display only) |
+| `t` | **Show / hide the current directory's direct files**, largest first (display only; files are listed automatically when the directory has no subdirectories) |
 | `d` | **Move directory to system Trash** (review modal dialog, press `y` to confirm) |
 | `q` / `Ctrl+C` | Cleanly exit full-screen mode |
 

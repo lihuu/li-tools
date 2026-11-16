@@ -143,7 +143,7 @@ class ScreenRendererTest {
 
         List<String> lines = new ScreenRenderer(false).render(new TuiState(result), 60, 8);
 
-        assertTrue(lines.get(3).contains("no subdirectories"), lines.get(3));
+        assertTrue(lines.get(3).contains("(empty)"), lines.get(3));
     }
 
     @Test

@@ -8,8 +8,11 @@ import io.github.lihuu.dukit.core.delete.DeleteService;
 import io.github.lihuu.dukit.core.delete.TreeUpdater;
 import io.github.lihuu.dukit.core.trash.TrashException;
 import io.github.lihuu.dukit.core.model.DirEntry;
+import io.github.lihuu.dukit.core.model.FileEntry;
 import io.github.lihuu.dukit.core.model.ScanResult;
 import io.github.lihuu.dukit.core.report.HumanBytes;
+import io.github.lihuu.dukit.core.scan.DirectoryLister;
+import io.github.lihuu.dukit.core.scan.Exclusions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,15 +46,23 @@ public final class Browser {
     private final PrintWriter out;
     private final OutputStyle style;
     private final Deque<DirEntry> trail = new ArrayDeque<>();
+    private final Exclusions exclusions;
     private SortKey sortKey = SortKey.SIZE;
+    private boolean showFiles;
 
     public Browser(@NotNull ScanResult result, @NotNull Reader input, @NotNull PrintWriter out,
             @NotNull OutputStyle style, @Nullable DeleteService deleteService) {
+        this(result, input, out, style, deleteService, Exclusions.none());
+    }
+
+    public Browser(@NotNull ScanResult result, @NotNull Reader input, @NotNull PrintWriter out,
+            @NotNull OutputStyle style, @Nullable DeleteService deleteService, @NotNull Exclusions exclusions) {
         this.result = result;
         this.deleteService = deleteService;
         this.in = input instanceof BufferedReader buffered ? buffered : new BufferedReader(input);
         this.out = out;
         this.style = style;
+        this.exclusions = exclusions;
         this.trail.push(result.root());
     }
 
@@ -75,6 +86,9 @@ public final class Browser {
                 printHelp();
             } else if ("s".equals(command) || "sort".equals(command)) {
                 cycleSort();
+            } else if ("t".equals(command) || "files".equals(command)) {
+                showFiles = !showFiles;
+                render();
             } else if (command.startsWith("sort ")) {
                 setSort(command);
             } else if (command.matches("\\d+")) {
@@ -238,9 +252,16 @@ public final class Browser {
                     i + 1, HumanBytes.format(child.diskSize()), percent(child, current), child.name(), ownFiles, marker));
         }
         if (children.isEmpty()) {
-            out.println(style.muted("  (no subdirectories)"));
+            out.println(style.muted(emptyMessage(current)));
         }
-        out.println(style.muted("<n> enter · .. up · top · s/sort sort · q quit · ? help"));
+        List<FileEntry> files = visibleFiles(current);
+        for (FileEntry file : files) {
+            out.println(style.muted(String.format(Locale.US, "       %9s       %s",
+                    HumanBytes.format(file.diskSize()), file.name())));
+        }
+        out.println(style.muted(String.format(Locale.US,
+                "<n> enter · .. up · top · s/sort sort · t files(%s) · q quit · ? help",
+                filesMode(current))));
     }
 
     private void printHelp() {
@@ -249,9 +270,58 @@ public final class Browser {
         out.println(style.muted(".. or up       go to the parent directory"));
         out.println(style.muted("top            go back to the scan root"));
         out.println(style.muted("s              cycle sort: size -> name -> count"));
+        out.println(style.muted("t or files     show / hide the current directory's files"));
         out.println(style.muted("sort <key>     order by size, name or count"));
         out.println(style.muted("[enter]        re-render the current directory"));
         out.println(style.muted("q              quit (end of input also quits)"));
+    }
+
+    /**
+     * A directory with no subdirectories always lists its files: there is nothing else to
+     * show, and an empty listing reads like a bug rather than an empty directory.
+     */
+    private boolean filesVisible(@NotNull DirEntry current) {
+        return showFiles || current.children().isEmpty();
+    }
+
+    private @NotNull List<FileEntry> visibleFiles(@NotNull DirEntry current) {
+        if (!filesVisible(current)) {
+            return List.of();
+        }
+        DirectoryLister.Listing listing = DirectoryLister.list(currentDirectory(), result.path(),
+                exclusions, DirectoryLister.LIMIT);
+        if (listing.total() == 0) {
+            return current.topFiles();
+        }
+        if (listing.truncated()) {
+            out.println(style.muted(String.format(Locale.US, "  showing the largest %,d of %,d files",
+                    listing.files().size(), listing.total())));
+        }
+        return listing.files();
+    }
+
+    private @NotNull String emptyMessage(@NotNull DirEntry current) {
+        if (current.children().isEmpty() && current.ownFileCount() == 0) {
+            return "  (empty)";
+        }
+        return filesVisible(current) ? "  (no files)" : "  (no subdirectories)";
+    }
+
+    private @NotNull String filesMode(@NotNull DirEntry current) {
+        if (current.children().isEmpty()) {
+            return "auto";
+        }
+        return showFiles ? "on" : "off";
+    }
+
+    private @NotNull Path currentDirectory() {
+        Path path = result.path();
+        Iterator<DirEntry> ancestors = trail.descendingIterator();
+        ancestors.next();
+        while (ancestors.hasNext()) {
+            path = path.resolve(ancestors.next().name());
+        }
+        return path;
     }
 
     private @NotNull String currentPath() {

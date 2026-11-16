@@ -8,6 +8,7 @@ import io.github.lihuu.dukit.core.delete.TreeUpdater;
 import io.github.lihuu.dukit.core.model.DirEntry;
 import io.github.lihuu.dukit.core.model.TreeEntry;
 import io.github.lihuu.dukit.core.model.ScanResult;
+import io.github.lihuu.dukit.core.scan.Exclusions;
 import io.github.lihuu.dukit.core.trash.TrashException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -50,8 +51,8 @@ public final class FullScreenBrowser {
      * @return true when the full-screen session ran; false when no usable terminal could be
      *         opened and the caller should fall back to the line-based browser
      */
-    public static boolean run(@NotNull ScanResult result, boolean color, @NotNull DeleteService deleteService)
-            throws IOException {
+    public static boolean run(@NotNull ScanResult result, boolean color, @NotNull DeleteService deleteService,
+            @NotNull Exclusions exclusions) throws IOException {
         Terminal terminal = openTerminal();
         if (terminal == null) {
             return false;
@@ -68,7 +69,7 @@ public final class FullScreenBrowser {
             writer.print(ENTER_ALTERNATE_SCREEN + HIDE_CURSOR);
             writer.flush();
 
-            TuiState state = new TuiState(result);
+            TuiState state = new TuiState(result, exclusions);
             ScreenRenderer renderer = new ScreenRenderer(color);
             KeyParser parser = new KeyParser(inputOf(terminal));
 
