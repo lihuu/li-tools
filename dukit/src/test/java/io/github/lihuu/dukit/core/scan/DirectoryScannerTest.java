@@ -542,6 +542,34 @@ class DirectoryScannerTest {
         }
     }
 
+    @Test
+    void scanSpawnsReplacementWorkersWhenDirectoryListingsStallWithQueuedSiblings() throws IOException {
+        Path realRoot = Files.createDirectories(temporary.resolve("hunglistings"));
+        Files.createDirectories(realRoot.resolve("a-cloud1"));
+        Files.createDirectories(realRoot.resolve("b-cloud2"));
+        Path fine = Files.createDirectories(realRoot.resolve("c-fine"));
+        Files.writeString(fine.resolve("f.bin"), "x".repeat(4096), StandardCharsets.US_ASCII);
+
+        StallFileSystem stallSystem = StallFileSystemProvider.mount();
+        Path stallRoot = stallSystem.getPath(realRoot.toString());
+        StallFileSystemProvider.sortDirectory(stallRoot);
+        StallFileSystemProvider.hangDirectory(stallRoot.resolve("a-cloud1"));
+        StallFileSystemProvider.hangDirectory(stallRoot.resolve("b-cloud2"));
+        try {
+            // Both workers wedge in directory listings before c-fine is dequeued.
+            // Replacing lost workers must start new threads so queued siblings still run.
+            ScanResult result = assertTimeoutPreemptively(java.time.Duration.ofSeconds(3), () ->
+                    new DirectoryScanner(List.of(), 2, java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(200))
+                            .scan(stallRoot, (files, bytes, dir) -> { }));
+
+            assertEquals(2, result.errors().size(), "both hung directories fail: " + result.errors());
+            assertEquals(4096, result.root().size(), "the queued healthy sibling still runs");
+            assertEquals(List.of("c-fine"), names(result.root()));
+        } finally {
+            StallFileSystemProvider.unstallAll();
+        }
+    }
+
     private Path tree(String name) throws IOException {
         Path root = temporary.resolve(name);
         Files.createDirectories(root.resolve("a/sub"));

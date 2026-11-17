@@ -241,7 +241,7 @@ public final class DirectoryScanner {
                 }
                 ThreadPoolExecutor executor = pool;
                 boolean noFreeWorker = executor == null
-                        || executor.getActiveCount() >= executor.getMaximumPoolSize();
+                        || executor.getActiveCount() >= executor.getPoolSize();
                 boolean nothingLeftToRun = active.isEmpty()
                         && (executor == null || executor.getQueue().isEmpty() || noFreeWorker);
                 if (!nothingLeftToRun) {
@@ -256,12 +256,12 @@ public final class DirectoryScanner {
                         Runnable queued;
                         while ((queued = executor.getQueue().poll()) != null) {
                             if (queued instanceof ScanJob job) {
-                                abandonDirectory(job);
+                                abandonDirectory(job, false);
                             }
                         }
                     }
                     if (done.getCount() > 0) {
-                        abandonDirectory(rootJob);
+                        abandonDirectory(rootJob, false);
                     }
                     return;
                 }
@@ -282,7 +282,11 @@ public final class DirectoryScanner {
         }
 
         private void abandonDirectory(@Nullable ScanJob job) {
-            if (job == null) {
+            abandonDirectory(job, true);
+        }
+
+        private void abandonDirectory(@Nullable ScanJob job, boolean replaceWorker) {
+            if (job == null || job.isFinished()) {
                 return;
             }
             boolean isRoot = job.parent() == null;
@@ -293,7 +297,7 @@ public final class DirectoryScanner {
             job.abandon();
             if (isRoot) {
                 rootAbandoned = true;
-            } else {
+            } else if (replaceWorker) {
                 replaceLostWorker();
             }
         }
@@ -313,6 +317,7 @@ public final class DirectoryScanner {
             }
             executor.setMaximumPoolSize(maximum + 1);
             executor.setCorePoolSize(maximum + 1);
+            executor.prestartCoreThread();
         }
 
         private void submit(@NotNull ScanJob job) {
@@ -583,6 +588,7 @@ public final class DirectoryScanner {
 
         private void completeOwnListingLocked() {
             listingDone = true;
+            entries = null;
             node.errorCount += deferredErrors;
             if (deferred != null) {
                 for (ScanJob child : deferred) {
