@@ -117,6 +117,42 @@ class BrowserTest {
         assertTrue(output.toString().contains("descend into entry"), output.toString());
     }
 
+
+    @Test
+    void aDirectoryWithoutSubdirectoriesListsItsFiles() throws IOException {
+        int code = browser("1\nq\n").run();
+
+        assertEquals(0, code);
+        String out = output.toString();
+        assertTrue(out.contains("content.bin"), "files are listed without asking: " + out);
+        assertTrue(out.contains("second.txt"), out);
+        assertTrue(out.contains("files(auto)"), "the toggle reads auto, not off: " + out);
+    }
+
+    @Test
+    void tRevealsEveryFileNotJustAScannedPreview() throws IOException {
+        Path many = Files.createDirectories(root.resolve("many/inner"));
+        for (int i = 1; i <= 12; i++) {
+            Files.writeString(many.getParent().resolve("note-" + i + ".txt"), "x".repeat(i * 10), StandardCharsets.US_ASCII);
+        }
+        String hidden;
+        try {
+            browser("1\nq\n").run();
+            hidden = output.toString();
+        } finally {
+            output = new StringWriter();
+        }
+        assertFalse(hidden.contains("note-12.txt"), "files stay out of a listing that has subdirectories");
+
+        int code = browser("1\nt\nq\n").run();
+
+        assertEquals(0, code);
+        String out = output.toString();
+        assertTrue(out.contains("files(on)"), out);
+        assertTrue(out.contains("note-12.txt"), "files come from the directory, not the scan preview: " + out);
+        assertTrue(out.contains("note-1.txt"), out);
+    }
+
     private Browser browser(String input) throws IOException {
         output = new StringWriter();
         ScanResult result = new DirectoryScanner(List.of()).scan(root, (files, bytes, dir) -> { });
