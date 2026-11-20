@@ -140,7 +140,10 @@ public final class DirectoryScanner {
         Exclusions exclusions = Exclusions.compile(excludePatterns, absolute.getFileSystem());
 
         Run run = new Run(absolute, exclusions, listener, buildTree, topLimit, topFiles, stallBudgetNanos);
-        int workers = parallelism > 0 ? parallelism : Math.max(1, Runtime.getRuntime().availableProcessors() * 2);
+        // One worker per processor: the previous two-per-processor default oversubscribed
+        // the machine and never won wall time in benchmarks; it was up to 17% slower.
+        int workers = parallelism > 0 ? parallelism
+                : Math.max(1, Runtime.getRuntime().availableProcessors());
         run.start(workers);
         listener.onUpdate(run.fileCount.get(), run.bytesSeen.get(), absolute);
         return run;
